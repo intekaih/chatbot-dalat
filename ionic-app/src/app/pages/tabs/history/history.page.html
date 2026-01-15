@@ -1,6 +1,11 @@
-<ion-header>
-  <ion-toolbar color="primary">
-    <ion-title>Lịch Sử Chat</ion-title>
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>
+      <div class="header-title">
+        <ion-icon name="time-outline"></ion-icon>
+        <span>Lịch Sử Chat</span>
+      </div>
+    </ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -8,19 +13,21 @@
   @if (conversations.length === 0) {
     <div class="empty-state">
       <ion-icon name="chatbubbles-outline"></ion-icon>
-      <h3>Chưa có cuộc trò chuyện nào</h3>
-      <p>Hãy bắt đầu chat để tư vấn du lịch Đà Lạt!</p>
+      <h3>Chưa có cuộc trò chuyện</h3>
+      <p>Hãy bắt đầu chat để nhận tư vấn du lịch Đà Lạt thú vị!</p>
     </div>
   } @else {
     <ion-list>
       @for (conv of conversations; track conv.id) {
-        <ion-item button (click)="openConversation(conv)">
-          <ion-icon name="chatbubble-outline" slot="start" color="primary"></ion-icon>
+        <ion-item button (click)="openConversation(conv)" class="conversation-item">
+          <div class="conv-icon" slot="start">
+            <ion-icon name="chatbubble-outline"></ion-icon>
+          </div>
           <ion-label>
             <h2>{{ conv.title }}</h2>
             <p>{{ formatDate(conv.lastMessageAt) }}</p>
           </ion-label>
-          <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+          <ion-icon name="chevron-forward-outline" slot="end" class="arrow-icon"></ion-icon>
         </ion-item>
       }
     </ion-list>

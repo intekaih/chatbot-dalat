@@ -1,8 +1,13 @@
-<ion-header>
-  <ion-toolbar color="primary">
-    <ion-title>Địa Điểm Yêu Thích</ion-title>
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>
+      <div class="header-title">
+        <ion-icon name="heart-outline"></ion-icon>
+        <span>Địa Điểm Yêu Thích</span>
+      </div>
+    </ion-title>
     <ion-buttons slot="end">
-      <ion-button (click)="addFavorite()">
+      <ion-button (click)="addFavorite()" class="add-btn">
         <ion-icon slot="icon-only" name="add-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
@@ -24,12 +29,17 @@
     <ion-list>
       @for (fav of favorites; track fav.id) {
         <ion-item-sliding>
-          <ion-item>
-            <ion-icon name="location-outline" slot="start" color="danger"></ion-icon>
+          <ion-item class="favorite-item">
+            <div class="fav-icon" slot="start">
+              <ion-icon name="location-outline"></ion-icon>
+            </div>
             <ion-label>
               <h2>{{ fav.name }}</h2>
               @if (fav.address) {
-                <p><ion-icon name="pin-outline"></ion-icon> {{ fav.address }}</p>
+                <p class="address">
+                  <ion-icon name="pin-outline"></ion-icon>
+                  {{ fav.address }}
+                </p>
               }
               @if (fav.description) {
                 <p class="description">{{ fav.description }}</p>
