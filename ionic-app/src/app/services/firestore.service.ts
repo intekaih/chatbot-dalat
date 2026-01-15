@@ -68,12 +68,17 @@ export class FirestoreService {
 
   async addMessage(conversationId: string, message: Partial<ChatMessage>): Promise<string> {
     const ref = collection(this.firestore, `users/${this.uid}/conversations/${conversationId}/messages`);
-    const docRef = await addDoc(ref, {
-      ...message,
+    const messageData: Record<string, any> = {
       uid: this.uid,
       conversationId,
       createdAt: serverTimestamp()
-    });
+    };
+    if (message.text !== undefined) messageData['text'] = message.text;
+    if (message.localImagePath !== undefined) messageData['localImagePath'] = message.localImagePath;
+    if (message.localAudioPath !== undefined) messageData['localAudioPath'] = message.localAudioPath;
+    if (message.role !== undefined) messageData['role'] = message.role;
+    
+    const docRef = await addDoc(ref, messageData);
     await this.updateConversationTimestamp(conversationId);
     return docRef.id;
   }
