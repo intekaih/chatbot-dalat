@@ -1,0 +1,279 @@
+Bạn là Replit AI đóng vai trò Tech Lead cho đồ án môn Phát triển ứng dụng di động nâng cao (Ionic + Angular + Firebase + Capacitor).
+Mục tiêu: tạo một project mới từ đầu trong repo theo đúng yêu cầu kỹ thuật môn học, giữ chủ đề “Chatbot tư vấn du lịch Đà Lạt”, lưu lịch sử chat và địa điểm yêu thích trên Firebase Firestore, có multi-user Auth, và hỗ trợ native Camera + Microphone bằng Capacitor.
+
+0) QUY TẮC LÀM VIỆC (BẮT BUỘC)
+
+Trước khi code, hãy tạo CHECKLIST triển khai theo dạng task list (✅/⬜), chia theo giai đoạn: Setup → Architecture → Firebase → Features → Native → Security → QA → Docs → Git workflow.
+
+Sau mỗi giai đoạn lớn, update checklist bằng trạng thái (✅ done / ⬜ todo).
+
+Không hardcode Firebase keys: dùng .env + Angular environment mapping. Repo phải có .env.example và .gitignore chuẩn.
+
+Code rõ ràng, có comment vừa đủ, tuân theo best-practice Angular/Ionic.
+
+UI tối thiểu nhưng chạy được đầy đủ chức năng.
+
+1) KHỞI TẠO PROJECT MỚI (IONIC + ANGULAR + CAPACITOR)
+
+Tạo project trong thư mục: ionic-app/
+
+Ionic Framework + Angular phiên bản mới nhất tương thích ổn định (khuyến nghị dùng Ionic Angular chính thức).
+
+Ngôn ngữ: TypeScript + SCSS + HTML5
+
+Routing: dùng Angular Router + Ionic Tabs.
+
+Capacitor: cấu hình để build native Android (iOS nếu có môi trường).
+
+Tối ưu cấu trúc để nộp đồ án: gọn, rõ, dễ thuyết trình.
+
+Yêu cầu scripts trong ionic-app/package.json:
+
+start, build, test (nếu có)
+
+cap:sync, cap:android, cap:open:android, (tuỳ) cap:ios
+
+Có hướng dẫn chạy web preview và build Android.
+
+2) KIẾN TRÚC HIỆN ĐẠI + MVC (BẮT BUỘC)
+
+Thiết kế cấu trúc theo “MVC rõ ràng” + Services:
+
+2.1 Models (src/app/models/)
+
+Tạo interface/type:
+
+ChatMessage (id, text?, imageUrl?, audioUrl?, createdAt, uid, role: 'user'|'bot', conversationId)
+
+Conversation (id, title, createdAt, uid, lastMessageAt)
+
+FavoritePlace (id, name, description?, address?, lat?, lng?, imageUrl?, createdAt, uid)
+
+UserProfile (uid, email, displayName?, photoURL?, createdAt)
+
+2.2 Views (Pages/Components)
+
+Pages bắt buộc:
+
+Auth: LoginPage, RegisterPage
+
+Tabs: ChatPage, HistoryPage, FavoritesPage, SettingsPage
+Components gợi ý:
+
+chat-bubble/
+
+media-preview/ (preview ảnh trước khi gửi)
+
+audio-player/ (phát audio message)
+
+2.3 Controllers
+
+Logic điều phối đặt trong *.page.ts (hoặc tách controllers/ nếu sạch hơn).
+
+Controller chỉ làm: validate input, gọi service, update state UI.
+
+2.4 Services (src/app/services/)
+
+Tạo service rõ ràng:
+
+auth.service.ts (login/register/logout, currentUser$, guard helpers)
+
+firestore.service.ts (CRUD chat/conversation/favorites theo uid)
+
+storage.service.ts (upload image/audio lên Firebase Storage và trả downloadURL)
+
+media.service.ts (Camera + Mic: chụp/chọn ảnh, record audio)
+
+chatbot.service.ts (logic bot trả lời; tối thiểu rule-based/templated; dễ thay bằng API sau)
+
+3) FIREBASE (FIRESTORE + AUTH + STORAGE)
+3.1 Tích hợp
+
+Dùng @angular/fire (AngularFire) theo best practice.
+
+Firebase services dùng:
+
+Authentication (Email/Password; tuỳ chọn Google sign-in nếu làm được)
+
+Firestore (lưu chats, conversations, favorites)
+
+Storage (upload ảnh và audio)
+
+3.2 Data model Firestore (tối thiểu)
+
+Dữ liệu phải phân tách theo uid (multi-user):
+
+users/{uid} (UserProfile)
+
+users/{uid}/conversations/{conversationId}
+
+users/{uid}/conversations/{conversationId}/messages/{messageId}
+
+users/{uid}/favorites/{favoriteId}
+
+Fields chung:
+
+createdAt dùng server timestamp
+
+message có thể có: text, imageUrl, audioUrl.
+
+3.3 Security Rules (BẮT BUỘC)
+
+Viết Firestore Rules để user chỉ đọc/ghi dưới users/{uid} của chính họ.
+
+Storage Rules tương tự: chỉ upload/đọc file thuộc folder users/{uid}/....
+
+Include rules mẫu trong repo: firebase.rules.firestore và firebase.rules.storage (hoặc folder firebase/).
+
+3.4 Secrets / env
+
+Dùng .env chứa Firebase config (apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId).
+
+Map sang Angular environment.ts (không commit secrets).
+
+Tạo .env.example và hướng dẫn set GitHub Secrets / Environment variables cho CI sau này.
+
+4) TÍNH NĂNG ỨNG DỤNG (MINIMUM VIABLE + ĐÚNG MÔN)
+4.1 Authentication (multi-user)
+
+UI Login/Register (form validation)
+
+Logout trong Settings
+
+App guard: chưa login thì redirect login.
+
+Mọi query/collection đều theo uid.
+
+4.2 Chatbot Đà Lạt (core)
+
+Chat UI: bubble user/bot, auto-scroll.
+
+Khi gửi:
+
+lưu message user vào Firestore
+
+bot trả lời (rule-based gợi ý địa điểm, lịch trình, ăn uống) → lưu message bot vào Firestore
+
+Có History:
+
+list conversations theo lastMessageAt
+
+click mở lại chat của conversation
+
+Có Favorites:
+
+add/remove place
+
+list favorites theo createdAt
+
+4.3 Camera & chọn ảnh để hỏi
+
+Dùng Capacitor Camera:
+
+chụp ảnh / chọn ảnh
+
+Preview ảnh trước khi gửi trong Chat UI
+
+Upload ảnh lên Storage → lấy downloadURL
+
+Lưu Firestore message với imageUrl
+
+4.4 Voice bằng mic (record audio)
+
+Tích hợp thu âm theo hướng Capacitor-compatible (plugin phù hợp):
+
+có nút Start/Stop record
+
+trạng thái recording...
+
+Upload audio lên Storage → lấy downloadURL
+
+Lưu Firestore message với audioUrl
+
+Hiển thị audio player trong chat bubble (play/pause)
+
+Lưu ý: chọn plugin record audio phù hợp hệ sinh thái Capacitor hiện tại; nếu cần có thể fallback Cordova plugin, nhưng ưu tiên Capacitor.
+
+5) CAPACITOR & NATIVE BUILD
+
+Bắt buộc:
+
+ionic build
+
+ionic cap add android
+
+ionic cap sync
+
+ionic cap open android
+
+README phải có mục “Run on Android (Capacitor)”
+
+Nêu rõ yêu cầu Android Studio + SDK.
+
+Có checklist test Camera/Mic trên device/emulator (nếu emulator không có mic/camera thì hướng dẫn test trên máy thật).
+
+6) REPO WORKFLOW (MÔN HỌC YÊU CẦU)
+
+Tạo cấu trúc repo rõ ràng:
+
+ionic-app/ là project nộp chính
+
+root có README tổng, hoặc README trong ionic-app/ (nhưng phải rõ)
+
+Có .gitignore chuẩn, không commit .env.
+
+Đề xuất convention commit:
+
+feat:, fix:, chore:, docs:, refactor:
+
+Gợi ý GitHub Actions (tuỳ thời gian): build lint test (nếu có), không cần deploy.
+
+7) DELIVERABLE (BẮT BUỘC SAU KHI LÀM XONG)
+
+Sau khi hoàn tất, hãy output:
+
+Cây thư mục của ionic-app/src/app/ thể hiện rõ MVC + services
+
+Chỉ ra các file quan trọng:
+
+app.module.ts / main.ts / config AngularFire
+
+app-routing.module.ts + tabs routing
+
+auth.service.ts, firestore.service.ts, storage.service.ts, media.service.ts, chatbot.service.ts
+
+chat.page.*, history.page.*, favorites.page.*, settings.page.*, login/register
+
+Cập nhật README:
+
+Setup .env
+
+Chạy web
+
+Chạy Android bằng Capacitor
+
+Test Firestore/Auth/Storage
+
+Troubleshooting Camera/Mic permissions
+
+Đảm bảo project không phụ thuộc vào bất kỳ stack khác; chỉ tập trung vào Ionic Angular Capacitor.
+
+8) TIÊU CHÍ ĐÁNH GIÁ CHẤT LƯỢNG
+
+Build chạy được web và Android.
+
+Code sạch, đúng MVC, service tách bạch.
+
+Firestore tách theo uid + security rules chuẩn.
+
+Có tài liệu README rõ ràng để giảng viên chạy được.
+
+Dữ liệu chat/favorites có timestamp và hiển thị đúng.
+
+BẮT ĐẦU NGAY:
+(1) Tạo CHECKLIST triển khai,
+(2) Khởi tạo ionic-app/ và kiến trúc MVC,
+(3) Tích hợp Firebase (Auth/Firestore/Storage + rules),
+(4) Implement Chat/History/Favorites/Settings + Camera + Mic,
+(5) Capacitor Android build,
+(6) Hoàn thiện README + scripts + cây thư mục deliverable.
