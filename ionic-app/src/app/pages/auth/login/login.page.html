@@ -1,4 +1,4 @@
-<ion-header>
+<ion-header class="ion-no-border">
   <ion-toolbar color="primary">
     <ion-title>Đăng Nhập</ion-title>
   </ion-toolbar>
@@ -12,21 +12,23 @@
       <p>Tư vấn du lịch thông minh</p>
     </div>
 
-    <form (ngSubmit)="login()">
-      <ion-item>
-        <ion-label position="floating">Email</ion-label>
-        <ion-input type="email" [(ngModel)]="email" name="email" required></ion-input>
-      </ion-item>
+    <div class="form-container">
+      <form (ngSubmit)="login()">
+        <ion-item lines="none">
+          <ion-label position="floating">Email</ion-label>
+          <ion-input type="email" [(ngModel)]="email" name="email" required></ion-input>
+        </ion-item>
 
-      <ion-item>
-        <ion-label position="floating">Mật khẩu</ion-label>
-        <ion-input type="password" [(ngModel)]="password" name="password" required></ion-input>
-      </ion-item>
+        <ion-item lines="none">
+          <ion-label position="floating">Mật khẩu</ion-label>
+          <ion-input type="password" [(ngModel)]="password" name="password" required></ion-input>
+        </ion-item>
 
-      <ion-button expand="block" type="submit" class="ion-margin-top">
-        Đăng Nhập
-      </ion-button>
-    </form>
+        <ion-button expand="block" type="submit">
+          Đăng Nhập
+        </ion-button>
+      </form>
+    </div>
 
     <div class="register-link">
       <p>Chưa có tài khoản? <a routerLink="/register">Đăng ký ngay</a></p>

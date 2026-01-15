@@ -1,7 +1,7 @@
-<ion-header>
+<ion-header class="ion-no-border">
   <ion-toolbar color="primary">
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/login"></ion-back-button>
+      <ion-back-button defaultHref="/login" color="light"></ion-back-button>
     </ion-buttons>
     <ion-title>Đăng Ký</ion-title>
   </ion-toolbar>
@@ -10,35 +10,38 @@
 <ion-content class="ion-padding">
   <div class="register-container">
     <div class="header-section">
+      <ion-icon name="chatbubbles-outline" class="header-icon"></ion-icon>
       <h2>Tạo tài khoản mới</h2>
       <p>Khám phá Đà Lạt cùng chatbot thông minh</p>
     </div>
 
-    <form (ngSubmit)="register()">
-      <ion-item>
-        <ion-label position="floating">Tên hiển thị</ion-label>
-        <ion-input type="text" [(ngModel)]="displayName" name="displayName" required></ion-input>
-      </ion-item>
+    <div class="form-container">
+      <form (ngSubmit)="register()">
+        <ion-item lines="none">
+          <ion-label position="floating">Tên hiển thị</ion-label>
+          <ion-input type="text" [(ngModel)]="displayName" name="displayName" required></ion-input>
+        </ion-item>
 
-      <ion-item>
-        <ion-label position="floating">Email</ion-label>
-        <ion-input type="email" [(ngModel)]="email" name="email" required></ion-input>
-      </ion-item>
+        <ion-item lines="none">
+          <ion-label position="floating">Email</ion-label>
+          <ion-input type="email" [(ngModel)]="email" name="email" required></ion-input>
+        </ion-item>
 
-      <ion-item>
-        <ion-label position="floating">Mật khẩu</ion-label>
-        <ion-input type="password" [(ngModel)]="password" name="password" required></ion-input>
-      </ion-item>
+        <ion-item lines="none">
+          <ion-label position="floating">Mật khẩu</ion-label>
+          <ion-input type="password" [(ngModel)]="password" name="password" required></ion-input>
+        </ion-item>
 
-      <ion-item>
-        <ion-label position="floating">Xác nhận mật khẩu</ion-label>
-        <ion-input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required></ion-input>
-      </ion-item>
+        <ion-item lines="none">
+          <ion-label position="floating">Xác nhận mật khẩu</ion-label>
+          <ion-input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required></ion-input>
+        </ion-item>
 
-      <ion-button expand="block" type="submit" class="ion-margin-top">
-        Đăng Ký
-      </ion-button>
-    </form>
+        <ion-button expand="block" type="submit">
+          Đăng Ký
+        </ion-button>
+      </form>
+    </div>
 
     <div class="login-link">
       <p>Đã có tài khoản? <a routerLink="/login">Đăng nhập</a></p>

@@ -1,3 +1,7 @@
+ion-content {
+  --background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
 .chat-container {
   display: flex;
   flex-direction: column;
@@ -8,28 +12,74 @@
 .typing-indicator {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  color: var(--ion-color-medium);
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: white;
+  border-radius: 16px;
+  margin: 0.5rem 0;
+  max-width: 160px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 
   ion-spinner {
     width: 20px;
     height: 20px;
+    color: var(--ion-color-primary);
+  }
+
+  span {
+    color: #6c757d;
+    font-size: 0.9rem;
+  }
+}
+
+ion-footer {
+  ion-toolbar {
+    --background: white;
+    --border-width: 0;
+    padding: 4px 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
   }
 }
 
 .input-container {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
+  gap: 4px;
+  padding: 8px 12px;
+
+  ion-buttons {
+    ion-button {
+      --padding-start: 8px;
+      --padding-end: 8px;
+      
+      ion-icon {
+        font-size: 22px;
+      }
+    }
+  }
 
   ion-input {
     flex: 1;
-    --background: var(--ion-color-light);
-    --padding-start: 1rem;
-    --padding-end: 1rem;
-    border-radius: 20px;
+    --background: #f1f3f5;
+    --padding-start: 16px;
+    --padding-end: 16px;
+    --padding-top: 10px;
+    --padding-bottom: 10px;
+    border-radius: 24px;
+    font-size: 15px;
+  }
+
+  > ion-button {
+    --background: linear-gradient(135deg, #4a90d9 0%, #667eea 100%);
+    --border-radius: 50%;
+    --padding-start: 10px;
+    --padding-end: 10px;
+    width: 44px;
+    height: 44px;
+
+    ion-icon {
+      font-size: 20px;
+    }
   }
 }
 
@@ -40,14 +90,22 @@
   gap: 0.5rem;
   padding: 0.5rem;
   color: var(--ion-color-danger);
+  background: rgba(235, 68, 90, 0.1);
+  border-radius: 8px;
+  margin: 0 12px 8px 12px;
   animation: pulse 1s infinite;
 
   ion-icon {
-    font-size: 12px;
+    font-size: 14px;
+  }
+
+  span {
+    font-size: 0.85rem;
+    font-weight: 500;
   }
 }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  50% { opacity: 0.6; }
 }

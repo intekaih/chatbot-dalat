@@ -1,38 +1,48 @@
 .audio-player {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem;
-  min-width: 180px;
+  gap: 10px;
+  padding: 8px 4px;
+  min-width: 200px;
 
   ion-button {
-    --padding-start: 4px;
-    --padding-end: 4px;
+    --padding-start: 6px;
+    --padding-end: 6px;
+    --background: linear-gradient(135deg, #4a90d9 0%, #667eea 100%);
+    --border-radius: 50%;
+    width: 36px;
+    height: 36px;
     margin: 0;
+    
+    ion-icon {
+      font-size: 18px;
+    }
   }
 
   .progress-info {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 4px;
 
     .progress-bar {
-      height: 4px;
+      height: 6px;
       background: rgba(0, 0, 0, 0.1);
-      border-radius: 2px;
+      border-radius: 3px;
       overflow: hidden;
 
       .progress-fill {
         height: 100%;
-        background: var(--ion-color-primary);
+        background: linear-gradient(135deg, #4a90d9 0%, #667eea 100%);
+        border-radius: 3px;
         transition: width 0.1s linear;
       }
     }
 
     .time {
-      font-size: 0.7rem;
-      opacity: 0.7;
+      font-size: 0.75rem;
+      color: #868e96;
+      font-weight: 500;
     }
   }
 }

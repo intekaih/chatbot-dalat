@@ -1,41 +1,93 @@
+ion-content {
+  --background: linear-gradient(180deg, #f0f4f8 0%, #d9e2ec 100%);
+}
+
 .register-container {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 70vh;
+  min-height: 80vh;
+  padding: 0 1rem;
 }
 
 .header-section {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
+
+  .header-icon {
+    font-size: 50px;
+    background: linear-gradient(135deg, #4a90d9 0%, #667eea 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 
   h2 {
-    margin: 0;
-    color: var(--ion-color-primary);
+    margin: 0.5rem 0 0.25rem 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #4a90d9 0%, #667eea 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   p {
-    color: var(--ion-color-medium);
-    margin: 0.5rem 0;
+    color: #6c757d;
+    margin: 0;
+    font-size: 0.95rem;
   }
 }
 
-ion-item {
-  margin-bottom: 1rem;
-  --background: var(--ion-color-light);
-  border-radius: 8px;
+.form-container {
+  background: white;
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
-ion-button {
-  margin-top: 1.5rem;
+ion-item {
+  --background: #f8f9fa;
+  --border-radius: 12px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  margin-bottom: 0.75rem;
+  border-radius: 12px;
+  box-shadow: none;
+  
+  ion-label {
+    font-weight: 500;
+    color: #495057;
+  }
+  
+  ion-input {
+    --padding-top: 8px;
+    --padding-bottom: 8px;
+    font-size: 16px;
+  }
+}
+
+ion-button[type="submit"] {
+  --background: linear-gradient(135deg, #4a90d9 0%, #667eea 100%);
+  --border-radius: 12px;
+  --box-shadow: 0 4px 16px rgba(74, 144, 217, 0.4);
+  height: 50px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 0.5rem;
 }
 
 .login-link {
   text-align: center;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
+
+  p {
+    color: #6c757d;
+    margin: 0;
+  }
 
   a {
-    color: var(--ion-color-primary);
+    color: #4a90d9;
     text-decoration: none;
     font-weight: 600;
   }
