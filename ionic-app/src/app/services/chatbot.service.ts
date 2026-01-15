@@ -47,8 +47,9 @@ export class ChatbotService {
         text: reply,
         suggestedPlace
       };
-    } catch (error) {
-      console.error('AI API error, falling back to rule-based:', error);
+    } catch (error: any) {
+      console.error('AI API error:', error);
+      console.error('Error details:', error?.message, error?.status, error?.statusText);
       return this.generateRuleBasedResponse(userMessage);
     }
   }

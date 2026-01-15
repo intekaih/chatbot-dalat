@@ -125,7 +125,8 @@ export class ChatPage implements OnInit, OnDestroy {
         this.promptSavePlace(botResponse.suggestedPlace);
       }
     } catch (error) {
-      this.showToast('Lỗi gửi tin nhắn');
+      console.error('Chat error:', error);
+      this.showToast('Lỗi gửi tin nhắn: ' + (error as Error).message);
     } finally {
       this.isLoading = false;
       this.scrollToBottom();
