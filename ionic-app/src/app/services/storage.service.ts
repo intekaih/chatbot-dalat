@@ -1,45 +1,83 @@
 import { Injectable, inject } from '@angular/core';
-import { Storage, ref, uploadBytes, getDownloadURL } from '@angular/fire/storage';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class StorageService {
-  private storage = inject(Storage);
   private authService = inject(AuthService);
 
   private get uid(): string {
     return this.authService.currentUser?.uid || '';
   }
 
-  async uploadImage(base64Data: string, fileName?: string): Promise<string> {
+  async saveImageLocally(base64Data: string, fileName?: string): Promise<string> {
     const name = fileName || `image_${Date.now()}.jpg`;
-    const path = `users/${this.uid}/images/${name}`;
-    const storageRef = ref(this.storage, path);
+    const path = `dalat-chatbot/${this.uid}/images/${name}`;
 
     const base64Content = base64Data.includes(',') 
       ? base64Data.split(',')[1] 
       : base64Data;
-    
-    const byteString = atob(base64Content);
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
-    }
-    const blob = new Blob([ab], { type: 'image/jpeg' });
 
-    await uploadBytes(storageRef, blob);
-    return getDownloadURL(storageRef);
+    await Filesystem.writeFile({
+      path,
+      data: base64Content,
+      directory: Directory.Data,
+      recursive: true
+    });
+
+    return path;
   }
 
-  async uploadAudio(blob: Blob, fileName?: string): Promise<string> {
+  async saveAudioLocally(base64Data: string, fileName?: string): Promise<string> {
     const name = fileName || `audio_${Date.now()}.webm`;
-    const path = `users/${this.uid}/audio/${name}`;
-    const storageRef = ref(this.storage, path);
+    const path = `dalat-chatbot/${this.uid}/audio/${name}`;
 
-    await uploadBytes(storageRef, blob);
-    return getDownloadURL(storageRef);
+    await Filesystem.writeFile({
+      path,
+      data: base64Data,
+      directory: Directory.Data,
+      recursive: true
+    });
+
+    return path;
+  }
+
+  async readLocalFile(path: string): Promise<string> {
+    try {
+      const result = await Filesystem.readFile({
+        path,
+        directory: Directory.Data
+      });
+      return result.data as string;
+    } catch (error) {
+      console.error('Error reading local file:', error);
+      return '';
+    }
+  }
+
+  async deleteLocalFile(path: string): Promise<void> {
+    try {
+      await Filesystem.deleteFile({
+        path,
+        directory: Directory.Data
+      });
+    } catch (error) {
+      console.error('Error deleting local file:', error);
+    }
+  }
+
+  async getLocalFileUri(path: string): Promise<string> {
+    try {
+      const result = await Filesystem.getUri({
+        path,
+        directory: Directory.Data
+      });
+      return result.uri;
+    } catch (error) {
+      console.error('Error getting file URI:', error);
+      return '';
+    }
   }
 }

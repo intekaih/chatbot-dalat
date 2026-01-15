@@ -1,11 +1,11 @@
 <div class="bubble-container" [class.user]="isUser" [class.bot]="!isUser">
   <div class="bubble">
-    @if (message.imageUrl) {
-      <img [src]="message.imageUrl" alt="Attached image" class="message-image" />
+    @if (imageDataUrl) {
+      <img [src]="imageDataUrl" alt="Attached image" class="message-image" />
     }
     
-    @if (message.audioUrl) {
-      <app-audio-player [audioUrl]="message.audioUrl"></app-audio-player>
+    @if (audioDataUrl) {
+      <app-audio-player [audioUrl]="audioDataUrl"></app-audio-player>
     }
     
     @if (message.text) {

@@ -1,8 +1,8 @@
 export interface ChatMessage {
   id: string;
   text?: string;
-  imageUrl?: string;
-  audioUrl?: string;
+  localImagePath?: string;
+  localAudioPath?: string;
   createdAt: Date;
   uid: string;
   role: 'user' | 'bot';

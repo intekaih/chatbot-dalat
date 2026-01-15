@@ -5,8 +5,9 @@
 
 ## Tech Stack
 - **Frontend**: Ionic 8 + Angular 20 (Standalone Components)
-- **Backend**: Firebase (Auth + Firestore + Storage)
-- **Native**: Capacitor 6 (Camera, Audio)
+- **Backend**: Firebase (Auth + Firestore) - chỉ lưu metadata
+- **Local Storage**: Capacitor Filesystem (lưu ảnh/audio local)
+- **Native**: Capacitor 6 (Camera, Audio, Filesystem)
 - **Language**: TypeScript + SCSS
 
 ## Project Structure
@@ -20,7 +21,7 @@ ionic-app/
 │   │   ├── auth/         # Login, Register
 │   │   └── tabs/         # Chat, History, Favorites, Settings
 │   └── components/       # Reusable UI components
-├── firebase/             # Security rules
+├── firebase/             # Security rules (firestore.rules only)
 └── capacitor.config.ts   # Capacitor config
 ```
 
@@ -31,19 +32,29 @@ ionic-app/
 - Favorite places management
 - Camera integration for photo messages
 - Voice recording for audio messages
+- Local file storage using Capacitor Filesystem
+
+## Storage Architecture
+- **Ảnh/Audio**: Lưu local trên thiết bị sử dụng Capacitor Filesystem
+- **Firestore chỉ lưu metadata**:
+  - text: nội dung tin nhắn
+  - localImagePath / localAudioPath: đường dẫn local
+  - createdAt: timestamp
+  - uid: user ID
+  - role: 'user' | 'bot'
 
 ## Setup Required
 1. Create Firebase project at console.firebase.google.com
-2. Enable Auth (Email/Password), Firestore, Storage
+2. Enable Auth (Email/Password), Firestore Database
 3. Copy Firebase config to `src/environments/environment.ts`
-4. Deploy security rules from `firebase/` folder
+4. Deploy Firestore rules from `firebase/firestore.rules`
 
 ## Running
 - Web: `cd ionic-app && npm start`
 - Android: `cd ionic-app && npm run cap:android`
 
 ## Recent Changes
-- Initial project setup with full MVC architecture
-- Implemented all core features: Auth, Chat, History, Favorites
-- Added Camera and Audio recording support
-- Created Firebase security rules
+- 2026-01-15: Refactored to use Capacitor Filesystem for local file storage
+- Firestore now only stores metadata (text, localPath, createdAt, uid)
+- Removed Firebase Storage dependency
+- Updated ChatMessage model with localImagePath/localAudioPath

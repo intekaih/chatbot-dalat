@@ -94,15 +94,15 @@ export class ChatPage implements OnInit, OnDestroy {
         });
       }
 
-      let imageUrl: string | undefined;
+      let localImagePath: string | undefined;
       if (this.pendingImage) {
-        imageUrl = await this.storageService.uploadImage(this.pendingImage);
+        localImagePath = await this.storageService.saveImageLocally(this.pendingImage);
         this.pendingImage = null;
       }
 
       await this.firestoreService.addMessage(this.conversationId, {
         text: this.newMessage || undefined,
-        imageUrl,
+        localImagePath,
         role: 'user'
       });
 
@@ -151,19 +151,26 @@ export class ChatPage implements OnInit, OnDestroy {
       if (audioBlob && this.conversationId) {
         this.isLoading = true;
         try {
-          const audioUrl = await this.storageService.uploadAudio(audioBlob);
-          await this.firestoreService.addMessage(this.conversationId, {
-            audioUrl,
-            role: 'user'
-          });
-          
-          await this.firestoreService.addMessage(this.conversationId, {
-            text: 'Tôi đã nhận được tin nhắn thoại của bạn! Hiện tại tôi chỉ hỗ trợ trả lời văn bản. Bạn có thể gõ câu hỏi để tôi tư vấn nhé!',
-            role: 'bot'
-          });
+          const reader = new FileReader();
+          reader.readAsDataURL(audioBlob);
+          reader.onloadend = async () => {
+            const base64Audio = reader.result as string;
+            const base64Data = base64Audio.split(',')[1];
+            const localAudioPath = await this.storageService.saveAudioLocally(base64Data);
+            
+            await this.firestoreService.addMessage(this.conversationId!, {
+              localAudioPath,
+              role: 'user'
+            });
+            
+            await this.firestoreService.addMessage(this.conversationId!, {
+              text: 'Tôi đã nhận được tin nhắn thoại của bạn! Hiện tại tôi chỉ hỗ trợ trả lời văn bản. Bạn có thể gõ câu hỏi để tôi tư vấn nhé!',
+              role: 'bot'
+            });
+            this.isLoading = false;
+          };
         } catch (error) {
           this.showToast('Lỗi gửi audio');
-        } finally {
           this.isLoading = false;
         }
       }
