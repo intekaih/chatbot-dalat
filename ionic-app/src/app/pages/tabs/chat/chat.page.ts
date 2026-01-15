@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { IonicModule, ToastController, AlertController } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 import { ChatMessage } from '../../../models';
@@ -26,8 +27,10 @@ export class ChatPage implements OnInit, OnDestroy {
   pendingImage: string | null = null;
 
   private messagesSubscription?: Subscription;
+  private queryParamSubscription?: Subscription;
 
   constructor(
+    private route: ActivatedRoute,
     private firestoreService: FirestoreService,
     private chatbotService: ChatbotService,
     private mediaService: MediaService,
@@ -37,11 +40,19 @@ export class ChatPage implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.startNewConversation();
+    this.queryParamSubscription = this.route.queryParams.subscribe(params => {
+      const convId = params['conversationId'];
+      if (convId) {
+        this.loadConversation(convId);
+      } else {
+        this.startNewConversation();
+      }
+    });
   }
 
   ngOnDestroy() {
     this.messagesSubscription?.unsubscribe();
+    this.queryParamSubscription?.unsubscribe();
   }
 
   async startNewConversation() {
