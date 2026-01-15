@@ -54,7 +54,11 @@ ionic-app/
 - Android: `cd ionic-app && npm run cap:android`
 
 ## Recent Changes
-- 2026-01-15: Refactored to use Capacitor Filesystem for local file storage
+- 2026-01-15: Integrated Replit AI (OpenAI GPT-4o-mini) for intelligent chatbot responses
+- Added Express API server (port 3001) for AI chat processing
+- Refactored ChatbotService to use AI with fallback to rule-based responses
+- Refactored to use Capacitor Filesystem for local file storage
 - Firestore now only stores metadata (text, localPath, createdAt, uid)
 - Removed Firebase Storage dependency
 - Updated ChatMessage model with localImagePath/localAudioPath
+- Improved UI design with gradient purple theme

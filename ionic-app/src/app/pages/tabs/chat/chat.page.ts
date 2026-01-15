@@ -108,7 +108,14 @@ export class ChatPage implements OnInit, OnDestroy {
       const userText = this.newMessage;
       this.newMessage = '';
 
-      const botResponse = this.chatbotService.generateResponse(userText);
+      const history = this.messages
+        .filter(m => m.text)
+        .map(m => ({
+          role: m.role === 'bot' ? 'assistant' as const : 'user' as const,
+          content: m.text!
+        }));
+
+      const botResponse = await this.chatbotService.generateAIResponse(userText, history);
       await this.firestoreService.addMessage(this.conversationId, {
         text: botResponse.text,
         role: 'bot'
