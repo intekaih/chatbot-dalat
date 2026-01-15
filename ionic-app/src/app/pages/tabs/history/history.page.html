@@ -1,0 +1,28 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Lịch Sử Chat</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  @if (conversations.length === 0) {
+    <div class="empty-state">
+      <ion-icon name="chatbubbles-outline"></ion-icon>
+      <h3>Chưa có cuộc trò chuyện nào</h3>
+      <p>Hãy bắt đầu chat để tư vấn du lịch Đà Lạt!</p>
+    </div>
+  } @else {
+    <ion-list>
+      @for (conv of conversations; track conv.id) {
+        <ion-item button (click)="openConversation(conv)">
+          <ion-icon name="chatbubble-outline" slot="start" color="primary"></ion-icon>
+          <ion-label>
+            <h2>{{ conv.title }}</h2>
+            <p>{{ formatDate(conv.lastMessageAt) }}</p>
+          </ion-label>
+          <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+        </ion-item>
+      }
+    </ion-list>
+  }
+</ion-content>

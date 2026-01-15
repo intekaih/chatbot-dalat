@@ -1,0 +1,35 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Đăng Nhập</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="login-container">
+    <div class="logo-section">
+      <ion-icon name="chatbubbles-outline" class="logo-icon"></ion-icon>
+      <h1>Đà Lạt Chatbot</h1>
+      <p>Tư vấn du lịch thông minh</p>
+    </div>
+
+    <form (ngSubmit)="login()">
+      <ion-item>
+        <ion-label position="floating">Email</ion-label>
+        <ion-input type="email" [(ngModel)]="email" name="email" required></ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="floating">Mật khẩu</ion-label>
+        <ion-input type="password" [(ngModel)]="password" name="password" required></ion-input>
+      </ion-item>
+
+      <ion-button expand="block" type="submit" class="ion-margin-top">
+        Đăng Nhập
+      </ion-button>
+    </form>
+
+    <div class="register-link">
+      <p>Chưa có tài khoản? <a routerLink="/register">Đăng ký ngay</a></p>
+    </div>
+  </div>
+</ion-content>

@@ -1,0 +1,32 @@
+.preview-container {
+  padding: 0.5rem;
+  background: var(--ion-color-light);
+  border-top: 1px solid var(--ion-color-medium-tint);
+}
+
+.preview-content {
+  position: relative;
+  display: inline-block;
+
+  img {
+    max-width: 120px;
+    max-height: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    --padding-start: 0;
+    --padding-end: 0;
+
+    ion-icon {
+      font-size: 24px;
+      color: var(--ion-color-danger);
+      background: white;
+      border-radius: 50%;
+    }
+  }
+}

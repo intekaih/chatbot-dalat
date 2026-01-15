@@ -1,0 +1,8 @@
+<div class="preview-container" *ngIf="imageUrl">
+  <div class="preview-content">
+    <img [src]="imageUrl" alt="Preview" />
+    <ion-button fill="clear" size="small" (click)="onCancel()" class="close-btn">
+      <ion-icon slot="icon-only" name="close-circle"></ion-icon>
+    </ion-button>
+  </div>
+</div>

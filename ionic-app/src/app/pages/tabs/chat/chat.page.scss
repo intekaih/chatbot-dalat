@@ -1,0 +1,53 @@
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding-bottom: 1rem;
+}
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  color: var(--ion-color-medium);
+
+  ion-spinner {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.input-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+
+  ion-input {
+    flex: 1;
+    --background: var(--ion-color-light);
+    --padding-start: 1rem;
+    --padding-end: 1rem;
+    border-radius: 20px;
+  }
+}
+
+.recording-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  color: var(--ion-color-danger);
+  animation: pulse 1s infinite;
+
+  ion-icon {
+    font-size: 12px;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

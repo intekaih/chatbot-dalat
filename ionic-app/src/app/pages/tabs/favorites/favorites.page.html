@@ -1,0 +1,49 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Địa Điểm Yêu Thích</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="addFavorite()">
+        <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  @if (favorites.length === 0) {
+    <div class="empty-state">
+      <ion-icon name="heart-outline"></ion-icon>
+      <h3>Chưa có địa điểm yêu thích</h3>
+      <p>Chat với bot để nhận gợi ý và lưu lại những địa điểm bạn thích!</p>
+      <ion-button (click)="addFavorite()">
+        <ion-icon slot="start" name="add-outline"></ion-icon>
+        Thêm địa điểm
+      </ion-button>
+    </div>
+  } @else {
+    <ion-list>
+      @for (fav of favorites; track fav.id) {
+        <ion-item-sliding>
+          <ion-item>
+            <ion-icon name="location-outline" slot="start" color="danger"></ion-icon>
+            <ion-label>
+              <h2>{{ fav.name }}</h2>
+              @if (fav.address) {
+                <p><ion-icon name="pin-outline"></ion-icon> {{ fav.address }}</p>
+              }
+              @if (fav.description) {
+                <p class="description">{{ fav.description }}</p>
+              }
+              <p class="date">Đã lưu: {{ formatDate(fav.createdAt) }}</p>
+            </ion-label>
+          </ion-item>
+          <ion-item-options side="end">
+            <ion-item-option color="danger" (click)="removeFavorite(fav)">
+              <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+            </ion-item-option>
+          </ion-item-options>
+        </ion-item-sliding>
+      }
+    </ion-list>
+  }
+</ion-content>

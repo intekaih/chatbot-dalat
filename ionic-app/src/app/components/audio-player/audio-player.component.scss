@@ -1,0 +1,38 @@
+.audio-player {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem;
+  min-width: 180px;
+
+  ion-button {
+    --padding-start: 4px;
+    --padding-end: 4px;
+    margin: 0;
+  }
+
+  .progress-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .progress-bar {
+      height: 4px;
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+
+      .progress-fill {
+        height: 100%;
+        background: var(--ion-color-primary);
+        transition: width 0.1s linear;
+      }
+    }
+
+    .time {
+      font-size: 0.7rem;
+      opacity: 0.7;
+    }
+  }
+}

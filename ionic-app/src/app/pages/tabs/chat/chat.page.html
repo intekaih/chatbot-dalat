@@ -1,0 +1,68 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Chat Du Lịch Đà Lạt</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="startNewConversation()">
+        <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content #chatContent class="ion-padding">
+  <div class="chat-container">
+    @for (message of messages; track message.id) {
+      <app-chat-bubble [message]="message"></app-chat-bubble>
+    }
+
+    @if (isLoading) {
+      <div class="typing-indicator">
+        <ion-spinner name="dots"></ion-spinner>
+        <span>Đang xử lý...</span>
+      </div>
+    }
+  </div>
+</ion-content>
+
+<ion-footer>
+  @if (pendingImage) {
+    <app-media-preview 
+      [imageUrl]="pendingImage" 
+      (cancel)="cancelImage()">
+    </app-media-preview>
+  }
+
+  <ion-toolbar>
+    <div class="input-container">
+      <ion-buttons>
+        <ion-button (click)="takePhoto()" color="medium">
+          <ion-icon slot="icon-only" name="camera-outline"></ion-icon>
+        </ion-button>
+        <ion-button (click)="pickPhoto()" color="medium">
+          <ion-icon slot="icon-only" name="image-outline"></ion-icon>
+        </ion-button>
+        <ion-button (click)="toggleRecording()" [color]="isRecording ? 'danger' : 'medium'">
+          <ion-icon slot="icon-only" [name]="isRecording ? 'stop-circle' : 'mic-outline'"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+
+      <ion-input
+        [(ngModel)]="newMessage"
+        placeholder="Nhập tin nhắn..."
+        (keyup.enter)="sendMessage()"
+        [disabled]="isRecording">
+      </ion-input>
+
+      <ion-button (click)="sendMessage()" [disabled]="isLoading || isRecording">
+        <ion-icon slot="icon-only" name="send"></ion-icon>
+      </ion-button>
+    </div>
+
+    @if (isRecording) {
+      <div class="recording-indicator">
+        <ion-icon name="radio-button-on" color="danger"></ion-icon>
+        <span>Đang ghi âm...</span>
+      </div>
+    }
+  </ion-toolbar>
+</ion-footer>

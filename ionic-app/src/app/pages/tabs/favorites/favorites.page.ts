@@ -1,0 +1,107 @@
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { IonicModule, AlertController, ToastController } from '@ionic/angular';
+import { Subscription } from 'rxjs';
+import { FavoritePlace } from '../../../models';
+import { FirestoreService } from '../../../services';
+
+@Component({
+  selector: 'app-favorites',
+  standalone: true,
+  imports: [CommonModule, FormsModule, IonicModule],
+  templateUrl: './favorites.page.html',
+  styleUrls: ['./favorites.page.scss']
+})
+export class FavoritesPage implements OnInit, OnDestroy {
+  favorites: FavoritePlace[] = [];
+  private subscription?: Subscription;
+
+  constructor(
+    private firestoreService: FirestoreService,
+    private alertCtrl: AlertController,
+    private toastCtrl: ToastController
+  ) {}
+
+  ngOnInit() {
+    this.loadFavorites();
+  }
+
+  ngOnDestroy() {
+    this.subscription?.unsubscribe();
+  }
+
+  loadFavorites() {
+    this.subscription = this.firestoreService.getFavorites().subscribe(favs => {
+      this.favorites = favs;
+    });
+  }
+
+  async addFavorite() {
+    const alert = await this.alertCtrl.create({
+      header: 'Thêm địa điểm yêu thích',
+      inputs: [
+        { name: 'name', type: 'text', placeholder: 'Tên địa điểm' },
+        { name: 'address', type: 'text', placeholder: 'Địa chỉ' },
+        { name: 'description', type: 'textarea', placeholder: 'Mô tả' }
+      ],
+      buttons: [
+        { text: 'Hủy', role: 'cancel' },
+        {
+          text: 'Thêm',
+          handler: async (data) => {
+            if (data.name) {
+              try {
+                await this.firestoreService.addFavorite({
+                  name: data.name,
+                  address: data.address,
+                  description: data.description
+                });
+                this.showToast('Đã thêm địa điểm!');
+              } catch (error) {
+                this.showToast('Lỗi khi thêm địa điểm');
+              }
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  async removeFavorite(fav: FavoritePlace) {
+    const alert = await this.alertCtrl.create({
+      header: 'Xác nhận',
+      message: `Bạn có muốn xóa "${fav.name}" khỏi danh sách yêu thích?`,
+      buttons: [
+        { text: 'Hủy', role: 'cancel' },
+        {
+          text: 'Xóa',
+          role: 'destructive',
+          handler: async () => {
+            try {
+              await this.firestoreService.removeFavorite(fav.id);
+              this.showToast('Đã xóa khỏi yêu thích');
+            } catch (error) {
+              this.showToast('Lỗi khi xóa');
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  formatDate(date: Date): string {
+    return new Date(date).toLocaleDateString('vi-VN');
+  }
+
+  private async showToast(message: string) {
+    const toast = await this.toastCtrl.create({
+      message,
+      duration: 2000,
+      position: 'bottom'
+    });
+    toast.present();
+  }
+}

@@ -1,0 +1,23 @@
+<div class="audio-player">
+  <audio 
+    #audioElement 
+    [src]="audioUrl"
+    (timeupdate)="onTimeUpdate($event)"
+    (loadedmetadata)="onLoadedMetadata($event)"
+    (ended)="onEnded()">
+  </audio>
+
+  <ion-button fill="clear" size="small" (click)="togglePlay()">
+    <ion-icon slot="icon-only" [name]="isPlaying ? 'pause' : 'play'"></ion-icon>
+  </ion-button>
+
+  <div class="progress-info">
+    <div class="progress-bar">
+      <div 
+        class="progress-fill" 
+        [style.width.%]="duration ? (currentTime / duration * 100) : 0">
+      </div>
+    </div>
+    <span class="time">{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</span>
+  </div>
+</div>
