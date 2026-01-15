@@ -6,8 +6,7 @@ import { IonicModule, ToastController, AlertController } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 import { ChatMessage } from '../../../models';
 import { FirestoreService, ChatbotService, MediaService, StorageService } from '../../../services';
-import { ChatBubbleComponent } from '../../../components/chat-bubble/chat-bubble.component';
-import { MediaPreviewComponent } from '../../../components/media-preview/media-preview.component';
+import { ChatBubbleComponent, MediaPreviewComponent } from '../../../components';
 
 @Component({
   selector: 'app-chat',

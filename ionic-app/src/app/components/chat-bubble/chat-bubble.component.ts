@@ -2,8 +2,8 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { ChatMessage } from '../../models';
-import { AudioPlayerComponent } from '../audio-player/audio-player.component';
 import { StorageService } from '../../services';
+import { AudioPlayerComponent } from '../audio-player/audio-player.component';
 import { Capacitor } from '@capacitor/core';
 
 @Component({
