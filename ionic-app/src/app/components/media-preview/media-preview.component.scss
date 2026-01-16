@@ -25,6 +25,10 @@
     right: -5px;
     --padding-start: 0;
     --padding-end: 0;
+    --background: transparent;
+    --background-hover: transparent;
+    --background-activated: transparent;
+    --background-focused: transparent;
     width: 18px;
     height: 18px;
     min-height: 18px;
@@ -34,6 +38,7 @@
       font-size: 18px;
       color: var(--app-text-muted);
       filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.8));
+      background: transparent;
     }
 
     &:hover ion-icon {
