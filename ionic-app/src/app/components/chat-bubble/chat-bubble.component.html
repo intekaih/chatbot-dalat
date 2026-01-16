@@ -16,6 +16,15 @@
       <p class="message-text">{{ message.text }}</p>
     }
     
-    <span class="timestamp">{{ formatTime(message.createdAt) }}</span>
+    <div class="bubble-footer">
+      <span class="timestamp">{{ formatTime(message.createdAt) }}</span>
+      
+      @if (hasSuggestedPlace) {
+        <button class="save-btn" [class.saved]="isSaved" (click)="onSavePlace()" [disabled]="isSaved">
+          <ion-icon [name]="isSaved ? 'heart' : 'heart-outline'"></ion-icon>
+          <span>{{ isSaved ? 'Đã lưu' : 'Lưu địa điểm' }}</span>
+        </button>
+      }
+    </div>
   </div>
 </div>

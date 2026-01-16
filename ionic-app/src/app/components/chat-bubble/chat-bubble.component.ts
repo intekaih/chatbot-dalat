@@ -1,7 +1,7 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
-import { ChatMessage } from '../../models';
+import { ChatMessage, SuggestedPlace } from '../../models';
 import { StorageService } from '../../services';
 import { AudioPlayerComponent } from '../audio-player/audio-player.component';
 import { Capacitor } from '@capacitor/core';
@@ -15,6 +15,9 @@ import { Capacitor } from '@capacitor/core';
 })
 export class ChatBubbleComponent implements OnInit {
   @Input() message!: ChatMessage;
+  @Output() savePlace = new EventEmitter<SuggestedPlace>();
+  
+  isSaved = false;
   
   imageDataUrl: string | null = null;
   audioDataUrl: string | null = null;
@@ -60,6 +63,17 @@ export class ChatBubbleComponent implements OnInit {
 
   get isUser(): boolean {
     return this.message.role === 'user';
+  }
+
+  get hasSuggestedPlace(): boolean {
+    return !this.isUser && !!this.message.suggestedPlace;
+  }
+
+  onSavePlace() {
+    if (this.message.suggestedPlace && !this.isSaved) {
+      this.savePlace.emit(this.message.suggestedPlace);
+      this.isSaved = true;
+    }
   }
 
   formatTime(date: Date): string {

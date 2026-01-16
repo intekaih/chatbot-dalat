@@ -52,7 +52,7 @@
 
     @for (message of messages; track message.id) {
     @if (message.id !== 'welcome' || messages.length > 1) {
-    <app-chat-bubble [message]="message"></app-chat-bubble>
+    <app-chat-bubble [message]="message" (savePlace)="savePlace($event)"></app-chat-bubble>
     }
     }
 

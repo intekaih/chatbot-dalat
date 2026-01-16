@@ -69,11 +69,59 @@
     font-size: 15px;
   }
 
-  .timestamp {
-    display: block;
-    font-size: 11px;
+  .bubble-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin-top: var(--spacing-sm);
-    text-align: right;
+    gap: var(--spacing-md);
+  }
+
+  .timestamp {
+    font-size: 11px;
     font-weight: 500;
+  }
+
+  .save-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    border: 1px solid var(--app-accent);
+    border-radius: 16px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--app-accent);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    ion-icon {
+      font-size: 14px;
+    }
+
+    &:hover:not(:disabled) {
+      background: rgba(255, 107, 107, 0.1);
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+
+    &.saved {
+      background: var(--app-accent);
+      color: white;
+      border-color: var(--app-accent);
+      cursor: default;
+
+      ion-icon {
+        color: white;
+      }
+    }
+
+    &:disabled:not(.saved) {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   }
 }

@@ -123,12 +123,9 @@ export class ChatPage implements OnInit, OnDestroy {
       const botResponse = await this.chatbotService.generateAIResponse(userText, history);
       await this.firestoreService.addMessage(this.conversationId, {
         text: botResponse.text,
-        role: 'bot'
+        role: 'bot',
+        suggestedPlace: botResponse.suggestedPlace
       });
-
-      if (botResponse.suggestedPlace) {
-        this.promptSavePlace(botResponse.suggestedPlace);
-      }
     } catch (error) {
       console.error('Chat error:', error);
       this.showToast('Lỗi gửi tin nhắn: ' + (error as Error).message);
@@ -202,32 +199,17 @@ export class ChatPage implements OnInit, OnDestroy {
     }
   }
 
-  private async promptSavePlace(place: any) {
-    const alert = await this.alertCtrl.create({
-      header: 'Lưu địa điểm?',
-      message: `Bạn có muốn lưu "${place.name}" vào danh sách yêu thích?`,
-      cssClass: 'dalat-alert',
-      buttons: [
-        { text: 'Không', role: 'cancel', cssClass: 'alert-btn-cancel' },
-        {
-          text: 'Lưu',
-          cssClass: 'alert-btn-confirm',
-          handler: async () => {
-            try {
-              await this.firestoreService.addFavorite({
-                name: place.name,
-                description: place.description,
-                address: place.address
-              });
-              this.showToast('Đã lưu vào yêu thích!');
-            } catch (error) {
-              this.showToast('Lỗi khi lưu');
-            }
-          }
-        }
-      ]
-    });
-    await alert.present();
+  async savePlace(place: any) {
+    try {
+      await this.firestoreService.addFavorite({
+        name: place.name,
+        description: place.description,
+        address: place.address
+      });
+      this.showToast('Đã lưu vào yêu thích!');
+    } catch (error) {
+      this.showToast('Lỗi khi lưu');
+    }
   }
 
   private scrollToBottom() {
