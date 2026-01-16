@@ -109,4 +109,9 @@ export class FirestoreService {
     const ref = doc(this.firestore, `users/${this.uid}/favorites/${favoriteId}`);
     await deleteDoc(ref);
   }
+
+  async deleteConversation(conversationId: string): Promise<void> {
+    const ref = doc(this.firestore, `users/${this.uid}/conversations/${conversationId}`);
+    await deleteDoc(ref);
+  }
 }

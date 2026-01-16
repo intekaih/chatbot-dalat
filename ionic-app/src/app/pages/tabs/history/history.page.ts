@@ -52,4 +52,29 @@ export class HistoryPage implements OnInit, OnDestroy {
       minute: '2-digit'
     });
   }
+
+  async deleteConversation(conv: Conversation, event: Event) {
+    event.stopPropagation();
+    
+    const alert = await this.alertCtrl.create({
+      header: 'Xóa cuộc trò chuyện',
+      message: `Bạn có chắc muốn xóa "${conv.title}"?`,
+      cssClass: 'dalat-alert',
+      buttons: [
+        {
+          text: 'Hủy',
+          role: 'cancel',
+          cssClass: 'alert-btn-cancel'
+        },
+        {
+          text: 'Xóa',
+          cssClass: 'alert-btn-danger',
+          handler: async () => {
+            await this.firestoreService.deleteConversation(conv.id);
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
 }

@@ -64,16 +64,24 @@ ion-content {
 .conversation-card {
   display: flex;
   align-items: center;
-  padding: 16px;
   background: var(--app-surface);
   border-radius: var(--radius-lg);
-  cursor: pointer;
   transition: all 0.2s ease;
   margin-bottom: var(--spacing-md);
   box-shadow: var(--shadow-md);
+  overflow: hidden;
 
-  &:active {
-    transform: scale(0.98);
+  .conversation-main {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    padding: 16px;
+    cursor: pointer;
+    min-width: 0;
+
+    &:active {
+      background: rgba(0, 0, 0, 0.02);
+    }
   }
 
   .conversation-icon {
@@ -122,6 +130,33 @@ ion-content {
     color: var(--app-text-muted);
     margin-left: var(--spacing-sm);
     flex-shrink: 0;
-    transition: transform 0.2s ease;
+  }
+
+  .delete-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 100%;
+    min-height: 80px;
+    background: transparent;
+    border: none;
+    border-left: 1px solid var(--app-border-light);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    ion-icon {
+      font-size: 20px;
+      color: var(--app-text-muted);
+      transition: color 0.2s ease;
+    }
+
+    &:hover, &:active {
+      background: rgba(239, 68, 68, 0.08);
+
+      ion-icon {
+        color: #EF4444;
+      }
+    }
   }
 }

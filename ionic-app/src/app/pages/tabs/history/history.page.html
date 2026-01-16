@@ -16,15 +16,20 @@
   } @else {
   <div class="conversations-container">
     @for (conv of conversations; track conv.id) {
-    <div class="conversation-card" (click)="openConversation(conv)">
-      <div class="conversation-icon">
-        <ion-icon name="chatbubble-ellipses"></ion-icon>
+    <div class="conversation-card">
+      <div class="conversation-main" (click)="openConversation(conv)">
+        <div class="conversation-icon">
+          <ion-icon name="chatbubble-ellipses"></ion-icon>
+        </div>
+        <div class="conversation-content">
+          <h3 class="conversation-title">{{ conv.title }}</h3>
+          <p class="conversation-date">{{ formatDate(conv.lastMessageAt) }}</p>
+        </div>
+        <ion-icon name="chevron-forward-outline" class="chevron"></ion-icon>
       </div>
-      <div class="conversation-content">
-        <h3 class="conversation-title">{{ conv.title }}</h3>
-        <p class="conversation-date">{{ formatDate(conv.lastMessageAt) }}</p>
-      </div>
-      <ion-icon name="chevron-forward-outline" class="chevron"></ion-icon>
+      <button class="delete-btn" (click)="deleteConversation(conv, $event)">
+        <ion-icon name="trash-outline"></ion-icon>
+      </button>
     </div>
     }
   </div>
