@@ -97,6 +97,14 @@ export class ChatBubbleComponent implements OnInit {
     }
   }
 
+  openMap() {
+    if (this.message.suggestedPlace?.address) {
+      const address = encodeURIComponent(this.message.suggestedPlace.address + ', Đà Lạt, Việt Nam');
+      const url = `https://www.google.com/maps/search/?api=1&query=${address}`;
+      window.open(url, '_blank');
+    }
+  }
+
   formatTime(date: Date): string {
     return new Date(date).toLocaleTimeString('vi-VN', {
       hour: '2-digit',

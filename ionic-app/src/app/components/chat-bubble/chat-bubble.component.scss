@@ -102,17 +102,20 @@
     font-weight: 500;
   }
 
-  .save-btn {
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  .map-btn, .save-btn {
     display: flex;
     align-items: center;
     gap: 4px;
     background: transparent;
-    border: 1px solid var(--app-accent);
     border-radius: 16px;
     padding: 4px 10px;
     font-size: 12px;
     font-weight: 600;
-    color: var(--app-accent);
     cursor: pointer;
     transition: all 0.2s ease;
 
@@ -120,12 +123,26 @@
       font-size: 14px;
     }
 
-    &:hover:not(:disabled) {
-      background: rgba(255, 107, 107, 0.1);
-    }
-
     &:active:not(:disabled) {
       transform: scale(0.95);
+    }
+  }
+
+  .map-btn {
+    border: 1px solid var(--app-primary);
+    color: var(--app-primary);
+
+    &:hover {
+      background: rgba(27, 94, 59, 0.1);
+    }
+  }
+
+  .save-btn {
+    border: 1px solid var(--app-accent);
+    color: var(--app-accent);
+
+    &:hover:not(:disabled) {
+      background: rgba(255, 107, 107, 0.1);
     }
 
     &.saved {
