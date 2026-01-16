@@ -256,9 +256,11 @@ ion-footer {
     display: flex;
     align-items: center;
     background: var(--app-background);
+    border: 1px solid var(--app-border);
     border-radius: 24px;
     padding: 4px 4px 4px 16px;
     gap: 8px;
+    min-height: 48px;
 
     input {
       flex: 1;
