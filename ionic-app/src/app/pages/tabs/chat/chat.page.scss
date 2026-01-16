@@ -251,52 +251,62 @@ ion-footer {
     }
   }
 
-  input {
+  .input-wrapper {
     flex: 1;
-    border: none;
-    background: transparent;
-    font-size: 16px;
-    font-family: 'Nunito', sans-serif;
-    color: var(--app-text-primary);
-    outline: none;
-    padding: var(--spacing-sm) 0;
-
-    &::placeholder {
-      color: var(--app-text-muted);
-    }
-
-    &:disabled {
-      opacity: 0.6;
-    }
-  }
-
-  .send-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--app-primary-gradient);
-    color: white;
-    border: none;
     display: flex;
     align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-    box-shadow: var(--shadow-primary);
+    background: var(--app-background);
+    border-radius: 24px;
+    padding: 4px 4px 4px 16px;
+    gap: 8px;
 
-    &:active {
-      transform: scale(0.95);
+    input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: 16px;
+      font-family: 'Nunito', sans-serif;
+      color: var(--app-text-primary);
+      outline: none;
+      padding: var(--spacing-sm) 0;
+
+      &::placeholder {
+        color: var(--app-text-muted);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+      }
     }
 
-    &:disabled {
-      background: var(--app-border);
-      cursor: not-allowed;
-      box-shadow: none;
-    }
+    .send-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--app-primary-gradient);
+      color: white;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+      box-shadow: var(--shadow-primary);
 
-    ion-icon {
-      font-size: 22px;
+      &:active {
+        transform: scale(0.95);
+      }
+
+      &:disabled {
+        background: var(--app-border);
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      ion-icon {
+        font-size: 18px;
+      }
     }
   }
 }

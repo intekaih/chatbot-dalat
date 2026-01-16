@@ -103,12 +103,13 @@
       </button>
     </div>
 
-    <input type="text" [(ngModel)]="newMessage" placeholder="Hỏi về Đà Lạt..." (keyup.enter)="sendMessage()"
-      [disabled]="isRecording" />
-
-    <button class="send-btn" (click)="sendMessage()" [disabled]="isLoading || isRecording || !newMessage?.trim()">
-      <ion-icon name="paper-plane"></ion-icon>
-    </button>
+    <div class="input-wrapper">
+      <input type="text" [(ngModel)]="newMessage" placeholder="Hỏi về Đà Lạt..." (keyup.enter)="sendMessage()"
+        [disabled]="isRecording" />
+      <button class="send-btn" (click)="sendMessage()" [disabled]="isLoading || isRecording || !newMessage?.trim()">
+        <ion-icon name="paper-plane"></ion-icon>
+      </button>
+    </div>
     }
   </div>
 </ion-footer>
