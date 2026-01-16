@@ -88,9 +88,11 @@ export class ChatPage implements OnInit, OnDestroy {
     if (!this.newMessage.trim() && !this.pendingImage) return;
 
     this.isLoading = true;
+    const imageToSend = this.pendingImage;
+    
     try {
       if (!this.conversationId) {
-        const title = this.newMessage.substring(0, 30) || 'Cuộc trò chuyện mới';
+        const title = this.newMessage.substring(0, 30) || 'Ảnh địa điểm';
         this.conversationId = await this.firestoreService.createConversation(title);
         this.messagesSubscription = this.firestoreService.getMessages(this.conversationId).subscribe(msgs => {
           this.messages = msgs;
@@ -120,7 +122,7 @@ export class ChatPage implements OnInit, OnDestroy {
           content: m.text!
         }));
 
-      const botResponse = await this.chatbotService.generateAIResponse(userText, history);
+      const botResponse = await this.chatbotService.generateAIResponse(userText, history, imageToSend || undefined);
       await this.firestoreService.addMessage(this.conversationId, {
         text: botResponse.text,
         role: 'bot',

@@ -31,13 +31,19 @@ export class ChatbotService {
 
   constructor(private http: HttpClient) {}
 
-  async generateAIResponse(userMessage: string, history: ChatHistory[] = []): Promise<{ text: string; suggestedPlace?: DalatPlace }> {
+  async generateAIResponse(userMessage: string, history: ChatHistory[] = [], imageBase64?: string): Promise<{ text: string; suggestedPlace?: DalatPlace }> {
     try {
+      const payload: any = {
+        message: userMessage,
+        history: history.map(h => ({ role: h.role, content: h.content }))
+      };
+      
+      if (imageBase64) {
+        payload.imageBase64 = imageBase64;
+      }
+      
       const response = await firstValueFrom(
-        this.http.post<{ reply: string; suggestedPlace?: DalatPlace }>(this.apiUrl, {
-          message: userMessage,
-          history: history.map(h => ({ role: h.role, content: h.content }))
-        })
+        this.http.post<{ reply: string; suggestedPlace?: DalatPlace }>(this.apiUrl, payload)
       );
 
       return {

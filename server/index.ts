@@ -24,7 +24,8 @@ Quy tắc trả lời:
 - Sử dụng emoji phù hợp để tạo không khí vui vẻ
 - Có thể dùng markdown để in đậm tên địa điểm quan trọng
 - Nếu được hỏi về địa điểm, cung cấp địa chỉ và mô tả ngắn
-- Khi gợi ý địa điểm cụ thể, CHỈ gợi ý 1 địa điểm nổi bật nhất, không liệt kê nhiều địa điểm`;
+- Khi gợi ý địa điểm cụ thể, CHỈ gợi ý 1 địa điểm nổi bật nhất, không liệt kê nhiều địa điểm
+- Nếu người dùng gửi ảnh, hãy phân tích ảnh để nhận diện địa điểm ở Đà Lạt và cung cấp thông tin chi tiết về địa điểm đó`;
 
 const PLACE_EXTRACT_PROMPT = `Dựa vào cuộc trò chuyện, nếu có gợi ý địa điểm cụ thể, hãy trả về JSON với thông tin địa điểm quan trọng nhất.
 Chỉ trả về JSON theo format:
@@ -34,23 +35,46 @@ Chỉ trả JSON, không có text khác.`;
 
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, history = [] } = req.body;
+    const { message, history = [], imageBase64 } = req.body;
 
-    if (!message) {
-      return res.status(400).json({ error: 'Message is required' });
+    if (!message && !imageBase64) {
+      return res.status(400).json({ error: 'Message or image is required' });
+    }
+
+    const historyMessages: OpenAI.ChatCompletionMessageParam[] = history.map((m: { role: string; content: string }) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+    }));
+
+    let userContent: OpenAI.ChatCompletionContentPart[] = [];
+    
+    if (message) {
+      userContent.push({ type: 'text', text: message });
+    }
+    
+    if (imageBase64) {
+      userContent.push({
+        type: 'image_url',
+        image_url: {
+          url: `data:image/jpeg;base64,${imageBase64}`,
+          detail: 'low'
+        }
+      });
+      if (!message) {
+        userContent.unshift({ type: 'text', text: 'Đây là ảnh tôi chụp. Bạn có thể cho tôi biết đây là địa điểm nào ở Đà Lạt không?' });
+      }
     }
 
     const messages: OpenAI.ChatCompletionMessageParam[] = [
       { role: 'system', content: DALAT_SYSTEM_PROMPT },
-      ...history.map((m: { role: string; content: string }) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      })),
-      { role: 'user', content: message },
+      ...historyMessages,
+      { role: 'user', content: userContent.length === 1 && userContent[0].type === 'text' ? (userContent[0] as any).text : userContent },
     ];
 
+    const modelToUse = imageBase64 ? 'gpt-4o' : 'gpt-4o-mini';
+    
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: modelToUse,
       messages,
       max_completion_tokens: 1024,
     });
