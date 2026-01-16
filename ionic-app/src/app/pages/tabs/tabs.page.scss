@@ -1,44 +1,71 @@
 ion-tab-bar {
   --background: var(--app-surface);
-  border-top: 1px solid var(--app-border-light);
-  height: 60px;
-  padding: 0;
-  padding-bottom: env(safe-area-inset-bottom);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+  border-top: none;
+  height: 70px;
+  padding: 8px 16px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.08);
+  border-radius: 24px 24px 0 0;
 }
 
 ion-tab-button {
-  --color: var(--app-text-muted);
+  --color: #A0AEC0;
   --color-selected: var(--app-primary);
-  --padding-top: 8px;
-  --padding-bottom: 8px;
+  --padding-top: 6px;
+  --padding-bottom: 6px;
   font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
-  transition: all 0.2s ease;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 40px;
+    height: 3px;
+    background: var(--app-primary-gradient);
+    border-radius: 0 0 3px 3px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 
   ion-icon {
-    font-size: 24px;
+    font-size: 26px;
     margin-bottom: 4px;
-    transition: all 0.25s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   ion-label {
     font-size: 11px;
     font-weight: 600;
-    margin-top: 0;
-    letter-spacing: 0.2px;
+    margin-top: 2px;
+    letter-spacing: 0.3px;
+    transition: all 0.3s ease;
   }
 
   &.tab-selected {
     --color: var(--app-primary);
 
+    &::before {
+      transform: translateX(-50%) scaleX(1);
+    }
+
     ion-icon {
       color: var(--app-primary);
-      transform: scale(1.1);
+      transform: translateY(-2px) scale(1.1);
     }
 
     ion-label {
       color: var(--app-primary);
       font-weight: 700;
+      transform: translateY(-1px);
+    }
+  }
+
+  &:active {
+    ion-icon {
+      transform: scale(0.9);
     }
   }
 }

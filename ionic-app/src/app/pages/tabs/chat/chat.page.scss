@@ -22,15 +22,28 @@ ion-header {
   }
 
   .new-chat-btn {
-    --color: var(--app-primary);
-    --background: rgba(27, 94, 59, 0.1);
-    --border-radius: 12px;
-    width: 42px;
-    height: 42px;
-    margin-right: 8px;
+    --color: white;
+    --background: var(--app-primary-gradient);
+    --border-radius: 50%;
+    --padding-start: 0;
+    --padding-end: 0;
+    width: 40px;
+    height: 40px;
+    margin-right: 12px;
+    box-shadow: 0 4px 12px rgba(27, 94, 59, 0.3);
+    transition: all 0.25s ease;
+
+    &::part(native) {
+      border-radius: 50%;
+    }
 
     ion-icon {
-      font-size: 22px;
+      font-size: 20px;
+      color: white;
+    }
+
+    &:active {
+      transform: scale(0.92);
     }
   }
 }
