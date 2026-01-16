@@ -1,8 +1,5 @@
 <ion-header class="ion-no-border">
   <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-menu-button></ion-menu-button>
-    </ion-buttons>
     <ion-title>Tư vấn du lịch Đà Lạt</ion-title>
     <ion-buttons slot="end">
       <ion-button (click)="startNewConversation()" class="new-chat-btn">
@@ -15,86 +12,80 @@
 <ion-content #chatContent>
   <div class="chat-container">
     @if (messages.length === 0 || (messages.length === 1 && messages[0].id === 'welcome')) {
-      <div class="welcome-section">
-        <div class="welcome-icon">
-          <ion-icon name="leaf-outline"></ion-icon>
-        </div>
-        <h2>Chào mừng đến Đà Lạt!</h2>
-        <p>Tôi là trợ lý du lịch thông minh. Hãy hỏi tôi bất cứ điều gì về thành phố ngàn hoa.</p>
-        
-        <div class="suggestion-chips">
-          <button class="chip" (click)="askSuggestion('Địa điểm nổi tiếng ở Đà Lạt?')">
-            🏔️ Địa điểm nổi tiếng
-          </button>
-          <button class="chip" (click)="askSuggestion('Món ăn ngon ở Đà Lạt?')">
-            🍜 Ẩm thực đặc sản
-          </button>
-          <button class="chip" (click)="askSuggestion('Quán cà phê view đẹp?')">
-            ☕ Cà phê view đẹp
-          </button>
-          <button class="chip" (click)="askSuggestion('Lịch trình 2 ngày ở Đà Lạt?')">
-            📅 Lịch trình 2 ngày
-          </button>
-        </div>
+    <div class="welcome-section">
+      <div class="welcome-icon">
+        <ion-icon name="leaf-outline"></ion-icon>
       </div>
+      <h2>Chào mừng đến Đà Lạt!</h2>
+      <p>Tôi là trợ lý du lịch thông minh. Hãy hỏi tôi bất cứ điều gì về thành phố ngàn hoa.</p>
+
+      <div class="suggestion-chips">
+        <button class="chip" (click)="askSuggestion('Địa điểm nổi tiếng ở Đà Lạt?')">
+          🏔️ Địa điểm nổi tiếng
+        </button>
+        <button class="chip" (click)="askSuggestion('Món ăn ngon ở Đà Lạt?')">
+          🍜 Ẩm thực đặc sản
+        </button>
+        <button class="chip" (click)="askSuggestion('Quán cà phê view đẹp?')">
+          ☕ Cà phê view đẹp
+        </button>
+        <button class="chip" (click)="askSuggestion('Lịch trình 2 ngày ở Đà Lạt?')">
+          📅 Lịch trình 2 ngày
+        </button>
+      </div>
+    </div>
     }
 
     @for (message of messages; track message.id) {
-      @if (message.id !== 'welcome' || messages.length > 1) {
-        <app-chat-bubble [message]="message"></app-chat-bubble>
-      }
+    @if (message.id !== 'welcome' || messages.length > 1) {
+    <app-chat-bubble [message]="message"></app-chat-bubble>
+    }
     }
 
     @if (isLoading) {
-      <div class="typing-indicator">
-        <div class="typing-dots">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-        <span class="typing-text">Đang xử lý...</span>
+    <div class="typing-indicator">
+      <div class="typing-dots">
+        <span></span>
+        <span></span>
+        <span></span>
       </div>
+      <span class="typing-text">Đang xử lý...</span>
+    </div>
     }
   </div>
 </ion-content>
 
 <ion-footer class="ion-no-border">
   @if (pendingImage) {
-    <app-media-preview 
-      [imageUrl]="pendingImage" 
-      (cancel)="cancelImage()">
-    </app-media-preview>
+  <app-media-preview [imageUrl]="pendingImage" (cancel)="cancelImage()">
+  </app-media-preview>
   }
 
   <div class="floating-input-bar">
     @if (isRecording) {
-      <div class="recording-indicator">
-        <div class="recording-pulse"></div>
-        <span>Đang ghi âm...</span>
-      </div>
+    <div class="recording-indicator">
+      <div class="recording-pulse"></div>
+      <span>Đang ghi âm...</span>
+    </div>
     } @else {
-      <div class="media-buttons">
-        <button class="icon-btn" (click)="takePhoto()">
-          <ion-icon name="camera-outline"></ion-icon>
-        </button>
-        <button class="icon-btn" (click)="pickPhoto()">
-          <ion-icon name="image-outline"></ion-icon>
-        </button>
-        <button class="icon-btn" [class.recording]="isRecording" (click)="toggleRecording()">
-          <ion-icon [name]="isRecording ? 'stop-circle' : 'mic-outline'"></ion-icon>
-        </button>
-      </div>
-
-      <input
-        type="text"
-        [(ngModel)]="newMessage"
-        placeholder="Hỏi về Đà Lạt..."
-        (keyup.enter)="sendMessage()"
-        [disabled]="isRecording" />
-
-      <button class="send-btn" (click)="sendMessage()" [disabled]="isLoading || isRecording">
-        <ion-icon name="send"></ion-icon>
+    <div class="media-buttons">
+      <button class="icon-btn" (click)="takePhoto()">
+        <ion-icon name="camera-outline"></ion-icon>
       </button>
+      <button class="icon-btn" (click)="pickPhoto()">
+        <ion-icon name="image-outline"></ion-icon>
+      </button>
+      <button class="icon-btn" [class.recording]="isRecording" (click)="toggleRecording()">
+        <ion-icon [name]="isRecording ? 'stop-circle' : 'mic-outline'"></ion-icon>
+      </button>
+    </div>
+
+    <input type="text" [(ngModel)]="newMessage" placeholder="Hỏi về Đà Lạt..." (keyup.enter)="sendMessage()"
+      [disabled]="isRecording" />
+
+    <button class="send-btn" (click)="sendMessage()" [disabled]="isLoading || isRecording">
+      <ion-icon name="send"></ion-icon>
+    </button>
     }
   </div>
 </ion-footer>

@@ -1,8 +1,55 @@
+// ChatGPT-inspired Tab Bar
 ion-tab-bar {
-  --background: var(--ion-color-light);
+  --background: #FFFFFF;
+  border-top: 1px solid #E5E5E5;
+  height: 56px;
+  padding: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: none;
 }
 
 ion-tab-button {
-  --color: var(--ion-color-medium);
-  --color-selected: var(--ion-color-primary);
+  --color: #8E8EA0;
+  --color-selected: #10A37F;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  ion-icon {
+    font-size: 24px;
+    margin-bottom: 4px;
+    transition: transform 0.2s ease;
+  }
+
+  ion-label {
+    font-size: 10px;
+    font-weight: 500;
+    margin-top: 0;
+    letter-spacing: 0.2px;
+  }
+
+  // Active state
+  &.tab-selected {
+    ion-icon {
+      color: #10A37F;
+    }
+
+    ion-label {
+      color: #10A37F;
+      font-weight: 600;
+    }
+  }
+}
+
+// Dark mode
+@media (prefers-color-scheme: dark) {
+  ion-tab-bar {
+    --background: #1A1A1A;
+    border-top-color: #2A2A2A;
+  }
+
+  ion-tab-button {
+    --color: #8E8EA0;
+    --color-selected: #10A37F;
+  }
 }

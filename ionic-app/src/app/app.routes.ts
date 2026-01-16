@@ -19,7 +19,7 @@ export const routes: Routes = [
   },
   {
     path: 'app',
-    loadChildren: () => import('./pages/layout/layout.routes').then(m => m.LAYOUT_ROUTES),
+    loadChildren: () => import('./pages/tabs/tabs.routes').then(m => m.TABS_ROUTES),
     canActivate: [authGuard]
   },
   {

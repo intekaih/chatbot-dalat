@@ -1,66 +1,201 @@
+// ChatGPT-inspired History Page
 ion-header {
   ion-toolbar {
-    --background: transparent;
-    --color: var(--app-text-primary);
-    padding: 8px 0;
+    --background: #FFFFFF;
+    --color: #000000;
+    --border-width: 0 0 1px 0;
+    --border-color: #E5E5E5;
+    padding: 0;
   }
 
   ion-title {
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: 600;
+    color: #000000;
+    letter-spacing: -0.2px;
   }
 }
 
 ion-content {
-  --background: var(--app-background);
+  --background: #FFFFFF;
 }
 
-ion-list {
-  background: transparent !important;
-  padding: var(--spacing-lg);
-}
+// Empty State
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 70vh;
+  padding: 40px;
 
-.conversation-item {
-  --background: var(--app-surface);
-  --border-radius: var(--radius-lg);
-  --padding-start: var(--spacing-lg);
-  --padding-end: var(--spacing-lg);
-  margin-bottom: var(--spacing-md);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-
-  .conv-icon {
-    width: 44px;
-    height: 44px;
-    background: rgba(45, 122, 79, 0.1);
-    border-radius: var(--radius-md);
+  .empty-icon {
+    width: 64px;
+    height: 64px;
+    background: #F7F7F8;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: var(--spacing-lg);
+    margin-bottom: 20px;
 
     ion-icon {
-      font-size: 22px;
-      color: var(--app-primary);
+      font-size: 32px;
+      color: #8E8EA0;
     }
   }
 
-  ion-label {
-    h2 {
-      font-weight: 600;
-      font-size: 16px;
-      color: var(--app-text-primary);
-      margin-bottom: 4px;
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1A1A1A;
+    margin-bottom: 8px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    color: #6E6E80;
+  }
+}
+
+// Conversations Container
+.conversations-container {
+  padding: 0;
+  padding-bottom: 80px;
+}
+
+// Conversation Card (ChatGPT style)
+.conversation-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #FFFFFF;
+  border-bottom: 1px solid #F0F0F0;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  min-height: 72px;
+
+  &:active {
+    background: #F7F7F8;
+  }
+
+  .conversation-header {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .conversation-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #10A37F 0%, #0D8D6C 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    ion-icon {
+      font-size: 20px;
+      color: #FFFFFF;
+    }
+  }
+
+  .conversation-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .conversation-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 500;
+    color: #1A1A1A;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .conversation-date {
+    margin: 0;
+    font-size: 13px;
+    color: #8E8EA0;
+    font-weight: 400;
+  }
+
+  .chevron {
+    font-size: 18px;
+    color: #C5C5D2;
+    margin-left: 8px;
+    flex-shrink: 0;
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+
+  // Hover effect for web
+  @media (hover: hover) {
+    &:hover {
+      background: #F7F7F8;
+
+      .chevron {
+        color: #8E8EA0;
+        transform: translateX(2px);
+      }
+    }
+  }
+}
+
+// Dark mode support (optional)
+@media (prefers-color-scheme: dark) {
+  ion-header ion-toolbar {
+    --background: #1A1A1A;
+    --color: #FFFFFF;
+    --border-color: #2A2A2A;
+  }
+
+  ion-content {
+    --background: #1A1A1A;
+  }
+
+  .conversation-card {
+    background: #1A1A1A;
+    border-bottom-color: #2A2A2A;
+
+    &:active,
+    &:hover {
+      background: #2A2A2A;
+    }
+
+    .conversation-title {
+      color: #ECECF1;
+    }
+
+    .conversation-date {
+      color: #8E8EA0;
+    }
+  }
+
+  .empty-state {
+    .empty-icon {
+      background: #2A2A2A;
+    }
+
+    h3 {
+      color: #ECECF1;
     }
 
     p {
-      color: var(--app-text-secondary);
-      font-size: 13px;
+      color: #8E8EA0;
     }
-  }
-
-  .arrow-icon {
-    color: var(--app-border);
-    font-size: 20px;
   }
 }

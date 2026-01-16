@@ -53,7 +53,7 @@ ion-list {
 ion-list-header {
   padding-left: var(--spacing-xs);
   margin-bottom: var(--spacing-sm);
-  
+
   ion-label {
     font-weight: 700;
     font-size: 14px;
@@ -69,18 +69,26 @@ ion-button {
   --color: white;
   --padding-start: 20px;
   --padding-end: 20px;
+  --box-shadow: 0 2px 8px rgba(45, 122, 79, 0.2);
   height: 48px;
   font-weight: 600;
   font-size: 15px;
   letter-spacing: 0.3px;
   text-transform: none;
-  
+  transition: all 0.2s ease;
+
   ion-icon {
     font-size: 20px;
   }
-  
+
+  &:hover {
+    --box-shadow: 0 4px 12px rgba(45, 122, 79, 0.3);
+    transform: translateY(-1px);
+  }
+
   &:active {
     transform: scale(0.97);
+    --box-shadow: 0 2px 6px rgba(45, 122, 79, 0.2);
   }
 }
 
@@ -97,28 +105,28 @@ ion-button.button-outline {
   height: 65vh;
   text-align: center;
   padding: var(--spacing-xxl);
-  
+
   .empty-illustration {
     width: 180px;
     height: 180px;
     margin-bottom: var(--spacing-xl);
     object-fit: contain;
   }
-  
-  > ion-icon {
+
+  >ion-icon {
     font-size: 80px;
     color: var(--app-primary);
     opacity: 0.6;
     margin-bottom: var(--spacing-xl);
   }
-  
+
   h3 {
     margin: 0;
     color: var(--app-text-primary);
     font-weight: 700;
     font-size: 20px;
   }
-  
+
   p {
     color: var(--app-text-secondary);
     margin: var(--spacing-md) 0 var(--spacing-xl) 0;
@@ -126,13 +134,13 @@ ion-button.button-outline {
     line-height: 1.6;
     font-size: 16px;
   }
-  
+
   ion-button {
     --background: var(--app-primary);
     --color: white;
     --box-shadow: 0 4px 12px rgba(45, 122, 79, 0.3);
     margin-top: var(--spacing-md);
-    
+
     ion-icon {
       font-size: 20px;
       margin-right: 8px;
@@ -145,16 +153,16 @@ ion-button.button-outline {
 ion-menu {
   --background: var(--app-surface);
   --width: 280px;
-  
+
   ion-header ion-toolbar {
     --background: var(--app-primary);
     --color: white;
   }
-  
+
   ion-content {
     --background: var(--app-surface);
   }
-  
+
   ion-item {
     --background: transparent;
     --padding-start: var(--spacing-lg);
@@ -162,20 +170,20 @@ ion-menu {
     margin-bottom: 0;
     box-shadow: none;
     border-radius: 0;
-    
+
     ion-icon {
       color: var(--app-primary);
       margin-right: var(--spacing-md);
     }
-    
+
     ion-label {
       font-weight: 600;
       color: var(--app-text-primary);
     }
-    
+
     &.active {
       --background: rgba(45, 122, 79, 0.1);
-      
+
       ion-label {
         color: var(--app-primary);
       }
@@ -193,7 +201,7 @@ ion-back-button {
 
 ion-footer {
   background: transparent;
-  
+
   ion-toolbar {
     --background: transparent;
     --border-width: 0;
@@ -203,22 +211,33 @@ ion-footer {
 .suggestion-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
   padding: var(--spacing-sm) 0;
-  
+
   .chip {
     background: var(--app-primary);
     color: white;
-    padding: var(--spacing-sm) var(--spacing-lg);
+    padding: 0 var(--spacing-lg);
+    height: 36px;
     border-radius: var(--radius-md);
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: transform 0.15s ease, opacity 0.15s ease;
-    
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(45, 122, 79, 0.2);
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(45, 122, 79, 0.3);
+    }
+
     &:active {
       transform: scale(0.97);
-      opacity: 0.9;
+      box-shadow: 0 2px 6px rgba(45, 122, 79, 0.2);
     }
   }
 }
@@ -232,8 +251,9 @@ ion-footer {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  
-  input, textarea {
+
+  input,
+  textarea {
     flex: 1;
     border: none;
     background: transparent;
@@ -242,12 +262,12 @@ ion-footer {
     color: var(--app-text-primary);
     outline: none;
     resize: none;
-    
+
     &::placeholder {
       color: var(--app-text-secondary);
     }
   }
-  
+
   .send-btn {
     width: 44px;
     height: 44px;
@@ -260,16 +280,16 @@ ion-footer {
     justify-content: center;
     cursor: pointer;
     transition: transform 0.15s ease;
-    
+
     &:active {
       transform: scale(0.95);
     }
-    
+
     &:disabled {
       background: var(--app-border);
       cursor: not-allowed;
     }
-    
+
     ion-icon {
       font-size: 22px;
     }
@@ -283,7 +303,7 @@ ion-footer {
   margin-bottom: var(--spacing-sm);
   font-size: 16px;
   line-height: 1.5;
-  
+
   &.bot {
     background: var(--app-surface);
     color: var(--app-text-primary);
@@ -291,7 +311,7 @@ ion-footer {
     border-bottom-left-radius: var(--spacing-xs);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   }
-  
+
   &.user {
     background: var(--app-primary);
     color: white;
