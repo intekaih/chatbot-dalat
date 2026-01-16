@@ -66,9 +66,18 @@ ion-list-header {
 ion-button {
   --border-radius: var(--radius-md);
   --background: var(--app-primary);
+  --color: white;
+  --padding-start: 20px;
+  --padding-end: 20px;
+  height: 48px;
   font-weight: 600;
+  font-size: 15px;
   letter-spacing: 0.3px;
   text-transform: none;
+  
+  ion-icon {
+    font-size: 20px;
+  }
   
   &:active {
     transform: scale(0.97);
@@ -96,7 +105,7 @@ ion-button.button-outline {
     object-fit: contain;
   }
   
-  ion-icon {
+  > ion-icon {
     font-size: 80px;
     color: var(--app-primary);
     opacity: 0.6;
@@ -120,7 +129,16 @@ ion-button.button-outline {
   
   ion-button {
     --background: var(--app-primary);
+    --color: white;
     --box-shadow: 0 4px 12px rgba(45, 122, 79, 0.3);
+    margin-top: var(--spacing-md);
+    
+    ion-icon {
+      font-size: 20px;
+      margin-right: 8px;
+      color: white;
+      opacity: 1;
+    }
   }
 }
 
