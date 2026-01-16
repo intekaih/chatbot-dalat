@@ -1,38 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap');
+
 :root {
-  --ion-color-primary: #4a90d9;
-  --ion-color-primary-rgb: 74, 144, 217;
+  --ion-color-primary: #2D7A4F;
+  --ion-color-primary-rgb: 45, 122, 79;
   --ion-color-primary-contrast: #ffffff;
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #417fbf;
-  --ion-color-primary-tint: #5c9bdd;
+  --ion-color-primary-shade: #286b46;
+  --ion-color-primary-tint: #428761;
 
-  --ion-color-secondary: #50c878;
-  --ion-color-secondary-rgb: 80, 200, 120;
+  --ion-color-secondary: #E56B6F;
+  --ion-color-secondary-rgb: 229, 107, 111;
   --ion-color-secondary-contrast: #ffffff;
   --ion-color-secondary-contrast-rgb: 255, 255, 255;
-  --ion-color-secondary-shade: #46b06a;
-  --ion-color-secondary-tint: #62cd86;
+  --ion-color-secondary-shade: #ca5e62;
+  --ion-color-secondary-tint: #e87a7d;
 
-  --ion-color-tertiary: #9b59b6;
-  --ion-color-tertiary-rgb: 155, 89, 182;
+  --ion-color-tertiary: #4A7C59;
+  --ion-color-tertiary-rgb: 74, 124, 89;
   --ion-color-tertiary-contrast: #ffffff;
   --ion-color-tertiary-contrast-rgb: 255, 255, 255;
-  --ion-color-tertiary-shade: #884ea0;
-  --ion-color-tertiary-tint: #a56abd;
+  --ion-color-tertiary-shade: #416d4e;
+  --ion-color-tertiary-tint: #5c896a;
 
-  --ion-color-success: #2dd36f;
-  --ion-color-success-rgb: 45, 211, 111;
-  --ion-color-success-contrast: #000000;
-  --ion-color-success-contrast-rgb: 0, 0, 0;
-  --ion-color-success-shade: #28ba62;
-  --ion-color-success-tint: #42d77d;
+  --ion-color-success: #059669;
+  --ion-color-success-rgb: 5, 150, 105;
+  --ion-color-success-contrast: #ffffff;
+  --ion-color-success-contrast-rgb: 255, 255, 255;
+  --ion-color-success-shade: #04845c;
+  --ion-color-success-tint: #1ea178;
 
-  --ion-color-warning: #ffc409;
-  --ion-color-warning-rgb: 255, 196, 9;
+  --ion-color-warning: #F59E0B;
+  --ion-color-warning-rgb: 245, 158, 11;
   --ion-color-warning-contrast: #000000;
   --ion-color-warning-contrast-rgb: 0, 0, 0;
-  --ion-color-warning-shade: #e0ac08;
-  --ion-color-warning-tint: #ffca22;
+  --ion-color-warning-shade: #d88b0a;
+  --ion-color-warning-tint: #f6a823;
 
   --ion-color-danger: #eb445a;
   --ion-color-danger-rgb: 235, 68, 90;
@@ -41,25 +43,42 @@
   --ion-color-danger-shade: #cf3c4f;
   --ion-color-danger-tint: #ed576b;
 
-  --ion-color-medium: #92949c;
-  --ion-color-medium-rgb: 146, 148, 156;
-  --ion-color-medium-contrast: #000000;
-  --ion-color-medium-contrast-rgb: 0, 0, 0;
-  --ion-color-medium-shade: #808289;
-  --ion-color-medium-tint: #9d9fa6;
+  --ion-color-medium: #6B7280;
+  --ion-color-medium-rgb: 107, 114, 128;
+  --ion-color-medium-contrast: #ffffff;
+  --ion-color-medium-contrast-rgb: 255, 255, 255;
+  --ion-color-medium-shade: #5e6470;
+  --ion-color-medium-tint: #7a808d;
 
-  --ion-color-light: #f4f5f8;
-  --ion-color-light-rgb: 244, 245, 248;
-  --ion-color-light-contrast: #000000;
-  --ion-color-light-contrast-rgb: 0, 0, 0;
-  --ion-color-light-shade: #d7d8da;
-  --ion-color-light-tint: #f5f6f9;
+  --ion-color-light: #F8F9F5;
+  --ion-color-light-rgb: 248, 249, 245;
+  --ion-color-light-contrast: #2C3531;
+  --ion-color-light-contrast-rgb: 44, 53, 49;
+  --ion-color-light-shade: #dadbd8;
+  --ion-color-light-tint: #f9faf6;
 
-  --ion-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  --ion-toolbar-background: linear-gradient(135deg, #4a90d9 0%, #667eea 100%);
-  --ion-toolbar-color: #ffffff;
-}
+  --ion-font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+  --ion-background-color: #F8F9F5;
+  --ion-text-color: #2C3531;
+  --ion-text-color-rgb: 44, 53, 49;
 
-ion-toolbar {
-  --background: linear-gradient(135deg, #4a90d9 0%, #667eea 100%);
+  --app-primary: #2D7A4F;
+  --app-accent: #E56B6F;
+  --app-background: #F8F9F5;
+  --app-surface: #FFFFFF;
+  --app-text-primary: #2C3531;
+  --app-text-secondary: #6B7280;
+  --app-border: #E5E7EB;
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-xxl: 32px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
 }

@@ -1,11 +1,9 @@
 <ion-header class="ion-no-border">
   <ion-toolbar>
-    <ion-title>
-      <div class="header-title">
-        <ion-icon name="time-outline"></ion-icon>
-        <span>Lịch Sử Chat</span>
-      </div>
-    </ion-title>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Lịch sử chat</ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -13,7 +11,7 @@
   @if (conversations.length === 0) {
     <div class="empty-state">
       <ion-icon name="chatbubbles-outline"></ion-icon>
-      <h3>Chưa có cuộc trò chuyện</h3>
+      <h3>Chưa có cuộc trò chuyện nào</h3>
       <p>Hãy bắt đầu chat để nhận tư vấn du lịch Đà Lạt thú vị!</p>
     </div>
   } @else {

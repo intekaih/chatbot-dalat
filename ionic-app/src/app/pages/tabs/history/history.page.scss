@@ -1,58 +1,47 @@
 ion-header {
   ion-toolbar {
-    --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --color: white;
+    --background: transparent;
+    --color: var(--app-text-primary);
     padding: 8px 0;
+  }
 
-    .header-title {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-
-      ion-icon {
-        font-size: 22px;
-      }
-
-      span {
-        font-weight: 600;
-        font-size: 18px;
-      }
-    }
+  ion-title {
+    font-size: 18px;
+    font-weight: 700;
   }
 }
 
 ion-content {
-  --background: linear-gradient(180deg, #f5f7fa 0%, #e4e8f0 100%);
+  --background: var(--app-background);
 }
 
 ion-list {
   background: transparent !important;
-  padding: 16px;
+  padding: var(--spacing-lg);
 }
 
 .conversation-item {
-  --background: white;
-  --border-radius: 16px;
-  --padding-start: 14px;
-  --padding-end: 14px;
-  margin-bottom: 12px;
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --background: var(--app-surface);
+  --border-radius: var(--radius-lg);
+  --padding-start: var(--spacing-lg);
+  --padding-end: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 
   .conv-icon {
     width: 44px;
     height: 44px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 12px;
+    background: rgba(45, 122, 79, 0.1);
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 14px;
+    margin-right: var(--spacing-lg);
 
     ion-icon {
       font-size: 22px;
-      color: white;
+      color: var(--app-primary);
     }
   }
 
@@ -60,18 +49,18 @@ ion-list {
     h2 {
       font-weight: 600;
       font-size: 16px;
-      color: #2d3436;
+      color: var(--app-text-primary);
       margin-bottom: 4px;
     }
 
     p {
-      color: #868e96;
+      color: var(--app-text-secondary);
       font-size: 13px;
     }
   }
 
   .arrow-icon {
-    color: #ced4da;
+    color: var(--app-border);
     font-size: 20px;
   }
 }

@@ -1,11 +1,9 @@
 <ion-header class="ion-no-border">
   <ion-toolbar>
-    <ion-title>
-      <div class="header-title">
-        <ion-icon name="chatbubbles-outline"></ion-icon>
-        <span>Chat Du Lịch Đà Lạt</span>
-      </div>
-    </ion-title>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Tư vấn du lịch Đà Lạt</ion-title>
     <ion-buttons slot="end">
       <ion-button (click)="startNewConversation()" class="new-chat-btn">
         <ion-icon slot="icon-only" name="add-outline"></ion-icon>
@@ -16,8 +14,35 @@
 
 <ion-content #chatContent>
   <div class="chat-container">
+    @if (messages.length === 0 || (messages.length === 1 && messages[0].id === 'welcome')) {
+      <div class="welcome-section">
+        <div class="welcome-icon">
+          <ion-icon name="leaf-outline"></ion-icon>
+        </div>
+        <h2>Chào mừng đến Đà Lạt!</h2>
+        <p>Tôi là trợ lý du lịch thông minh. Hãy hỏi tôi bất cứ điều gì về thành phố ngàn hoa.</p>
+        
+        <div class="suggestion-chips">
+          <button class="chip" (click)="askSuggestion('Địa điểm nổi tiếng ở Đà Lạt?')">
+            🏔️ Địa điểm nổi tiếng
+          </button>
+          <button class="chip" (click)="askSuggestion('Món ăn ngon ở Đà Lạt?')">
+            🍜 Ẩm thực đặc sản
+          </button>
+          <button class="chip" (click)="askSuggestion('Quán cà phê view đẹp?')">
+            ☕ Cà phê view đẹp
+          </button>
+          <button class="chip" (click)="askSuggestion('Lịch trình 2 ngày ở Đà Lạt?')">
+            📅 Lịch trình 2 ngày
+          </button>
+        </div>
+      </div>
+    }
+
     @for (message of messages; track message.id) {
-      <app-chat-bubble [message]="message"></app-chat-bubble>
+      @if (message.id !== 'welcome' || messages.length > 1) {
+        <app-chat-bubble [message]="message"></app-chat-bubble>
+      }
     }
 
     @if (isLoading) {
@@ -41,15 +66,13 @@
     </app-media-preview>
   }
 
-  <div class="input-wrapper">
+  <div class="floating-input-bar">
     @if (isRecording) {
       <div class="recording-indicator">
         <div class="recording-pulse"></div>
         <span>Đang ghi âm...</span>
       </div>
-    }
-
-    <div class="input-container">
+    } @else {
       <div class="media-buttons">
         <button class="icon-btn" (click)="takePhoto()">
           <ion-icon name="camera-outline"></ion-icon>
@@ -62,18 +85,16 @@
         </button>
       </div>
 
-      <div class="message-input">
-        <input
-          type="text"
-          [(ngModel)]="newMessage"
-          placeholder="Nhập tin nhắn..."
-          (keyup.enter)="sendMessage()"
-          [disabled]="isRecording" />
-      </div>
+      <input
+        type="text"
+        [(ngModel)]="newMessage"
+        placeholder="Hỏi về Đà Lạt..."
+        (keyup.enter)="sendMessage()"
+        [disabled]="isRecording" />
 
       <button class="send-btn" (click)="sendMessage()" [disabled]="isLoading || isRecording">
         <ion-icon name="send"></ion-icon>
       </button>
-    </div>
+    }
   </div>
 </ion-footer>

@@ -70,6 +70,11 @@ export class ChatPage implements OnInit, OnDestroy {
     this.messages = [welcomeMessage];
   }
 
+  askSuggestion(question: string) {
+    this.newMessage = question;
+    this.sendMessage();
+  }
+
   async loadConversation(convId: string) {
     this.messagesSubscription?.unsubscribe();
     this.conversationId = convId;

@@ -1,11 +1,9 @@
 <ion-header class="ion-no-border">
   <ion-toolbar>
-    <ion-title>
-      <div class="header-title">
-        <ion-icon name="heart-outline"></ion-icon>
-        <span>Địa Điểm Yêu Thích</span>
-      </div>
-    </ion-title>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Địa điểm đã lưu</ion-title>
     <ion-buttons slot="end">
       <ion-button (click)="addFavorite()" class="add-btn">
         <ion-icon slot="icon-only" name="add-outline"></ion-icon>
@@ -17,8 +15,8 @@
 <ion-content>
   @if (favorites.length === 0) {
     <div class="empty-state">
-      <ion-icon name="heart-outline"></ion-icon>
-      <h3>Chưa có địa điểm yêu thích</h3>
+      <ion-icon name="bookmark-outline"></ion-icon>
+      <h3>Chưa có địa điểm nào</h3>
       <p>Chat với bot để nhận gợi ý và lưu lại những địa điểm bạn thích!</p>
       <ion-button (click)="addFavorite()">
         <ion-icon slot="start" name="add-outline"></ion-icon>

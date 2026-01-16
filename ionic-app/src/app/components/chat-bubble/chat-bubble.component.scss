@@ -1,15 +1,15 @@
 .bubble-container {
   display: flex;
-  margin-bottom: 12px;
+  margin-bottom: var(--spacing-md);
 
   &.user {
     justify-content: flex-end;
 
     .bubble {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--app-primary);
       color: white;
-      border-radius: 20px 20px 6px 20px;
-      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.35);
+      border-radius: var(--radius-lg) var(--radius-lg) var(--spacing-xs) var(--radius-lg);
+      box-shadow: 0 4px 12px rgba(45, 122, 79, 0.25);
 
       .timestamp {
         color: rgba(255, 255, 255, 0.75);
@@ -21,43 +21,42 @@
     justify-content: flex-start;
 
     .bubble {
-      background: white;
-      color: #2d3436;
-      border-radius: 20px 20px 20px 6px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-      border: 1px solid #f1f3f5;
+      background: var(--app-surface);
+      color: var(--app-text-primary);
+      border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--spacing-xs);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 
       .timestamp {
-        color: #adb5bd;
+        color: var(--app-text-secondary);
       }
     }
 
     &::before {
-      content: '';
+      content: '🌲';
       width: 32px;
       height: 32px;
-      background: linear-gradient(135deg, #50c878 0%, #3cb371 100%);
+      background: rgba(45, 122, 79, 0.1);
       border-radius: 50%;
-      margin-right: 10px;
+      margin-right: var(--spacing-sm);
       flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 8px rgba(80, 200, 120, 0.3);
+      font-size: 16px;
     }
   }
 }
 
 .bubble {
   max-width: 75%;
-  padding: 14px 18px;
+  padding: var(--spacing-md) var(--spacing-lg);
   position: relative;
 
   .message-image {
     max-width: 100%;
     max-height: 220px;
-    border-radius: 12px;
-    margin-bottom: 8px;
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-sm);
     display: block;
     object-fit: cover;
   }
@@ -67,13 +66,13 @@
     white-space: pre-wrap;
     word-break: break-word;
     line-height: 1.55;
-    font-size: 15px;
+    font-size: 16px;
   }
 
   .timestamp {
     display: block;
     font-size: 11px;
-    margin-top: 8px;
+    margin-top: var(--spacing-sm);
     text-align: right;
     font-weight: 500;
   }

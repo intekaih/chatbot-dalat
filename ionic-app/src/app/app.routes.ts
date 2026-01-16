@@ -18,8 +18,33 @@ export const routes: Routes = [
     canActivate: [publicGuard]
   },
   {
-    path: 'tabs',
-    loadChildren: () => import('./pages/tabs/tabs.routes').then(m => m.TABS_ROUTES),
+    path: 'app',
+    loadChildren: () => import('./pages/layout/layout.routes').then(m => m.LAYOUT_ROUTES),
     canActivate: [authGuard]
+  },
+  {
+    path: 'tabs/chat',
+    redirectTo: 'app/chat',
+    pathMatch: 'full'
+  },
+  {
+    path: 'tabs/history',
+    redirectTo: 'app/history',
+    pathMatch: 'full'
+  },
+  {
+    path: 'tabs/favorites',
+    redirectTo: 'app/saved',
+    pathMatch: 'full'
+  },
+  {
+    path: 'tabs/settings',
+    redirectTo: 'app/settings',
+    pathMatch: 'full'
+  },
+  {
+    path: 'tabs',
+    redirectTo: 'app',
+    pathMatch: 'full'
   }
 ];

@@ -34,7 +34,7 @@ export class LoginPage {
 
     try {
       await this.authService.login(this.email, this.password);
-      this.router.navigate(['/tabs/chat']);
+      this.router.navigate(['/app/chat']);
     } catch (error: any) {
       this.showToast(error.message || 'Đăng nhập thất bại');
     } finally {

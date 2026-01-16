@@ -30,7 +30,7 @@ export const publicGuard: CanActivateFn = () => {
       if (!currentUser) {
         return true;
       }
-      router.navigate(['/tabs/chat']);
+      router.navigate(['/app/chat']);
       return false;
     })
   );

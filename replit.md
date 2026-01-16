@@ -6,6 +6,8 @@
 ## Tech Stack
 - **Frontend**: Ionic 8 + Angular 20 (Standalone Components)
 - **Backend**: Firebase (Auth + Firestore) - chỉ lưu metadata
+- **AI**: Replit AI Integrations (OpenAI GPT-4o-mini)
+- **API Server**: Express.js (port 3001)
 - **Local Storage**: Capacitor Filesystem (lưu ảnh/audio local)
 - **Native**: Capacitor 6 (Camera, Audio, Filesystem)
 - **Language**: TypeScript + SCSS
@@ -19,15 +21,28 @@ ionic-app/
 │   ├── guards/           # Route protection
 │   ├── pages/            # Views (MVC - View)
 │   │   ├── auth/         # Login, Register
+│   │   ├── layout/       # Drawer navigation layout
 │   │   └── tabs/         # Chat, History, Favorites, Settings
 │   └── components/       # Reusable UI components
 ├── firebase/             # Security rules (firestore.rules only)
 └── capacitor.config.ts   # Capacitor config
+server/
+└── index.ts              # Express API server for AI chat
 ```
+
+## Design System
+- **Navigation**: Drawer (side menu) thay vì tabs
+- **Primary Color**: #2D7A4F (Forest green - rừng thông Đà Lạt)
+- **Accent Color**: #E56B6F (Soft coral - chợ hoa)
+- **Background**: #F8F9F5 (Warm off-white)
+- **Font**: Nunito (Google Fonts)
+- **Border Radius**: 16px cards, 24px input, 12px chips
+- **Theme**: Organic/Natural với tính cách Việt Nam
 
 ## Features
 - Multi-user authentication (Email/Password)
-- Rule-based chatbot for Da Lat travel advice
+- AI-powered chatbot (GPT-4o-mini) for Da Lat travel advice
+- Suggestion chips for quick questions
 - Chat history with Firestore persistence
 - Favorite places management
 - Camera integration for photo messages
@@ -54,11 +69,14 @@ ionic-app/
 - Android: `cd ionic-app && npm run cap:android`
 
 ## Recent Changes
+- 2026-01-16: Complete UI/UX redesign with organic/natural theme
+  - Changed from Tab navigation to Drawer navigation
+  - New color palette: Forest green (#2D7A4F), Coral (#E56B6F)
+  - Nunito font family
+  - Floating input bar with suggestion chips
+  - Welcome section with quick action chips
 - 2026-01-15: Integrated Replit AI (OpenAI GPT-4o-mini) for intelligent chatbot responses
 - Added Express API server (port 3001) for AI chat processing
 - Refactored ChatbotService to use AI with fallback to rule-based responses
 - Refactored to use Capacitor Filesystem for local file storage
 - Firestore now only stores metadata (text, localPath, createdAt, uid)
-- Removed Firebase Storage dependency
-- Updated ChatMessage model with localImagePath/localAudioPath
-- Improved UI design with gradient purple theme

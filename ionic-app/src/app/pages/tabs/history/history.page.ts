@@ -38,7 +38,7 @@ export class HistoryPage implements OnInit, OnDestroy {
   }
 
   openConversation(conv: Conversation) {
-    this.router.navigate(['/tabs/chat'], { 
+    this.router.navigate(['/app/chat'], { 
       queryParams: { conversationId: conv.id } 
     });
   }

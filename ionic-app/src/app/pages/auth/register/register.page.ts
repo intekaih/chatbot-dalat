@@ -46,7 +46,7 @@ export class RegisterPage {
 
     try {
       await this.authService.register(this.email, this.password, this.displayName);
-      this.router.navigate(['/tabs/chat']);
+      this.router.navigate(['/app/chat']);
     } catch (error: any) {
       this.showToast(error.message || 'Đăng ký thất bại');
     } finally {
