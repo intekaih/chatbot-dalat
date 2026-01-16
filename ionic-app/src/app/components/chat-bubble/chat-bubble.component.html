@@ -12,7 +12,9 @@
       <app-audio-player [audioUrl]="audioDataUrl"></app-audio-player>
     }
     
-    @if (message.text) {
+    @if (renderedText) {
+      <div class="message-text" [innerHTML]="renderedText"></div>
+    } @else if (message.text) {
       <p class="message-text">{{ message.text }}</p>
     }
     

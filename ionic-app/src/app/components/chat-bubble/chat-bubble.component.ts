@@ -1,10 +1,12 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ChatMessage, SuggestedPlace } from '../../models';
 import { StorageService } from '../../services';
 import { AudioPlayerComponent } from '../audio-player/audio-player.component';
 import { Capacitor } from '@capacitor/core';
+import { marked } from 'marked';
 
 @Component({
   selector: 'app-chat-bubble',
@@ -21,8 +23,17 @@ export class ChatBubbleComponent implements OnInit {
   
   imageDataUrl: string | null = null;
   audioDataUrl: string | null = null;
+  renderedText: SafeHtml | null = null;
 
-  constructor(private storageService: StorageService) {}
+  constructor(
+    private storageService: StorageService,
+    private sanitizer: DomSanitizer
+  ) {
+    marked.setOptions({
+      breaks: true,
+      gfm: true
+    });
+  }
 
   async ngOnInit() {
     if (this.message.localImagePath) {
@@ -30,6 +41,16 @@ export class ChatBubbleComponent implements OnInit {
     }
     if (this.message.localAudioPath) {
       await this.loadLocalAudio();
+    }
+    if (this.message.text) {
+      this.renderMarkdown();
+    }
+  }
+
+  private renderMarkdown() {
+    if (this.message.text) {
+      const html = marked.parse(this.message.text) as string;
+      this.renderedText = this.sanitizer.bypassSecurityTrustHtml(html);
     }
   }
 
