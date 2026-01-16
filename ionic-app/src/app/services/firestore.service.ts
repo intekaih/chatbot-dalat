@@ -77,6 +77,7 @@ export class FirestoreService {
     if (message.localImagePath !== undefined) messageData['localImagePath'] = message.localImagePath;
     if (message.localAudioPath !== undefined) messageData['localAudioPath'] = message.localAudioPath;
     if (message.role !== undefined) messageData['role'] = message.role;
+    if (message.suggestedPlace !== undefined) messageData['suggestedPlace'] = message.suggestedPlace;
     
     const docRef = await addDoc(ref, messageData);
     await this.updateConversationTimestamp(conversationId);
