@@ -441,33 +441,71 @@ ion-footer {
 
   &.dalat-alert-input {
     .alert-wrapper {
-      max-width: 300px !important;
+      width: 320px !important;
+      max-width: 320px !important;
+      border-radius: 20px !important;
+    }
+
+    .alert-head {
+      padding: 24px 24px 12px 24px;
+      background: linear-gradient(135deg, rgba(27, 94, 59, 0.08) 0%, rgba(27, 94, 59, 0.03) 100%);
+      border-bottom: 1px solid var(--app-border-light);
+
+      .alert-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--app-primary);
+      }
     }
 
     .alert-input-group {
-      padding: 0 16px 8px 16px;
+      padding: 16px 20px;
       background: var(--app-surface);
 
       .alert-input-wrapper {
         border: 2px solid var(--app-border);
-        border-radius: 10px;
-        margin-bottom: 10px;
+        border-radius: 12px;
+        margin-bottom: 12px;
         background: var(--app-background);
+        overflow: hidden;
+        transition: border-color 0.2s ease;
         
         input,
         textarea {
-          padding: 12px 14px;
-          font-size: 14px;
+          padding: 14px 16px;
+          font-size: 15px;
           font-family: 'Nunito', sans-serif;
+          color: var(--app-text-primary);
+          background: transparent;
 
           &::placeholder {
             color: var(--app-text-muted);
           }
         }
 
+        textarea {
+          min-height: 80px;
+          resize: none;
+        }
+
         &:focus-within {
           border-color: var(--app-primary);
+          background: rgba(27, 94, 59, 0.03);
         }
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+
+    .alert-button-group {
+      padding: 12px 20px 20px 20px;
+
+      .alert-button {
+        border-radius: 12px;
+        min-height: 48px;
+        font-size: 15px;
       }
     }
   }
