@@ -69,12 +69,15 @@ server/
 - Android: `cd ionic-app && npm run cap:android`
 
 ## Recent Changes
-- 2026-01-16: Complete UI/UX redesign with organic/natural theme
-  - Changed from Tab navigation to Drawer navigation
-  - New color palette: Forest green (#2D7A4F), Coral (#E56B6F)
-  - Nunito font family
-  - Floating input bar with suggestion chips
-  - Welcome section with quick action chips
+- 2026-01-16: Enhanced Dalat-inspired UI/UX redesign
+  - Primary color: Pine Green (#1B5E3B) with gradient variations
+  - Accent color: Coral Pink (#FF6B6B) for favorites/highlights
+  - Login/Register pages with gradient hero sections
+  - Chat page with welcome section and 2x2 suggestion cards grid
+  - Card-based layouts for History, Favorites, Settings
+  - Updated Tab bar with selected state animations
+  - Bot avatar using tree emoji (🌲) for Dalat theme
+  - Consistent spacing system (xs to xxxl) and radius tokens
 - 2026-01-15: Integrated Replit AI (OpenAI GPT-4o-mini) for intelligent chatbot responses
 - Added Express API server (port 3001) for AI chat processing
 - Refactored ChatbotService to use AI with fallback to rule-based responses
