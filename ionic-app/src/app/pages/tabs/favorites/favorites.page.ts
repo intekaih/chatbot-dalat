@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, AlertController, ToastController } from '@ionic/angular';
+import { IonicModule, AlertController, ToastController, ViewWillEnter, ViewDidLeave } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 import { FavoritePlace } from '../../../models';
 import { FirestoreService } from '../../../services';
@@ -13,7 +13,7 @@ import { FirestoreService } from '../../../services';
   templateUrl: './favorites.page.html',
   styleUrls: ['./favorites.page.scss']
 })
-export class FavoritesPage implements OnInit, OnDestroy {
+export class FavoritesPage implements OnDestroy, ViewWillEnter, ViewDidLeave {
   favorites: FavoritePlace[] = [];
   private subscription?: Subscription;
 
@@ -23,8 +23,12 @@ export class FavoritesPage implements OnInit, OnDestroy {
     private toastCtrl: ToastController
   ) {}
 
-  ngOnInit() {
+  ionViewWillEnter() {
     this.loadFavorites();
+  }
+
+  ionViewDidLeave() {
+    this.subscription?.unsubscribe();
   }
 
   ngOnDestroy() {
@@ -32,6 +36,7 @@ export class FavoritesPage implements OnInit, OnDestroy {
   }
 
   loadFavorites() {
+    this.subscription?.unsubscribe();
     this.subscription = this.firestoreService.getFavorites().subscribe(favs => {
       this.favorites = favs;
     });

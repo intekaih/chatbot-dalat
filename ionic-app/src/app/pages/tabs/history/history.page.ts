@@ -1,6 +1,6 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule, AlertController } from '@ionic/angular';
+import { IonicModule, AlertController, ViewWillEnter, ViewDidLeave } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { Conversation } from '../../../models';
@@ -13,7 +13,7 @@ import { FirestoreService } from '../../../services';
   templateUrl: './history.page.html',
   styleUrls: ['./history.page.scss']
 })
-export class HistoryPage implements OnInit, OnDestroy {
+export class HistoryPage implements OnDestroy, ViewWillEnter, ViewDidLeave {
   conversations: Conversation[] = [];
   private subscription?: Subscription;
 
@@ -23,8 +23,12 @@ export class HistoryPage implements OnInit, OnDestroy {
     private alertCtrl: AlertController
   ) {}
 
-  ngOnInit() {
+  ionViewWillEnter() {
     this.loadConversations();
+  }
+
+  ionViewDidLeave() {
+    this.subscription?.unsubscribe();
   }
 
   ngOnDestroy() {
@@ -32,6 +36,7 @@ export class HistoryPage implements OnInit, OnDestroy {
   }
 
   loadConversations() {
+    this.subscription?.unsubscribe();
     this.subscription = this.firestoreService.getConversations().subscribe(convs => {
       this.conversations = convs;
     });

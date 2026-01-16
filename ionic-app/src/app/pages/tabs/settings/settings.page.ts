@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule, AlertController, LoadingController } from '@ionic/angular';
+import { IonicModule, AlertController, LoadingController, ViewWillEnter } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../services';
 
@@ -11,7 +11,7 @@ import { AuthService } from '../../../services';
   templateUrl: './settings.page.html',
   styleUrls: ['./settings.page.scss']
 })
-export class SettingsPage implements OnInit {
+export class SettingsPage implements ViewWillEnter {
   userEmail = '';
   userName = '';
 
@@ -22,7 +22,11 @@ export class SettingsPage implements OnInit {
     private loadingCtrl: LoadingController
   ) {}
 
-  ngOnInit() {
+  ionViewWillEnter() {
+    this.loadUserInfo();
+  }
+
+  private loadUserInfo() {
     const user = this.authService.currentUser;
     if (user) {
       this.userEmail = user.email || '';
