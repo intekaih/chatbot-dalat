@@ -363,47 +363,62 @@ ion-footer {
 }
 
 .dalat-alert {
-  --background: var(--app-surface);
-  --max-width: 320px;
+  --background: rgba(0, 0, 0, 0.5);
+  --backdrop-opacity: 1;
+
+  &::part(backdrop) {
+    background: rgba(0, 0, 0, 0.5);
+  }
 
   .alert-wrapper {
-    border-radius: 20px !important;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
+    background: var(--app-surface) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2) !important;
     overflow: hidden;
+    max-width: 280px !important;
+    min-width: 260px !important;
+    margin: auto;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
   }
 
   .alert-head {
-    padding: 24px 24px 12px 24px;
+    padding: 20px 20px 8px 20px;
     text-align: center;
+    background: var(--app-surface);
 
     .alert-title {
-      font-size: 20px;
+      font-size: 17px;
       font-weight: 700;
       color: var(--app-text-primary);
     }
   }
 
   .alert-message {
-    padding: 0 24px 20px 24px;
+    padding: 4px 20px 16px 20px;
     text-align: center;
-    font-size: 15px;
+    font-size: 14px;
     color: var(--app-text-secondary);
     line-height: 1.5;
+    background: var(--app-surface);
   }
 
   .alert-button-group {
-    padding: 0 16px 16px 16px;
+    padding: 0 12px 12px 12px;
     display: flex;
-    gap: 12px;
+    gap: 10px;
     flex-direction: row;
+    background: var(--app-surface);
 
     .alert-button {
       flex: 1;
       margin: 0;
-      border-radius: 12px;
-      min-height: 48px;
+      border-radius: 10px;
+      min-height: 44px;
       font-weight: 600;
-      font-size: 15px;
+      font-size: 14px;
       text-transform: none;
 
       .alert-button-inner {
@@ -412,36 +427,41 @@ ion-footer {
     }
 
     .alert-btn-cancel {
-      background: var(--app-background);
-      color: var(--app-text-secondary);
+      background: var(--app-background) !important;
+      color: var(--app-text-secondary) !important;
       border: 1px solid var(--app-border);
     }
 
     .alert-btn-confirm {
-      background: var(--app-primary-gradient);
-      color: white;
+      background: var(--app-primary-gradient) !important;
+      color: white !important;
     }
 
     .alert-btn-danger {
-      background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
-      color: white;
+      background: linear-gradient(135deg, #EF4444 0%, #F87171 100%) !important;
+      color: white !important;
     }
   }
 
   &.dalat-alert-input {
+    .alert-wrapper {
+      max-width: 300px !important;
+    }
+
     .alert-input-group {
-      padding: 0 20px;
+      padding: 0 16px 8px 16px;
+      background: var(--app-surface);
 
       .alert-input-wrapper {
         border: 2px solid var(--app-border);
-        border-radius: 12px;
-        margin-bottom: 12px;
+        border-radius: 10px;
+        margin-bottom: 10px;
         background: var(--app-background);
         
         input,
         textarea {
-          padding: 14px 16px;
-          font-size: 15px;
+          padding: 12px 14px;
+          font-size: 14px;
           font-family: 'Nunito', sans-serif;
 
           &::placeholder {
