@@ -59,13 +59,33 @@ server/
   - role: 'user' | 'bot'
 
 ## Setup Required
+
+### Firebase Setup
 1. Create Firebase project at console.firebase.google.com
 2. Enable Auth (Email/Password), Firestore Database
-3. Copy Firebase config to `src/environments/environment.ts`
-4. Deploy Firestore rules from `firebase/firestore.rules`
+3. Copy Firebase config to `ionic-app/src/environments/environment.ts`
+4. Deploy Firestore rules from `ionic-app/firebase/firestore.rules`
 
-## Running
-- Web: `cd ionic-app && npm start`
+### OpenAI API Setup (for local development)
+1. Get your API key from https://platform.openai.com/api-keys
+2. Create `.env` file in `server/` folder (copy from `.env.example`)
+3. Add your OpenAI API key: `OPENAI_API_KEY=sk-your-key-here`
+
+## Running (Local Development)
+```bash
+# Install dependencies
+cd ionic-app && npm install
+cd ../server && npm install
+
+# Start API server (Terminal 1)
+cd server && npm start
+
+# Start Ionic dev server (Terminal 2)
+cd ionic-app && npm start
+```
+
+## Running (Replit)
+- Web: Workflows auto-start (Ionic Dev Server + AI Chat Server)
 - Android: `cd ionic-app && npm run cap:android`
 
 ## Recent Changes

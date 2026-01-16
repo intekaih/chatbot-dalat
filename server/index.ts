@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import OpenAI from 'openai';
@@ -6,9 +7,18 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
+// Support both Replit AI integration and standard OpenAI API key for local development
+const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+const baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || undefined;
+
+if (!apiKey) {
+  console.error('WARNING: No OpenAI API key found!');
+  console.error('Please set OPENAI_API_KEY environment variable for local development.');
+}
+
 const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  apiKey: apiKey,
+  baseURL: baseURL,
 });
 
 const DALAT_SYSTEM_PROMPT = `Bạn là chatbot tư vấn du lịch Đà Lạt - thành phố ngàn hoa. Bạn có kiến thức sâu rộng về:
