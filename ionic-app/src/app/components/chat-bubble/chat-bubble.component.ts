@@ -98,9 +98,13 @@ export class ChatBubbleComponent implements OnInit {
   }
 
   openMap() {
-    if (this.message.suggestedPlace?.address) {
-      const address = encodeURIComponent(this.message.suggestedPlace.address + ', Đà Lạt, Việt Nam');
-      const url = `https://www.google.com/maps/search/?api=1&query=${address}`;
+    if (this.message.suggestedPlace) {
+      const place = this.message.suggestedPlace;
+      // Use name + address for more accurate search
+      const query = place.name 
+        ? `${place.name}, Đà Lạt, Lâm Đồng, Việt Nam`
+        : `${place.address}, Đà Lạt, Việt Nam`;
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
       window.open(url, '_blank');
     }
   }

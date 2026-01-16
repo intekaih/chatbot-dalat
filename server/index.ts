@@ -29,7 +29,8 @@ Quy tắc trả lời:
 
 const PLACE_EXTRACT_PROMPT = `Dựa vào cuộc trò chuyện, nếu có gợi ý địa điểm cụ thể, hãy trả về JSON với thông tin địa điểm quan trọng nhất.
 Chỉ trả về JSON theo format:
-{"name": "Tên địa điểm", "address": "Địa chỉ cụ thể, Đà Lạt", "description": "Mô tả ngắn"}
+{"name": "Tên địa điểm chính xác (ví dụ: Đại học Đà Lạt, Hồ Xuân Hương, Thác Datanla)", "address": "Địa chỉ cụ thể nếu biết", "description": "Mô tả ngắn"}
+QUAN TRỌNG: Trường "name" phải là tên chính xác của địa điểm để có thể tìm trên Google Maps.
 Nếu không có địa điểm cụ thể nào được gợi ý, trả về: null
 Chỉ trả JSON, không có text khác.`;
 
