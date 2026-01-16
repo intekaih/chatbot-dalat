@@ -69,6 +69,32 @@ ion-content {
     max-width: 280px;
     line-height: 1.6;
   }
+
+  .add-place-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--app-primary-gradient);
+    color: white;
+    border: none;
+    border-radius: 24px;
+    padding: 14px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+    box-shadow: var(--shadow-primary);
+    transition: all 0.2s ease;
+
+    ion-icon {
+      font-size: 20px;
+    }
+
+    &:active {
+      transform: scale(0.96);
+    }
+  }
 }
 
 .favorites-container {

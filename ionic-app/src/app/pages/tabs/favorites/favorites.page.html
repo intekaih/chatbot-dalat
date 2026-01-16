@@ -17,10 +17,10 @@
     </div>
     <h3>Chưa có địa điểm nào</h3>
     <p>Lưu lại những địa điểm yêu thích trong hành trình khám phá Đà Lạt của bạn</p>
-    <ion-button (click)="addFavorite()">
-      <ion-icon slot="start" name="add-outline"></ion-icon>
-      Thêm địa điểm
-    </ion-button>
+    <button class="add-place-btn" (click)="addFavorite()">
+      <ion-icon name="add-outline"></ion-icon>
+      <span>Thêm địa điểm</span>
+    </button>
   </div>
   } @else {
   <div class="favorites-container">
