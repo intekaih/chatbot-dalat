@@ -1,71 +1,77 @@
 ion-tab-bar {
   --background: var(--app-surface);
-  border-top: none;
-  height: 70px;
-  padding: 8px 16px;
-  padding-bottom: calc(8px + env(safe-area-inset-bottom));
-  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.08);
-  border-radius: 24px 24px 0 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  height: 64px;
+  padding: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid var(--app-border-light);
+  border-radius: 0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
 }
 
 ion-tab-button {
-  --color: #A0AEC0;
+  --color: var(--app-text-muted);
   --color-selected: var(--app-primary);
-  --padding-top: 6px;
-  --padding-bottom: 6px;
+  --background: transparent;
+  --background-focused: transparent;
+  --ripple-color: transparent;
+  flex: 1 1 0;
+  max-width: none;
+  min-height: 100%;
+  padding: 8px 0;
   font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
-  position: relative;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: transparent !important;
+  transition: color 0.2s ease;
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%) scaleX(0);
-    width: 40px;
-    height: 3px;
-    background: var(--app-primary-gradient);
-    border-radius: 0 0 3px 3px;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  &::part(native) {
+    background: transparent !important;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0;
   }
 
   ion-icon {
-    font-size: 26px;
-    margin-bottom: 4px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 24px;
+    margin: 0;
+    transition: color 0.2s ease, transform 0.2s ease;
   }
 
   ion-label {
     font-size: 11px;
     font-weight: 600;
-    margin-top: 2px;
-    letter-spacing: 0.3px;
-    transition: all 0.3s ease;
+    margin: 0;
+    letter-spacing: 0.2px;
+    transition: color 0.2s ease;
   }
 
   &.tab-selected {
     --color: var(--app-primary);
+    background: transparent !important;
 
-    &::before {
-      transform: translateX(-50%) scaleX(1);
+    &::part(native) {
+      background: transparent !important;
     }
 
     ion-icon {
       color: var(--app-primary);
-      transform: translateY(-2px) scale(1.1);
+      transform: scale(1.08);
     }
 
     ion-label {
       color: var(--app-primary);
       font-weight: 700;
-      transform: translateY(-1px);
-    }
-  }
-
-  &:active {
-    ion-icon {
-      transform: scale(0.9);
     }
   }
 }
