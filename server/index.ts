@@ -23,7 +23,14 @@ Quy tắc trả lời:
 - Trả lời ngắn gọn, thân thiện và hữu ích
 - Sử dụng emoji phù hợp để tạo không khí vui vẻ
 - Có thể dùng markdown để in đậm tên địa điểm quan trọng
-- Nếu được hỏi về địa điểm, cung cấp địa chỉ và mô tả ngắn`;
+- Nếu được hỏi về địa điểm, cung cấp địa chỉ và mô tả ngắn
+- Khi gợi ý địa điểm cụ thể, CHỈ gợi ý 1 địa điểm nổi bật nhất, không liệt kê nhiều địa điểm`;
+
+const PLACE_EXTRACT_PROMPT = `Dựa vào cuộc trò chuyện, nếu có gợi ý địa điểm cụ thể, hãy trả về JSON với thông tin địa điểm quan trọng nhất.
+Chỉ trả về JSON theo format:
+{"name": "Tên địa điểm", "address": "Địa chỉ cụ thể, Đà Lạt", "description": "Mô tả ngắn"}
+Nếu không có địa điểm cụ thể nào được gợi ý, trả về: null
+Chỉ trả JSON, không có text khác.`;
 
 app.post('/api/chat', async (req, res) => {
   try {
@@ -50,7 +57,26 @@ app.post('/api/chat', async (req, res) => {
 
     const reply = response.choices[0]?.message?.content || 'Xin lỗi, tôi không thể trả lời lúc này.';
 
-    res.json({ reply });
+    let suggestedPlace = null;
+    try {
+      const extractResponse = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: PLACE_EXTRACT_PROMPT },
+          { role: 'user', content: `Câu hỏi: ${message}\nTrả lời: ${reply}` }
+        ],
+        max_completion_tokens: 256,
+      });
+      
+      const extractedText = extractResponse.choices[0]?.message?.content?.trim();
+      if (extractedText && extractedText !== 'null') {
+        suggestedPlace = JSON.parse(extractedText);
+      }
+    } catch (e) {
+      console.log('Place extraction skipped');
+    }
+
+    res.json({ reply, suggestedPlace });
   } catch (error) {
     console.error('OpenAI API error:', error);
     res.status(500).json({ error: 'Failed to get AI response' });

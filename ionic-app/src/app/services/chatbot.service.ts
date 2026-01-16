@@ -34,33 +34,21 @@ export class ChatbotService {
   async generateAIResponse(userMessage: string, history: ChatHistory[] = []): Promise<{ text: string; suggestedPlace?: DalatPlace }> {
     try {
       const response = await firstValueFrom(
-        this.http.post<{ reply: string }>(this.apiUrl, {
+        this.http.post<{ reply: string; suggestedPlace?: DalatPlace }>(this.apiUrl, {
           message: userMessage,
           history: history.map(h => ({ role: h.role, content: h.content }))
         })
       );
 
-      const reply = response.reply;
-      const suggestedPlace = this.extractPlaceFromResponse(reply);
-
       return {
-        text: reply,
-        suggestedPlace
+        text: response.reply,
+        suggestedPlace: response.suggestedPlace || undefined
       };
     } catch (error: any) {
       console.error('AI API error:', error);
       console.error('Error details:', error?.message, error?.status, error?.statusText);
       return this.generateRuleBasedResponse(userMessage);
     }
-  }
-
-  private extractPlaceFromResponse(text: string): DalatPlace | undefined {
-    for (const place of this.places) {
-      if (text.includes(place.name)) {
-        return place;
-      }
-    }
-    return undefined;
   }
 
   generateRuleBasedResponse(userMessage: string): { text: string; suggestedPlace?: DalatPlace } {
