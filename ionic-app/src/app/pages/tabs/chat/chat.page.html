@@ -6,11 +6,6 @@
         <span>Đà Lạt Travel</span>
       </div>
     </ion-title>
-    <ion-buttons slot="end">
-      <ion-button (click)="startNewConversation()" class="new-chat-btn">
-        <ion-icon slot="icon-only" name="add-outline"></ion-icon>
-      </ion-button>
-    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
@@ -92,6 +87,10 @@
       </button>
     </div>
     } @else {
+    <button class="icon-btn new-chat-btn" (click)="startNewConversation()">
+      <ion-icon name="add-outline"></ion-icon>
+    </button>
+
     <div class="media-buttons">
       <button class="icon-btn" (click)="takePhoto()">
         <ion-icon name="camera-outline"></ion-icon>
