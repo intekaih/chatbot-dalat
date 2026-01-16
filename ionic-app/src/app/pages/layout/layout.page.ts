@@ -9,10 +9,10 @@ import { AuthService } from '../../services';
   standalone: true,
   imports: [CommonModule, RouterModule, IonicModule],
   template: `
-    <ion-menu contentId="main-content" type="overlay">
-      <ion-header>
-        <ion-toolbar>
-          <ion-title>Đà Lạt Travel</ion-title>
+    <ion-menu contentId="main-content" type="overlay" side="start">
+      <ion-header class="ion-no-border">
+        <ion-toolbar class="menu-toolbar">
+          <ion-title class="menu-title">Đà Lạt Travel</ion-title>
         </ion-toolbar>
       </ion-header>
       <ion-content>
@@ -59,9 +59,18 @@ import { AuthService } from '../../services';
     <ion-router-outlet id="main-content"></ion-router-outlet>
   `,
   styles: [`
-    ion-menu ion-header ion-toolbar {
+    ion-menu ion-header .menu-toolbar {
       --background: var(--app-primary);
       --color: white;
+      --padding-start: 16px;
+      --padding-end: 16px;
+    }
+    
+    ion-menu ion-header .menu-title {
+      font-size: 20px;
+      font-weight: 700;
+      padding-inline-start: 0;
+      padding-inline-end: 0;
     }
     
     ion-menu ion-content {
