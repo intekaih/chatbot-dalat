@@ -361,3 +361,107 @@ ion-footer {
   background: var(--app-border);
   border-radius: 3px;
 }
+
+.dalat-alert {
+  --background: var(--app-surface);
+  --max-width: 320px;
+
+  .alert-wrapper {
+    border-radius: 20px !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
+    overflow: hidden;
+  }
+
+  .alert-head {
+    padding: 24px 24px 12px 24px;
+    text-align: center;
+
+    .alert-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--app-text-primary);
+    }
+  }
+
+  .alert-message {
+    padding: 0 24px 20px 24px;
+    text-align: center;
+    font-size: 15px;
+    color: var(--app-text-secondary);
+    line-height: 1.5;
+  }
+
+  .alert-button-group {
+    padding: 0 16px 16px 16px;
+    display: flex;
+    gap: 12px;
+    flex-direction: row;
+
+    .alert-button {
+      flex: 1;
+      margin: 0;
+      border-radius: 12px;
+      min-height: 48px;
+      font-weight: 600;
+      font-size: 15px;
+      text-transform: none;
+
+      .alert-button-inner {
+        justify-content: center;
+      }
+    }
+
+    .alert-btn-cancel {
+      background: var(--app-background);
+      color: var(--app-text-secondary);
+      border: 1px solid var(--app-border);
+    }
+
+    .alert-btn-confirm {
+      background: var(--app-primary-gradient);
+      color: white;
+    }
+
+    .alert-btn-danger {
+      background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
+      color: white;
+    }
+  }
+
+  &.dalat-alert-input {
+    .alert-input-group {
+      padding: 0 20px;
+
+      .alert-input-wrapper {
+        border: 2px solid var(--app-border);
+        border-radius: 12px;
+        margin-bottom: 12px;
+        background: var(--app-background);
+        
+        input,
+        textarea {
+          padding: 14px 16px;
+          font-size: 15px;
+          font-family: 'Nunito', sans-serif;
+
+          &::placeholder {
+            color: var(--app-text-muted);
+          }
+        }
+
+        &:focus-within {
+          border-color: var(--app-primary);
+        }
+      }
+    }
+  }
+}
+
+ion-toast {
+  --background: var(--app-text-primary);
+  --color: white;
+  --border-radius: 12px;
+  --box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+}

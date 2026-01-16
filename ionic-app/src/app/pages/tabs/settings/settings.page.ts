@@ -33,12 +33,14 @@ export class SettingsPage implements OnInit {
   async confirmLogout() {
     const alert = await this.alertCtrl.create({
       header: 'Đăng xuất',
-      message: 'Bạn có chắc muốn đăng xuất?',
+      message: 'Bạn có chắc muốn đăng xuất khỏi tài khoản?',
+      cssClass: 'dalat-alert dalat-alert-danger',
       buttons: [
-        { text: 'Hủy', role: 'cancel' },
+        { text: 'Hủy', role: 'cancel', cssClass: 'alert-btn-cancel' },
         {
           text: 'Đăng xuất',
           role: 'destructive',
+          cssClass: 'alert-btn-danger',
           handler: () => this.logout()
         }
       ]

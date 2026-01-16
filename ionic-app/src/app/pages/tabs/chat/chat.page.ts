@@ -206,10 +206,12 @@ export class ChatPage implements OnInit, OnDestroy {
     const alert = await this.alertCtrl.create({
       header: 'Lưu địa điểm?',
       message: `Bạn có muốn lưu "${place.name}" vào danh sách yêu thích?`,
+      cssClass: 'dalat-alert',
       buttons: [
-        { text: 'Không', role: 'cancel' },
+        { text: 'Không', role: 'cancel', cssClass: 'alert-btn-cancel' },
         {
           text: 'Lưu',
+          cssClass: 'alert-btn-confirm',
           handler: async () => {
             try {
               await this.firestoreService.addFavorite({

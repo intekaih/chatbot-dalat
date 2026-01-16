@@ -40,15 +40,17 @@ export class FavoritesPage implements OnInit, OnDestroy {
   async addFavorite() {
     const alert = await this.alertCtrl.create({
       header: 'Thêm địa điểm yêu thích',
+      cssClass: 'dalat-alert dalat-alert-input',
       inputs: [
         { name: 'name', type: 'text', placeholder: 'Tên địa điểm' },
         { name: 'address', type: 'text', placeholder: 'Địa chỉ' },
         { name: 'description', type: 'textarea', placeholder: 'Mô tả' }
       ],
       buttons: [
-        { text: 'Hủy', role: 'cancel' },
+        { text: 'Hủy', role: 'cancel', cssClass: 'alert-btn-cancel' },
         {
           text: 'Thêm',
+          cssClass: 'alert-btn-confirm',
           handler: async (data) => {
             if (data.name) {
               try {
@@ -71,13 +73,15 @@ export class FavoritesPage implements OnInit, OnDestroy {
 
   async removeFavorite(fav: FavoritePlace) {
     const alert = await this.alertCtrl.create({
-      header: 'Xác nhận',
+      header: 'Xác nhận xóa',
       message: `Bạn có muốn xóa "${fav.name}" khỏi danh sách yêu thích?`,
+      cssClass: 'dalat-alert dalat-alert-danger',
       buttons: [
-        { text: 'Hủy', role: 'cancel' },
+        { text: 'Hủy', role: 'cancel', cssClass: 'alert-btn-cancel' },
         {
           text: 'Xóa',
           role: 'destructive',
+          cssClass: 'alert-btn-danger',
           handler: async () => {
             try {
               await this.firestoreService.removeFavorite(fav.id);
