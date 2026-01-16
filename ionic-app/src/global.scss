@@ -363,25 +363,21 @@ ion-footer {
 }
 
 .dalat-alert {
-  --background: rgba(0, 0, 0, 0.5);
-  --backdrop-opacity: 1;
+  --backdrop-opacity: 0.5;
 
-  &::part(backdrop) {
-    background: rgba(0, 0, 0, 0.5);
+  ion-backdrop {
+    background: #000 !important;
   }
 
+  &.alert-wrapper,
   .alert-wrapper {
     background: var(--app-surface) !important;
     border-radius: 16px !important;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2) !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25) !important;
     overflow: hidden;
+    width: 280px !important;
     max-width: 280px !important;
     min-width: 260px !important;
-    margin: auto;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
   }
 
   .alert-head {
