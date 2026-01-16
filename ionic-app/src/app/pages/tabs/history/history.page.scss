@@ -1,26 +1,21 @@
-// ChatGPT-inspired History Page
 ion-header {
   ion-toolbar {
-    --background: #FFFFFF;
-    --color: #000000;
-    --border-width: 0 0 1px 0;
-    --border-color: #E5E5E5;
-    padding: 0;
+    --background: var(--app-surface);
+    --color: var(--app-text-primary);
+    box-shadow: var(--shadow-sm);
   }
 
   ion-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #000000;
-    letter-spacing: -0.2px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
   }
 }
 
 ion-content {
-  --background: #FFFFFF;
+  --background: var(--app-background);
 }
 
-// Empty State
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -30,95 +25,84 @@ ion-content {
   padding: 40px;
 
   .empty-icon {
-    width: 64px;
-    height: 64px;
-    background: #F7F7F8;
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, rgba(27, 94, 59, 0.12) 0%, rgba(45, 122, 79, 0.06) 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 
     ion-icon {
-      font-size: 32px;
-      color: #8E8EA0;
+      font-size: 48px;
+      color: var(--app-primary);
     }
   }
 
   h3 {
     margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #1A1A1A;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--app-text-primary);
     margin-bottom: 8px;
   }
 
   p {
     margin: 0;
-    font-size: 14px;
-    color: #6E6E80;
+    font-size: 15px;
+    color: var(--app-text-secondary);
+    text-align: center;
   }
 }
 
-// Conversations Container
 .conversations-container {
-  padding: 0;
-  padding-bottom: 80px;
+  padding: var(--spacing-lg);
+  padding-bottom: 100px;
 }
 
-// Conversation Card (ChatGPT style)
 .conversation-card {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  background: #FFFFFF;
-  border-bottom: 1px solid #F0F0F0;
+  padding: 16px;
+  background: var(--app-surface);
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: background-color 0.15s ease;
-  min-height: 72px;
+  transition: all 0.2s ease;
+  margin-bottom: var(--spacing-md);
+  box-shadow: var(--shadow-md);
 
   &:active {
-    background: #F7F7F8;
-  }
-
-  .conversation-header {
-    display: flex;
-    align-items: center;
-    flex: 1;
-    gap: 12px;
-    min-width: 0;
+    transform: scale(0.98);
   }
 
   .conversation-icon {
-    width: 40px;
-    height: 40px;
-    background: linear-gradient(135deg, #10A37F 0%, #0D8D6C 100%);
-    border-radius: 8px;
+    width: 48px;
+    height: 48px;
+    background: var(--app-primary-gradient);
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    margin-right: var(--spacing-lg);
 
     ion-icon {
-      font-size: 20px;
-      color: #FFFFFF;
+      font-size: 22px;
+      color: white;
     }
   }
 
   .conversation-content {
     flex: 1;
     min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
   }
 
   .conversation-title {
     margin: 0;
     font-size: 15px;
-    font-weight: 500;
-    color: #1A1A1A;
+    font-weight: 600;
+    color: var(--app-text-primary);
     line-height: 1.4;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -128,74 +112,16 @@ ion-content {
   }
 
   .conversation-date {
-    margin: 0;
+    margin: 4px 0 0 0;
     font-size: 13px;
-    color: #8E8EA0;
-    font-weight: 400;
+    color: var(--app-text-muted);
   }
 
   .chevron {
-    font-size: 18px;
-    color: #C5C5D2;
-    margin-left: 8px;
+    font-size: 20px;
+    color: var(--app-text-muted);
+    margin-left: var(--spacing-sm);
     flex-shrink: 0;
-    transition: transform 0.2s ease, color 0.2s ease;
-  }
-
-  // Hover effect for web
-  @media (hover: hover) {
-    &:hover {
-      background: #F7F7F8;
-
-      .chevron {
-        color: #8E8EA0;
-        transform: translateX(2px);
-      }
-    }
-  }
-}
-
-// Dark mode support (optional)
-@media (prefers-color-scheme: dark) {
-  ion-header ion-toolbar {
-    --background: #1A1A1A;
-    --color: #FFFFFF;
-    --border-color: #2A2A2A;
-  }
-
-  ion-content {
-    --background: #1A1A1A;
-  }
-
-  .conversation-card {
-    background: #1A1A1A;
-    border-bottom-color: #2A2A2A;
-
-    &:active,
-    &:hover {
-      background: #2A2A2A;
-    }
-
-    .conversation-title {
-      color: #ECECF1;
-    }
-
-    .conversation-date {
-      color: #8E8EA0;
-    }
-  }
-
-  .empty-state {
-    .empty-icon {
-      background: #2A2A2A;
-    }
-
-    h3 {
-      color: #ECECF1;
-    }
-
-    p {
-      color: #8E8EA0;
-    }
+    transition: transform 0.2s ease;
   }
 }

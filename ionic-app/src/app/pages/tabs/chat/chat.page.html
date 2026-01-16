@@ -1,6 +1,11 @@
 <ion-header class="ion-no-border">
   <ion-toolbar>
-    <ion-title>Tư vấn du lịch Đà Lạt</ion-title>
+    <ion-title>
+      <div class="header-title">
+        <span class="title-icon">🌲</span>
+        <span>Đà Lạt Travel</span>
+      </div>
+    </ion-title>
     <ion-buttons slot="end">
       <ion-button (click)="startNewConversation()" class="new-chat-btn">
         <ion-icon slot="icon-only" name="add-outline"></ion-icon>
@@ -13,24 +18,38 @@
   <div class="chat-container">
     @if (messages.length === 0 || (messages.length === 1 && messages[0].id === 'welcome')) {
     <div class="welcome-section">
-      <div class="welcome-icon">
-        <ion-icon name="leaf-outline"></ion-icon>
+      <div class="welcome-card">
+        <div class="welcome-icon">
+          <ion-icon name="leaf"></ion-icon>
+        </div>
+        <h2>Chào mừng đến Đà Lạt!</h2>
+        <p>Tôi là trợ lý du lịch thông minh, sẵn sàng giúp bạn khám phá thành phố ngàn hoa</p>
       </div>
-      <h2>Chào mừng đến Đà Lạt!</h2>
-      <p>Tôi là trợ lý du lịch thông minh. Hãy hỏi tôi bất cứ điều gì về thành phố ngàn hoa.</p>
 
-      <div class="suggestion-chips">
-        <button class="chip" (click)="askSuggestion('Địa điểm nổi tiếng ở Đà Lạt?')">
-          🏔️ Địa điểm nổi tiếng
+      <div class="suggestions-grid">
+        <button class="suggestion-card" (click)="askSuggestion('Địa điểm nổi tiếng ở Đà Lạt?')">
+          <div class="suggestion-icon mountain">
+            <ion-icon name="trail-sign-outline"></ion-icon>
+          </div>
+          <span>Địa điểm nổi tiếng</span>
         </button>
-        <button class="chip" (click)="askSuggestion('Món ăn ngon ở Đà Lạt?')">
-          🍜 Ẩm thực đặc sản
+        <button class="suggestion-card" (click)="askSuggestion('Món ăn ngon ở Đà Lạt?')">
+          <div class="suggestion-icon food">
+            <ion-icon name="restaurant-outline"></ion-icon>
+          </div>
+          <span>Ẩm thực đặc sản</span>
         </button>
-        <button class="chip" (click)="askSuggestion('Quán cà phê view đẹp?')">
-          ☕ Cà phê view đẹp
+        <button class="suggestion-card" (click)="askSuggestion('Quán cà phê view đẹp?')">
+          <div class="suggestion-icon coffee">
+            <ion-icon name="cafe-outline"></ion-icon>
+          </div>
+          <span>Cà phê view đẹp</span>
         </button>
-        <button class="chip" (click)="askSuggestion('Lịch trình 2 ngày ở Đà Lạt?')">
-          📅 Lịch trình 2 ngày
+        <button class="suggestion-card" (click)="askSuggestion('Lịch trình 2 ngày ở Đà Lạt?')">
+          <div class="suggestion-icon calendar">
+            <ion-icon name="calendar-outline"></ion-icon>
+          </div>
+          <span>Lịch trình 2 ngày</span>
         </button>
       </div>
     </div>
@@ -44,12 +63,14 @@
 
     @if (isLoading) {
     <div class="typing-indicator">
-      <div class="typing-dots">
-        <span></span>
-        <span></span>
-        <span></span>
+      <div class="bot-avatar">🌲</div>
+      <div class="typing-content">
+        <div class="typing-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
       </div>
-      <span class="typing-text">Đang xử lý...</span>
     </div>
     }
   </div>
@@ -66,6 +87,9 @@
     <div class="recording-indicator">
       <div class="recording-pulse"></div>
       <span>Đang ghi âm...</span>
+      <button class="stop-btn" (click)="toggleRecording()">
+        <ion-icon name="stop"></ion-icon>
+      </button>
     </div>
     } @else {
     <div class="media-buttons">
@@ -75,16 +99,16 @@
       <button class="icon-btn" (click)="pickPhoto()">
         <ion-icon name="image-outline"></ion-icon>
       </button>
-      <button class="icon-btn" [class.recording]="isRecording" (click)="toggleRecording()">
-        <ion-icon [name]="isRecording ? 'stop-circle' : 'mic-outline'"></ion-icon>
+      <button class="icon-btn mic-btn" [class.recording]="isRecording" (click)="toggleRecording()">
+        <ion-icon name="mic-outline"></ion-icon>
       </button>
     </div>
 
     <input type="text" [(ngModel)]="newMessage" placeholder="Hỏi về Đà Lạt..." (keyup.enter)="sendMessage()"
       [disabled]="isRecording" />
 
-    <button class="send-btn" (click)="sendMessage()" [disabled]="isLoading || isRecording">
-      <ion-icon name="send"></ion-icon>
+    <button class="send-btn" (click)="sendMessage()" [disabled]="isLoading || isRecording || !newMessage?.trim()">
+      <ion-icon name="paper-plane"></ion-icon>
     </button>
     }
   </div>

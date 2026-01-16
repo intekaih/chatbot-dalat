@@ -1,52 +1,65 @@
-<ion-header class="ion-no-border">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button defaultHref="/login"></ion-back-button>
-    </ion-buttons>
-    <ion-title>Đăng Ký</ion-title>
-  </ion-toolbar>
-</ion-header>
-
-<ion-content>
-  <div class="register-container">
-    <div class="header-section">
-      <div class="header-icon">
-        <ion-icon name="chatbubbles-outline"></ion-icon>
+<ion-content [fullscreen]="true">
+  <div class="register-wrapper">
+    <div class="hero-section">
+      <div class="hero-pattern"></div>
+      <button class="back-btn" routerLink="/login">
+        <ion-icon name="arrow-back"></ion-icon>
+      </button>
+      <div class="logo-container">
+        <div class="logo-circle">
+          <ion-icon name="person-add"></ion-icon>
+        </div>
+        <h1>Tạo tài khoản</h1>
+        <p class="tagline">Bắt đầu hành trình khám phá</p>
       </div>
-      <h2>Tạo tài khoản mới</h2>
-      <p>Khám phá Đà Lạt cùng chatbot thông minh</p>
     </div>
 
-    <div class="form-container">
-      <form (ngSubmit)="register()">
-        <div class="input-group">
-          <label>Tên hiển thị</label>
-          <input type="text" [(ngModel)]="displayName" name="displayName" placeholder="Nhập tên của bạn" required />
+    <div class="form-section">
+      <div class="form-container">
+        <form (ngSubmit)="register()">
+          <div class="input-group">
+            <div class="input-icon">
+              <ion-icon name="person-outline"></ion-icon>
+            </div>
+            <input type="text" [(ngModel)]="displayName" name="displayName" placeholder="Tên của bạn" required />
+          </div>
+
+          <div class="input-group">
+            <div class="input-icon">
+              <ion-icon name="mail-outline"></ion-icon>
+            </div>
+            <input type="email" [(ngModel)]="email" name="email" placeholder="Email của bạn" required />
+          </div>
+
+          <div class="input-group">
+            <div class="input-icon">
+              <ion-icon name="lock-closed-outline"></ion-icon>
+            </div>
+            <input type="password" [(ngModel)]="password" name="password" placeholder="Mật khẩu (ít nhất 6 ký tự)" required />
+          </div>
+
+          <div class="input-group">
+            <div class="input-icon">
+              <ion-icon name="shield-checkmark-outline"></ion-icon>
+            </div>
+            <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" placeholder="Xác nhận mật khẩu" required />
+          </div>
+
+          <button type="submit" class="register-btn">
+            <span>Đăng Ký</span>
+            <ion-icon name="arrow-forward"></ion-icon>
+          </button>
+        </form>
+
+        <div class="divider">
+          <span>hoặc</span>
         </div>
 
-        <div class="input-group">
-          <label>Email</label>
-          <input type="email" [(ngModel)]="email" name="email" placeholder="Nhập email của bạn" required />
+        <div class="login-link">
+          <p>Đã có tài khoản?</p>
+          <a routerLink="/login">Đăng nhập</a>
         </div>
-
-        <div class="input-group">
-          <label>Mật khẩu</label>
-          <input type="password" [(ngModel)]="password" name="password" placeholder="Nhập mật khẩu (ít nhất 6 ký tự)" required />
-        </div>
-
-        <div class="input-group">
-          <label>Xác nhận mật khẩu</label>
-          <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" placeholder="Nhập lại mật khẩu" required />
-        </div>
-
-        <button type="submit" class="register-btn">
-          Đăng Ký
-        </button>
-      </form>
-    </div>
-
-    <div class="login-link">
-      <p>Đã có tài khoản? <a routerLink="/login">Đăng nhập</a></p>
+      </div>
     </div>
   </div>
 </ion-content>

@@ -6,61 +6,69 @@
 
 <ion-content>
   <div class="profile-section">
-    <div class="avatar">
-      <ion-icon name="leaf-outline"></ion-icon>
+    <div class="profile-card">
+      <div class="avatar">
+        <ion-icon name="leaf"></ion-icon>
+      </div>
+      <div class="user-info">
+        <h2>{{ userName }}</h2>
+        <p>{{ userEmail }}</p>
+      </div>
     </div>
-    <h2>{{ userName }}</h2>
-    <p>{{ userEmail }}</p>
   </div>
 
-  <ion-list>
-    <ion-list-header>
-      <ion-label>Thông tin ứng dụng</ion-label>
-    </ion-list-header>
+  <div class="settings-container">
+    <div class="settings-group">
+      <div class="group-header">Thông tin ứng dụng</div>
+      
+      <div class="settings-card">
+        <div class="setting-item">
+          <div class="item-icon version">
+            <ion-icon name="information-circle"></ion-icon>
+          </div>
+          <div class="item-content">
+            <h3>Phiên bản</h3>
+            <p>1.0.0</p>
+          </div>
+        </div>
 
-    <ion-item class="info-item">
-      <div class="item-icon info" slot="start">
-        <ion-icon name="information-circle-outline"></ion-icon>
+        <div class="setting-item">
+          <div class="item-icon tech">
+            <ion-icon name="code-slash"></ion-icon>
+          </div>
+          <div class="item-content">
+            <h3>Công nghệ</h3>
+            <p>Ionic + Angular + AI</p>
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="item-icon school">
+            <ion-icon name="school"></ion-icon>
+          </div>
+          <div class="item-content">
+            <h3>Đồ án môn học</h3>
+            <p>Phát triển ứng dụng di động</p>
+          </div>
+        </div>
       </div>
-      <ion-label>
-        <h3>Phiên bản</h3>
-        <p>1.0.0</p>
-      </ion-label>
-    </ion-item>
+    </div>
 
-    <ion-item class="info-item">
-      <div class="item-icon tech" slot="start">
-        <ion-icon name="code-slash-outline"></ion-icon>
+    <div class="settings-group">
+      <div class="group-header">Tài khoản</div>
+      
+      <div class="settings-card">
+        <button class="setting-item logout" (click)="confirmLogout()">
+          <div class="item-icon logout">
+            <ion-icon name="log-out"></ion-icon>
+          </div>
+          <div class="item-content">
+            <h3>Đăng xuất</h3>
+            <p>Thoát khỏi tài khoản hiện tại</p>
+          </div>
+          <ion-icon name="chevron-forward-outline" class="chevron"></ion-icon>
+        </button>
       </div>
-      <ion-label>
-        <h3>Công nghệ</h3>
-        <p>Ionic + Angular + Firebase + Capacitor</p>
-      </ion-label>
-    </ion-item>
-
-    <ion-item class="info-item">
-      <div class="item-icon school" slot="start">
-        <ion-icon name="school-outline"></ion-icon>
-      </div>
-      <ion-label>
-        <h3>Đồ án môn học</h3>
-        <p>Phát triển ứng dụng di động nâng cao</p>
-      </ion-label>
-    </ion-item>
-  </ion-list>
-
-  <ion-list>
-    <ion-list-header>
-      <ion-label>Tài khoản</ion-label>
-    </ion-list-header>
-
-    <ion-item button (click)="confirmLogout()" class="logout-item" detail="false">
-      <div class="item-icon logout" slot="start">
-        <ion-icon name="log-out-outline"></ion-icon>
-      </div>
-      <ion-label>
-        <h3>Đăng xuất</h3>
-      </ion-label>
-    </ion-item>
-  </ion-list>
+    </div>
+  </div>
 </ion-content>

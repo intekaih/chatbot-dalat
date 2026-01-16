@@ -1,223 +1,179 @@
-// ChatGPT-inspired Settings Page
 ion-header {
   ion-toolbar {
-    --background: #FFFFFF;
-    --color: #000000;
-    --border-width: 0 0 1px 0;
-    --border-color: #E5E5E5;
-    padding: 0;
+    --background: var(--app-surface);
+    --color: var(--app-text-primary);
+    box-shadow: var(--shadow-sm);
   }
 
   ion-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #000000;
-    letter-spacing: -0.2px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
   }
 }
 
 ion-content {
-  --background: #F7F7F8;
+  --background: var(--app-background);
 }
 
-// Profile Section
 .profile-section {
-  background: #FFFFFF;
-  padding: 32px 20px;
-  border-bottom: 1px solid #E5E5E5;
+  padding: var(--spacing-lg);
+  padding-bottom: 0;
+}
+
+.profile-card {
+  background: var(--app-primary-gradient);
+  border-radius: var(--radius-xl);
+  padding: 24px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  margin-bottom: 20px;
+  gap: 16px;
+  box-shadow: var(--shadow-primary-lg);
 
   .avatar {
-    width: 80px;
-    height: 80px;
-    background: linear-gradient(135deg, #10A37F 0%, #0D8D6C 100%);
+    width: 64px;
+    height: 64px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 16px;
+    flex-shrink: 0;
+    border: 2px solid rgba(255, 255, 255, 0.3);
 
     ion-icon {
-      font-size: 40px;
-      color: #FFFFFF;
+      font-size: 32px;
+      color: white;
     }
   }
 
-  h2 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 600;
-    color: #1A1A1A;
-    margin-bottom: 4px;
-  }
+  .user-info {
+    flex: 1;
+    min-width: 0;
 
-  p {
-    margin: 0;
-    font-size: 14px;
-    color: #6E6E80;
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: white;
+    }
+
+    p {
+      margin: 4px 0 0 0;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.85);
+    }
   }
 }
 
-// Settings List
-ion-list {
-  background: transparent !important;
-  padding: 0 !important;
-  margin-bottom: 20px;
+.settings-container {
+  padding: var(--spacing-lg);
+  padding-bottom: 100px;
 }
 
-ion-list-header {
+.settings-group {
+  margin-bottom: var(--spacing-xl);
+}
+
+.group-header {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--app-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding-left: 4px;
+  margin-bottom: var(--spacing-md);
+}
+
+.settings-card {
+  background: var(--app-surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  gap: 14px;
+  border-bottom: 1px solid var(--app-border-light);
+  cursor: default;
+  transition: background 0.2s ease;
   background: transparent;
-  padding: 20px 20px 8px 20px;
+  border: none;
+  width: 100%;
+  text-align: left;
 
-  ion-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #6E6E80;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-}
-
-// Settings Items
-.info-item,
-.logout-item {
-  --background: #FFFFFF;
-  --padding-start: 20px;
-  --padding-end: 20px;
-  --min-height: 56px;
-  --border-width: 0 0 1px 0;
-  --border-color: #F0F0F0;
-  margin: 0;
-  border-radius: 0;
-  box-shadow: none;
-  cursor: pointer;
-
-  &:first-of-type {
-    --border-radius: 12px 12px 0 0;
-  }
-
-  &:last-of-type {
-    --border-width: 0;
-    --border-radius: 0 0 12px 12px;
-  }
-
-  &:only-of-type {
-    --border-radius: 12px;
-    --border-width: 0;
+  &:last-child {
+    border-bottom: none;
   }
 
   .item-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 12px;
     flex-shrink: 0;
 
     ion-icon {
       font-size: 20px;
-      color: #FFFFFF;
+      color: white;
     }
 
-    &.info {
-      background: linear-gradient(135deg, #5E5CE6, #4A47D1);
+    &.version {
+      background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
     }
 
     &.tech {
-      background: linear-gradient(135deg, #10A37F, #0D8D6C);
+      background: linear-gradient(135deg, #1B5E3B 0%, #2D7A4F 100%);
     }
 
     &.school {
-      background: linear-gradient(135deg, #FF9F0A, #FF8C00);
+      background: linear-gradient(135deg, #FB923C 0%, #FBBF24 100%);
     }
 
     &.logout {
-      background: linear-gradient(135deg, #FF3B30, #E6302A);
+      background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
     }
   }
 
-  ion-label {
+  .item-content {
+    flex: 1;
+    min-width: 0;
+
     h3 {
-      font-size: 15px;
-      font-weight: 500;
-      color: #1A1A1A;
-      margin: 0 0 4px 0;
-    }
-
-    p {
-      font-size: 13px;
-      color: #6E6E80;
       margin: 0;
-      line-height: 1.4;
-    }
-  }
-
-  &:active {
-    --background: #F7F7F8;
-  }
-}
-
-// Logout Item Special Styling
-.logout-item {
-  margin-top: 20px;
-  --border-radius: 12px;
-  --border-width: 0;
-
-  ion-label h3 {
-    color: #FF3B30;
-    font-weight: 600;
-  }
-}
-
-// Dark mode
-@media (prefers-color-scheme: dark) {
-  ion-header ion-toolbar {
-    --background: #1A1A1A;
-    --color: #FFFFFF;
-    --border-color: #2A2A2A;
-  }
-
-  ion-content {
-    --background: #000000;
-  }
-
-  .profile-section {
-    background: #1A1A1A;
-    border-bottom-color: #2A2A2A;
-
-    h2 {
-      color: #ECECF1;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--app-text-primary);
     }
 
     p {
-      color: #8E8EA0;
+      margin: 2px 0 0 0;
+      font-size: 13px;
+      color: var(--app-text-secondary);
     }
   }
 
-  .info-item,
-  .logout-item {
-    --background: #1A1A1A;
-    --border-color: #2A2A2A;
+  .chevron {
+    font-size: 18px;
+    color: var(--app-text-muted);
+    flex-shrink: 0;
+  }
 
-    ion-label h3 {
-      color: #ECECF1;
-    }
-
-    ion-label p {
-      color: #8E8EA0;
-    }
+  &.logout {
+    cursor: pointer;
 
     &:active {
-      --background: #2A2A2A;
+      background: var(--app-background);
     }
-  }
 
-  .logout-item ion-label h3 {
-    color: #FF453A;
+    .item-content h3 {
+      color: #EF4444;
+    }
   }
 }

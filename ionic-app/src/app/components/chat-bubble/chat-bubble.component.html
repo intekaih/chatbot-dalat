@@ -1,4 +1,8 @@
 <div class="bubble-container" [class.user]="isUser" [class.bot]="!isUser">
+  @if (!isUser) {
+  <div class="bot-avatar">🌲</div>
+  }
+  
   <div class="bubble">
     @if (imageDataUrl) {
       <img [src]="imageDataUrl" alt="Attached image" class="message-image" />

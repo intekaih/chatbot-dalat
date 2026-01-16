@@ -1,33 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --ion-color-primary: #2D7A4F;
-  --ion-color-primary-rgb: 45, 122, 79;
+  --ion-color-primary: #1B5E3B;
+  --ion-color-primary-rgb: 27, 94, 59;
   --ion-color-primary-contrast: #ffffff;
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #286b46;
-  --ion-color-primary-tint: #428761;
+  --ion-color-primary-shade: #175334;
+  --ion-color-primary-tint: #326e4f;
 
-  --ion-color-secondary: #E56B6F;
-  --ion-color-secondary-rgb: 229, 107, 111;
+  --ion-color-secondary: #FF6B6B;
+  --ion-color-secondary-rgb: 255, 107, 107;
   --ion-color-secondary-contrast: #ffffff;
   --ion-color-secondary-contrast-rgb: 255, 255, 255;
-  --ion-color-secondary-shade: #ca5e62;
-  --ion-color-secondary-tint: #e87a7d;
+  --ion-color-secondary-shade: #e05e5e;
+  --ion-color-secondary-tint: #ff7a7a;
 
-  --ion-color-tertiary: #4A7C59;
-  --ion-color-tertiary-rgb: 74, 124, 89;
+  --ion-color-tertiary: #8B5CF6;
+  --ion-color-tertiary-rgb: 139, 92, 246;
   --ion-color-tertiary-contrast: #ffffff;
   --ion-color-tertiary-contrast-rgb: 255, 255, 255;
-  --ion-color-tertiary-shade: #416d4e;
-  --ion-color-tertiary-tint: #5c896a;
+  --ion-color-tertiary-shade: #7a51d8;
+  --ion-color-tertiary-tint: #976cf7;
 
-  --ion-color-success: #059669;
-  --ion-color-success-rgb: 5, 150, 105;
+  --ion-color-success: #10B981;
+  --ion-color-success-rgb: 16, 185, 129;
   --ion-color-success-contrast: #ffffff;
   --ion-color-success-contrast-rgb: 255, 255, 255;
-  --ion-color-success-shade: #04845c;
-  --ion-color-success-tint: #1ea178;
+  --ion-color-success-shade: #0ea372;
+  --ion-color-success-tint: #28c08e;
 
   --ion-color-warning: #F59E0B;
   --ion-color-warning-rgb: 245, 158, 11;
@@ -36,39 +36,56 @@
   --ion-color-warning-shade: #d88b0a;
   --ion-color-warning-tint: #f6a823;
 
-  --ion-color-danger: #eb445a;
-  --ion-color-danger-rgb: 235, 68, 90;
+  --ion-color-danger: #EF4444;
+  --ion-color-danger-rgb: 239, 68, 68;
   --ion-color-danger-contrast: #ffffff;
   --ion-color-danger-contrast-rgb: 255, 255, 255;
-  --ion-color-danger-shade: #cf3c4f;
-  --ion-color-danger-tint: #ed576b;
+  --ion-color-danger-shade: #d23c3c;
+  --ion-color-danger-tint: #f15757;
 
-  --ion-color-medium: #6B7280;
-  --ion-color-medium-rgb: 107, 114, 128;
+  --ion-color-medium: #64748B;
+  --ion-color-medium-rgb: 100, 116, 139;
   --ion-color-medium-contrast: #ffffff;
   --ion-color-medium-contrast-rgb: 255, 255, 255;
-  --ion-color-medium-shade: #5e6470;
-  --ion-color-medium-tint: #7a808d;
+  --ion-color-medium-shade: #58667a;
+  --ion-color-medium-tint: #748297;
 
-  --ion-color-light: #F8F9F5;
-  --ion-color-light-rgb: 248, 249, 245;
-  --ion-color-light-contrast: #2C3531;
-  --ion-color-light-contrast-rgb: 44, 53, 49;
-  --ion-color-light-shade: #dadbd8;
-  --ion-color-light-tint: #f9faf6;
+  --ion-color-light: #F1F5F9;
+  --ion-color-light-rgb: 241, 245, 249;
+  --ion-color-light-contrast: #1E293B;
+  --ion-color-light-contrast-rgb: 30, 41, 59;
+  --ion-color-light-shade: #d4d8db;
+  --ion-color-light-tint: #f2f6fa;
 
   --ion-font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
-  --ion-background-color: #F8F9F5;
-  --ion-text-color: #2C3531;
-  --ion-text-color-rgb: 44, 53, 49;
+  --ion-background-color: #F8FAF9;
+  --ion-text-color: #1E293B;
+  --ion-text-color-rgb: 30, 41, 59;
 
-  --app-primary: #2D7A4F;
-  --app-accent: #E56B6F;
-  --app-background: #F8F9F5;
+  --dalat-pine: #1B5E3B;
+  --dalat-pine-light: #2D7A4F;
+  --dalat-pine-dark: #134428;
+  --dalat-flower: #FF6B6B;
+  --dalat-flower-light: #FFB3B3;
+  --dalat-lavender: #9F7AEA;
+  --dalat-mist: #E2E8F0;
+  --dalat-sky: #38BDF8;
+  --dalat-sunset: #FB923C;
+  --dalat-gold: #FBBF24;
+
+  --app-primary: #1B5E3B;
+  --app-primary-light: #2D7A4F;
+  --app-primary-gradient: linear-gradient(135deg, #1B5E3B 0%, #2D7A4F 50%, #4A9F6E 100%);
+  --app-accent: #FF6B6B;
+  --app-accent-light: #FFE4E4;
+  --app-background: #F8FAF9;
   --app-surface: #FFFFFF;
-  --app-text-primary: #2C3531;
-  --app-text-secondary: #6B7280;
-  --app-border: #E5E7EB;
+  --app-surface-elevated: #FFFFFF;
+  --app-text-primary: #1E293B;
+  --app-text-secondary: #64748B;
+  --app-text-muted: #94A3B8;
+  --app-border: #E2E8F0;
+  --app-border-light: #F1F5F9;
 
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -76,9 +93,20 @@
   --spacing-lg: 16px;
   --spacing-xl: 24px;
   --spacing-xxl: 32px;
+  --spacing-xxxl: 48px;
 
+  --radius-xs: 6px;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-xl: 20px;
+  --radius-xxl: 28px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --shadow-primary: 0 4px 14px rgba(27, 94, 59, 0.25);
+  --shadow-primary-lg: 0 8px 24px rgba(27, 94, 59, 0.3);
 }

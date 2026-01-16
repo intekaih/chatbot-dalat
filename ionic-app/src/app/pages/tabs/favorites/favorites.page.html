@@ -1,6 +1,6 @@
 <ion-header class="ion-no-border">
   <ion-toolbar>
-    <ion-title>Địa điểm đã lưu</ion-title>
+    <ion-title>Địa điểm yêu thích</ion-title>
     <ion-buttons slot="end">
       <ion-button (click)="addFavorite()" class="add-btn">
         <ion-icon slot="icon-only" name="add-outline"></ion-icon>
@@ -12,24 +12,26 @@
 <ion-content>
   @if (favorites.length === 0) {
   <div class="empty-state">
-    <ion-icon name="bookmark-outline"></ion-icon>
+    <div class="empty-icon">
+      <ion-icon name="heart-outline"></ion-icon>
+    </div>
     <h3>Chưa có địa điểm nào</h3>
-    <p>Chat với bot để nhận gợi ý và lưu lại những địa điểm bạn thích!</p>
+    <p>Lưu lại những địa điểm yêu thích trong hành trình khám phá Đà Lạt của bạn</p>
     <ion-button (click)="addFavorite()">
       <ion-icon slot="start" name="add-outline"></ion-icon>
       Thêm địa điểm
     </ion-button>
   </div>
   } @else {
-  <ion-list>
+  <div class="favorites-container">
     @for (fav of favorites; track fav.id) {
     <ion-item-sliding>
-      <ion-item class="favorite-item">
-        <div class="fav-icon" slot="start">
-          <ion-icon name="location-outline"></ion-icon>
+      <div class="favorite-card">
+        <div class="fav-icon">
+          <ion-icon name="location"></ion-icon>
         </div>
-        <ion-label>
-          <h2>{{ fav.name }}</h2>
+        <div class="fav-content">
+          <h3>{{ fav.name }}</h3>
           @if (fav.address) {
           <p class="address">
             <ion-icon name="pin-outline"></ion-icon>
@@ -40,15 +42,13 @@
           <p class="description">{{ fav.description }}</p>
           }
           <p class="date">Đã lưu: {{ formatDate(fav.createdAt) }}</p>
-        </ion-label>
-      </ion-item>
-      <ion-item-options side="end">
-        <ion-item-option color="danger" (click)="removeFavorite(fav)">
-          <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
-        </ion-item-option>
-      </ion-item-options>
+        </div>
+        <button class="delete-btn" (click)="removeFavorite(fav)">
+          <ion-icon name="trash-outline"></ion-icon>
+        </button>
+      </div>
     </ion-item-sliding>
     }
-  </ion-list>
+  </div>
   }
 </ion-content>

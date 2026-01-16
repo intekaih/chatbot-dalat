@@ -31,7 +31,7 @@ ion-toolbar {
 ion-title {
   font-weight: 700;
   font-size: 20px;
-  letter-spacing: 0.3px;
+  letter-spacing: -0.3px;
   color: var(--app-text-primary);
 }
 
@@ -42,7 +42,12 @@ ion-item {
   --padding-end: var(--spacing-lg);
   margin-bottom: var(--spacing-sm);
   border-radius: var(--radius-lg);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 ion-list {
@@ -56,10 +61,10 @@ ion-list-header {
 
   ion-label {
     font-weight: 700;
-    font-size: 14px;
+    font-size: 13px;
     color: var(--app-text-secondary);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 1.2px;
   }
 }
 
@@ -67,34 +72,36 @@ ion-button {
   --border-radius: var(--radius-md);
   --background: var(--app-primary);
   --color: white;
-  --padding-start: 20px;
-  --padding-end: 20px;
-  --box-shadow: 0 2px 8px rgba(45, 122, 79, 0.2);
-  height: 48px;
-  font-weight: 600;
+  --padding-start: 24px;
+  --padding-end: 24px;
+  --box-shadow: var(--shadow-primary);
+  height: 52px;
+  font-weight: 700;
   font-size: 15px;
   letter-spacing: 0.3px;
   text-transform: none;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
 
   ion-icon {
     font-size: 20px;
   }
 
   &:hover {
-    --box-shadow: 0 4px 12px rgba(45, 122, 79, 0.3);
-    transform: translateY(-1px);
+    --box-shadow: var(--shadow-primary-lg);
+    transform: translateY(-2px);
   }
 
   &:active {
     transform: scale(0.97);
-    --box-shadow: 0 2px 6px rgba(45, 122, 79, 0.2);
+    --box-shadow: var(--shadow-primary);
   }
 }
 
 ion-button.button-outline {
   --border-color: var(--app-primary);
+  --border-width: 2px;
   --color: var(--app-primary);
+  --background: transparent;
 }
 
 .empty-state {
@@ -107,38 +114,55 @@ ion-button.button-outline {
   padding: var(--spacing-xxl);
 
   .empty-illustration {
-    width: 180px;
-    height: 180px;
+    width: 200px;
+    height: 200px;
     margin-bottom: var(--spacing-xl);
     object-fit: contain;
   }
 
-  >ion-icon {
+  .empty-icon {
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, rgba(27, 94, 59, 0.15) 0%, rgba(45, 122, 79, 0.08) 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--spacing-xl);
+
+    ion-icon {
+      font-size: 56px;
+      color: var(--app-primary);
+    }
+  }
+
+  > ion-icon {
     font-size: 80px;
     color: var(--app-primary);
-    opacity: 0.6;
+    opacity: 0.7;
     margin-bottom: var(--spacing-xl);
   }
 
   h3 {
     margin: 0;
     color: var(--app-text-primary);
-    font-weight: 700;
-    font-size: 20px;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.3px;
   }
 
   p {
     color: var(--app-text-secondary);
     margin: var(--spacing-md) 0 var(--spacing-xl) 0;
     max-width: 280px;
-    line-height: 1.6;
-    font-size: 16px;
+    line-height: 1.7;
+    font-size: 15px;
   }
 
   ion-button {
     --background: var(--app-primary);
     --color: white;
-    --box-shadow: 0 4px 12px rgba(45, 122, 79, 0.3);
+    --box-shadow: var(--shadow-primary-lg);
     margin-top: var(--spacing-md);
 
     ion-icon {
@@ -182,7 +206,7 @@ ion-menu {
     }
 
     &.active {
-      --background: rgba(45, 122, 79, 0.1);
+      --background: rgba(27, 94, 59, 0.1);
 
       ion-label {
         color: var(--app-primary);
@@ -215,11 +239,11 @@ ion-footer {
   padding: var(--spacing-sm) 0;
 
   .chip {
-    background: var(--app-primary);
+    background: var(--app-primary-gradient);
     color: white;
     padding: 0 var(--spacing-lg);
-    height: 36px;
-    border-radius: var(--radius-md);
+    height: 42px;
+    border-radius: var(--radius-full);
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -227,30 +251,32 @@ ion-footer {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(45, 122, 79, 0.2);
+    gap: 6px;
+    transition: all 0.25s ease;
+    box-shadow: var(--shadow-primary);
 
     &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(45, 122, 79, 0.3);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-primary-lg);
     }
 
     &:active {
       transform: scale(0.97);
-      box-shadow: 0 2px 6px rgba(45, 122, 79, 0.2);
+      box-shadow: var(--shadow-primary);
     }
   }
 }
 
 .floating-input-bar {
   background: var(--app-surface);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-xxl);
   padding: var(--spacing-sm) var(--spacing-md);
   margin: var(--spacing-lg);
-  box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-xl);
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  border: 1px solid var(--app-border-light);
 
   input,
   textarea {
@@ -264,22 +290,23 @@ ion-footer {
     resize: none;
 
     &::placeholder {
-      color: var(--app-text-secondary);
+      color: var(--app-text-muted);
     }
   }
 
   .send-btn {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
-    background: var(--app-primary);
+    background: var(--app-primary-gradient);
     color: white;
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: transform 0.15s ease;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-primary);
 
     &:active {
       transform: scale(0.95);
@@ -288,6 +315,7 @@ ion-footer {
     &:disabled {
       background: var(--app-border);
       cursor: not-allowed;
+      box-shadow: none;
     }
 
     ion-icon {
@@ -302,21 +330,22 @@ ion-footer {
   border-radius: var(--radius-lg);
   margin-bottom: var(--spacing-sm);
   font-size: 16px;
-  line-height: 1.5;
+  line-height: 1.6;
 
   &.bot {
     background: var(--app-surface);
     color: var(--app-text-primary);
     align-self: flex-start;
     border-bottom-left-radius: var(--spacing-xs);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-md);
   }
 
   &.user {
-    background: var(--app-primary);
+    background: var(--app-primary-gradient);
     color: white;
     align-self: flex-end;
     border-bottom-right-radius: var(--spacing-xs);
+    box-shadow: var(--shadow-primary);
   }
 }
 

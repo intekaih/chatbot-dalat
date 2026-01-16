@@ -1,55 +1,44 @@
-// ChatGPT-inspired Tab Bar
 ion-tab-bar {
-  --background: #FFFFFF;
-  border-top: 1px solid #E5E5E5;
-  height: 56px;
+  --background: var(--app-surface);
+  border-top: 1px solid var(--app-border-light);
+  height: 60px;
   padding: 0;
   padding-bottom: env(safe-area-inset-bottom);
-  box-shadow: none;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
 }
 
 ion-tab-button {
-  --color: #8E8EA0;
-  --color-selected: #10A37F;
+  --color: var(--app-text-muted);
+  --color-selected: var(--app-primary);
   --padding-top: 8px;
   --padding-bottom: 8px;
   font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+  transition: all 0.2s ease;
 
   ion-icon {
     font-size: 24px;
     margin-bottom: 4px;
-    transition: transform 0.2s ease;
+    transition: all 0.25s ease;
   }
 
   ion-label {
-    font-size: 10px;
-    font-weight: 500;
+    font-size: 11px;
+    font-weight: 600;
     margin-top: 0;
     letter-spacing: 0.2px;
   }
 
-  // Active state
   &.tab-selected {
+    --color: var(--app-primary);
+
     ion-icon {
-      color: #10A37F;
+      color: var(--app-primary);
+      transform: scale(1.1);
     }
 
     ion-label {
-      color: #10A37F;
-      font-weight: 600;
+      color: var(--app-primary);
+      font-weight: 700;
     }
-  }
-}
-
-// Dark mode
-@media (prefers-color-scheme: dark) {
-  ion-tab-bar {
-    --background: #1A1A1A;
-    border-top-color: #2A2A2A;
-  }
-
-  ion-tab-button {
-    --color: #8E8EA0;
-    --color-selected: #10A37F;
   }
 }
