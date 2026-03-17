@@ -1,0 +1,274 @@
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { ApiService } from '../../services/api.service';
+
+interface ChoiceItem {
+  id: string;
+  label: string;
+  emoji: string;
+  desc: string;
+}
+
+@Component({
+  selector: 'app-welcome',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
+    <div class="min-h-screen bg-white flex flex-col">
+      <div class="flex items-center justify-between px-4 pt-6 pb-3">
+        <button *ngIf="step > 0" (click)="goBack()" class="text-sm text-gray-500 flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Quay lại
+        </button>
+        <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Bước {{ step + 1 }} / {{ steps.length }}</p>
+        <button (click)="skip()" class="text-sm text-gray-400">Bỏ qua</button>
+      </div>
+
+      <div class="flex-1 flex flex-col px-6 pt-2 overflow-y-auto">
+        <ng-container [ngSwitch]="step">
+          <div *ngSwitchCase="0" class="w-full max-w-sm mx-auto space-y-6">
+            <div class="text-center">
+              <p class="text-sm text-gray-500">Chúng tôi gọi bạn là?</p>
+              <p class="text-2xl font-semibold text-gray-900 mt-2">Đặt tên cho trải nghiệm</p>
+            </div>
+            <div class="flex justify-center gap-3 flex-wrap">
+              <button 
+                *ngFor="let av of avatars" 
+                (click)="selectAvatar(av)"
+                class="w-14 h-14 rounded-full text-3xl flex items-center justify-center transition-all duration-200"
+                [class]="avatar === av ? 'bg-black text-white scale-110' : 'bg-gray-100 hover:bg-gray-200'"
+              >
+                {{ av }}
+              </button>
+            </div>
+            <input
+              type="text"
+              [(ngModel)]="name"
+              placeholder="Tên hiển thị"
+              class="w-full px-4 py-3 border border-gray-200 rounded-2xl bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
+
+          <div *ngSwitchCase="1" class="w-full max-w-sm mx-auto space-y-4">
+            <p class="text-center text-lg font-semibold text-gray-900">Bạn thích gì? 🎯</p>
+            <p class="text-center text-xs text-gray-500">Chọn nhiều cũng được!</p>
+            <div class="grid grid-cols-2 gap-3">
+              <button
+                *ngFor="let pref of preferences"
+                (click)="togglePreference(pref.id)"
+                class="relative p-4 rounded-2xl border transition-all duration-200 text-left"
+                [class]="selectedPrefs.includes(pref.id) ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'"
+              >
+                <div class="text-2xl">{{ pref.emoji }}</div>
+                <p class="text-sm font-medium mt-2">{{ pref.label }}</p>
+                <p class="text-[11px] text-gray-500">{{ pref.desc }}</p>
+                <span *ngIf="selectedPrefs.includes(pref.id)" class="absolute top-2 right-2 w-5 h-5 bg-black rounded-full flex items-center justify-center text-white text-[12px]">✓</span>
+              </button>
+            </div>
+          </div>
+
+          <div *ngSwitchCase="2" class="w-full max-w-sm mx-auto space-y-4">
+            <p class="text-center text-lg font-semibold text-gray-900">Bạn đi cùng ai? ✈️</p>
+            <p class="text-center text-xs text-gray-500">Chọn phong cách phù hợp</p>
+            <div class="grid grid-cols-2 gap-3">
+              <button
+                *ngFor="let style of travelStyles"
+                (click)="toggleTravelStyle(style.id)"
+                class="relative p-4 rounded-2xl border transition-all duration-200 text-center"
+                [class]="selectedStyles.includes(style.id) ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'"
+              >
+                <div class="text-3xl mb-3">{{ style.emoji }}</div>
+                <p class="text-sm font-medium">{{ style.label }}</p>
+                <p class="text-[11px] text-gray-500">{{ style.desc }}</p>
+                <span *ngIf="selectedStyles.includes(style.id)" class="absolute top-2 right-2 w-5 h-5 bg-black rounded-full flex items-center justify-center text-white text-[12px]">✓</span>
+              </button>
+            </div>
+          </div>
+
+          <div *ngSwitchCase="3" class="w-full max-w-sm mx-auto space-y-4">
+            <p class="text-center text-lg font-semibold text-gray-900">Ngân sách mỗi ngày? 💸</p>
+            <p class="text-center text-xs text-gray-500">Chúng tôi sẽ gợi ý phù hợp túi tiền</p>
+            <div class="space-y-3">
+              <button
+                *ngFor="let budget of budgets"
+                (click)="selectBudget(budget.id)"
+                class="w-full flex items-center gap-3 p-4 rounded-2xl border transition-all duration-200"
+                [class]="selectedBudget === budget.id ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'"
+              >
+                <div class="text-2xl">{{ budget.emoji }}</div>
+                <div class="text-left">
+                  <p class="text-sm font-medium">{{ budget.label }}</p>
+                  <p class="text-[11px] text-gray-500">{{ budget.desc }}</p>
+                </div>
+                <span *ngIf="selectedBudget === budget.id" class="ml-auto w-5 h-5 bg-black rounded-full flex items-center justify-center text-white text-[12px]">✓</span>
+              </button>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="flex items-center justify-center gap-2 px-4 pb-2">
+        <div
+          *ngFor="let _ of steps; let idx = index"
+          [class]="idx === step ? 'w-8 h-2 bg-black rounded-full' : 'w-2 h-2 bg-gray-200 rounded-full'"
+        ></div>
+      </div>
+
+      <div class="p-4 pb-8 space-y-3">
+        <button
+          (click)="next()"
+          [disabled]="!canNext()"
+          class="w-full py-3 rounded-full font-medium transition-all duration-200 text-white"
+          [class]="
+            canNext() ? 'bg-black hover:bg-gray-800' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+          "
+        >
+          {{ step === steps.length - 1 ? 'Hoàn thành' : 'Tiếp tục' }}
+        </button>
+
+        <button
+          *ngIf="step === 0"
+          (click)="skip()"
+          class="w-full py-3 rounded-full border border-gray-200 text-sm text-gray-500 hover:border-gray-300 transition-all duration-200"
+        >
+          Bỏ qua, vào thẳng app
+        </button>
+      </div>
+    </div>
+  `
+})
+export class WelcomePage {
+  steps = [0, 1, 2, 3];
+  step = 0;
+
+  avatars = ['🧑‍💻', '👩‍🦰', '👨‍🦱', '👩‍🦳', '🧔', '👩‍🎨', '🧑‍🌾', '👨‍✈️'];
+  avatar = this.avatars[0];
+  name = '';
+
+  preferences: ChoiceItem[] = [
+    { id: 'food', emoji: '🍜', label: 'Ẩm thực', desc: 'Món ngon địa phương' },
+    { id: 'cafe', emoji: '☕', label: 'Cafe', desc: 'Quán cà phê view đẹp' },
+    { id: 'checkin', emoji: '📸', label: 'Check-in', desc: 'Địa điểm sống ảo' },
+    { id: 'relax', emoji: '🏨', label: 'Nghỉ dưỡng', desc: 'Không gian thư giãn' },
+    { id: 'nature', emoji: '🌲', label: 'Thiên nhiên', desc: 'Rừng, thác, hồ' },
+    { id: 'night', emoji: '🌙', label: 'Về đêm', desc: 'Chợ đêm, bar, phố' },
+  ];
+  selectedPrefs: string[] = [];
+
+  travelStyles: ChoiceItem[] = [
+    { id: 'couple', emoji: '💑', label: 'Cặp đôi', desc: 'Lãng mạn, thơ mộng' },
+    { id: 'friends', emoji: '👥', label: 'Nhóm bạn', desc: 'Vui vẻ, náo nhiệt' },
+    { id: 'family', emoji: '👨‍👩‍👧', label: 'Gia đình', desc: 'An toàn, tiện nghi' },
+    { id: 'solo', emoji: '🎒', label: 'Solo', desc: 'Tự do, khám phá' },
+  ];
+  selectedStyles: string[] = [];
+
+  budgets: ChoiceItem[] = [
+    { id: 'budget', emoji: '💰', label: 'Tiết kiệm', desc: 'Dưới 500k/ngày' },
+    { id: 'mid', emoji: '💳', label: 'Vừa phải', desc: '500k – 1.5tr/ngày' },
+    { id: 'luxury', emoji: '✨', label: 'Sang trọng', desc: 'Trên 1.5tr/ngày' },
+  ];
+  selectedBudget = '';
+
+  constructor(
+    private router: Router,
+    private apiService: ApiService
+  ) {}
+
+  selectAvatar(av: string) {
+    this.avatar = av;
+  }
+
+  togglePreference(id: string) {
+    const current = this.selectedPrefs.indexOf(id);
+    if (current > -1) {
+      this.selectedPrefs.splice(current, 1);
+    } else {
+      this.selectedPrefs.push(id);
+    }
+  }
+
+  toggleTravelStyle(id: string) {
+    const current = this.selectedStyles.indexOf(id);
+    if (current > -1) {
+      this.selectedStyles.splice(current, 1);
+    } else {
+      this.selectedStyles.push(id);
+    }
+  }
+
+  selectBudget(id: string) {
+    this.selectedBudget = id;
+  }
+
+  canNext(): boolean {
+    if (this.step === 0) return this.name.trim().length > 0;
+    if (this.step === 1) return this.selectedPrefs.length > 0;
+    if (this.step === 2) return this.selectedStyles.length > 0;
+    return this.selectedBudget !== '';
+  }
+
+  next() {
+    if (this.step < this.steps.length - 1) {
+      this.step++;
+    } else {
+      this.complete();
+    }
+  }
+
+  goBack() {
+    if (this.step > 0) {
+      this.step--;
+    }
+  }
+
+  skip() {
+    this.name = 'Khách';
+    this.avatar = this.avatars[0];
+    this.selectedPrefs = ['food'];
+    this.selectedStyles = ['solo'];
+    this.selectedBudget = 'mid';
+    this.complete();
+  }
+
+  complete() {
+    // Save preferences to API
+    this.apiService.savePreferences({
+      name: this.name.trim(),
+      avatar: this.avatar,
+      preferences: this.selectedPrefs,
+      travelStyles: this.selectedStyles,
+      budget: this.selectedBudget
+    }).subscribe({
+      next: (response) => {
+        // Save to localStorage
+        localStorage.setItem('hasPersonalized', 'true');
+        localStorage.setItem('hasSeenOnboarding', 'true');
+        localStorage.setItem('userName', this.name.trim());
+        localStorage.setItem('userAvatar', this.avatar);
+        localStorage.setItem('userPreferences', JSON.stringify(this.selectedPrefs));
+        localStorage.setItem('userTravelStyles', JSON.stringify(this.selectedStyles));
+        localStorage.setItem('userBudget', this.selectedBudget);
+        
+        // Navigate to home
+        this.router.navigateByUrl('/home', { replaceUrl: true });
+      },
+      error: () => {
+        // Still save to localStorage and navigate even if API fails
+        localStorage.setItem('hasPersonalized', 'true');
+        localStorage.setItem('hasSeenOnboarding', 'true');
+        localStorage.setItem('userName', this.name.trim());
+        localStorage.setItem('userAvatar', this.avatar);
+        localStorage.setItem('userPreferences', JSON.stringify(this.selectedPrefs));
+        localStorage.setItem('userTravelStyles', JSON.stringify(this.selectedStyles));
+        localStorage.setItem('userBudget', this.selectedBudget);
+        
+        this.router.navigateByUrl('/home', { replaceUrl: true });
+      }
+    });
+  }
+}

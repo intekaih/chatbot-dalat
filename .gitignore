@@ -1,0 +1,8 @@
+node_modules/
+.env
+dist/
+build/
+.angular/
+.ionic/
+/server/node_modules/
+/ionic-tailwind-app/node_modules/

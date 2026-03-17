@@ -1,0 +1,7 @@
+{
+  "name": "ionic-tailwind-app",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
