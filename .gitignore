@@ -20,3 +20,7 @@ www/
 ai-response.json
 ai-result.json
 maujson.txt
+
+# Firebase Admin SDK service account key — KHÔNG BAO GIỜ COMMIT
+**/serviceAccountKey.json
+**/dalat-chatbot-firebase-adminsdk-*.json

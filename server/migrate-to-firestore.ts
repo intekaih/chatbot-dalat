@@ -9,11 +9,15 @@
  * - Lưu file JSON vào: server/serviceAccountKey.json
  */
 
-import { initializeApp, cert, ServiceAccount } from "firebase-admin/app";
+import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import Database from "better-sqlite3";
 import * as path from "path";
 import * as fs from "fs";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ===================== CONFIG =====================
 const DB_PATH = path.join(__dirname, "dalat_chatbot.db");
@@ -36,7 +40,7 @@ Hướng dẫn:
 }
 
 // Khởi tạo Firebase Admin
-const serviceAccount = JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, "utf8")) as ServiceAccount;
+const serviceAccount = JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, "utf8"));
 initializeApp({ credential: cert(serviceAccount) });
 const firestore = getFirestore();
 

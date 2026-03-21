@@ -1241,7 +1241,7 @@ app.get("/api/image-proxy", async (req, res) => {
 });
 
 // ========================
-// SMART IMAGE ENDPOINTS (Pexels)
+// AI IMAGE ENDPOINTS
 // ========================
 
 // Clear image cache (dùng khi cần force refresh tất cả ảnh)
@@ -1283,7 +1283,7 @@ app.post("/api/places/get-image", async (req, res) => {
   }
 });
 
-// Batch get images — dùng SmartImage (Pexels) theo từng place
+// Batch get images — dùng AI images theo từng place
 app.post("/api/places/batch-get-images", async (req, res) => {
   try {
     const { places, skipValidation } = req.body;
@@ -1326,22 +1326,25 @@ app.post("/api/places/batch-get-images", async (req, res) => {
   }
 });
 
-// Pexels search endpoint
-app.get("/api/pexels/search", async (req, res) => {
+// AI images endpoint — trả về URL ảnh AI cho một category
+app.get("/api/places/images", async (req, res) => {
   try {
-    const { query, per_page = 5 } = req.query;
-
-    if (!query || typeof query !== "string") {
-      return res.status(400).json({ error: "query parameter is required" });
+    const { category } = req.query;
+    if (!category || typeof category !== "string") {
+      return res.status(400).json({ error: "category parameter is required" });
     }
 
-    const { searchPexels } = await import("./pexels-service.js");
-    const results = await searchPexels(query, Number(per_page));
+    const validCategories = ["cafe", "food", "checkin", "nature", "homestay", "rental", "signature"];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({ error: `Invalid category. Must be one of: ${validCategories.join(", ")}` });
+    }
 
-    res.json(results);
+    const { getCategoryImages } = await import("./pexels-service.js");
+    const urls = getCategoryImages(category);
+    res.json({ category, urls });
   } catch (error) {
-    console.error("Pexels search error:", error);
-    res.status(500).json({ error: "Failed to search Pexels" });
+    console.error("AI images error:", error);
+    res.status(500).json({ error: "Failed to get AI images" });
   }
 });
 

@@ -37,3 +37,10 @@ temp/
 *.db-journal
 *.db-shm
 *.db-wal
+
+# Firebase Admin SDK service account key — TUYỆT ĐỐI KHÔNG COMMIT
+serviceAccountKey.json
+dalat-chatbot-firebase-adminsdk-*.json
+
+# Migration script output/logs
+codex-predeploy.out.log
