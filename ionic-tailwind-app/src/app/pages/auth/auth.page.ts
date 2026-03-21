@@ -516,12 +516,20 @@ export class AuthPage {
     localStorage.setItem('isFirebaseUser', 'true');
 
     if (user) {
-      localStorage.setItem('hasPersonalized', user.hasPersonalized ? 'true' : 'false');
-      if (user.name) localStorage.setItem('userName', user.name);
+      // Nếu API trả về hasPersonalized=true → cập nhật localStorage
+      // Nếu API trả về false nhưng localStorage đã là true → giữ nguyên true
+      // (tránh ghi đè khi user đã cá nhân hóa nhưng chưa sync lên DB)
+      const localPersonalized = localStorage.getItem('hasPersonalized') === 'true';
+      if (user.hasPersonalized || localPersonalized) {
+        localStorage.setItem('hasPersonalized', 'true');
+      } else {
+        localStorage.setItem('hasPersonalized', 'false');
+      }
+      if (user.name && user.name !== 'Khách') localStorage.setItem('userName', user.name);
       if (user.avatar) localStorage.setItem('userAvatar', user.avatar);
       if (user.budget) localStorage.setItem('userBudget', user.budget);
-      if (user.preferences) localStorage.setItem('userPreferences', JSON.stringify(user.preferences));
-      if (user.travelStyles) localStorage.setItem('userTravelStyles', JSON.stringify(user.travelStyles));
+      if (user.preferences?.length) localStorage.setItem('userPreferences', JSON.stringify(user.preferences));
+      if (user.travelStyles?.length) localStorage.setItem('userTravelStyles', JSON.stringify(user.travelStyles));
     }
 
     const hasPersonalized = localStorage.getItem('hasPersonalized') === 'true';

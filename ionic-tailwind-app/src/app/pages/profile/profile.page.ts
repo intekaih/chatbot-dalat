@@ -356,7 +356,7 @@ export class ProfilePage implements OnInit {
     this.router.navigate(["/home/settings"]);
   }
   goToWelcome() {
-    this.router.navigate(["/welcome"]);
+    this.router.navigate(["/welcome"], { queryParams: { mode: "update" } });
   }
 
   logout() {

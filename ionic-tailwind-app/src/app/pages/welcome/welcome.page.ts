@@ -1,7 +1,7 @@
 import { Component, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
-import { Router } from "@angular/router";
+import { Router, ActivatedRoute } from "@angular/router";
 import { ApiService } from "../../services/api.service";
 
 interface ChoiceItem {
@@ -233,6 +233,7 @@ interface ChoiceItem {
 })
 export class WelcomePage {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private apiService = inject(ApiService);
 
   steps = [0, 1, 2, 3];
@@ -282,6 +283,29 @@ export class WelcomePage {
     { id: "luxury", emoji: "✨", label: "Sang trọng", desc: "Trên 1.5tr/ngày" },
   ];
   selectedBudget = "";
+
+  ionViewWillEnter() {
+    const hasPersonalized = localStorage.getItem("hasPersonalized") === "true";
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+    const isUpdateMode = this.route.snapshot.queryParamMap.get("mode") === "update";
+
+    if (hasPersonalized && isLoggedIn && !isUpdateMode) {
+      this.router.navigateByUrl("/home", { replaceUrl: true });
+      return;
+    }
+
+    // Nếu đang cập nhật, điền lại giá trị cũ vào form
+    if (isUpdateMode) {
+      this.name = localStorage.getItem("userName") || "";
+      const savedAvatar = localStorage.getItem("userAvatar");
+      if (savedAvatar) this.avatar = savedAvatar;
+      const savedPrefs = localStorage.getItem("userPreferences");
+      if (savedPrefs) this.selectedPrefs = JSON.parse(savedPrefs);
+      const savedStyles = localStorage.getItem("userTravelStyles");
+      if (savedStyles) this.selectedStyles = JSON.parse(savedStyles);
+      this.selectedBudget = localStorage.getItem("userBudget") || "";
+    }
+  }
 
   selectAvatar(av: string) {
     this.avatar = av;
