@@ -355,12 +355,15 @@ export class WelcomePage {
   }
 
   skip() {
-    this.name = "Khách";
-    this.avatar = this.avatars[0];
-    this.selectedPrefs = ["food"];
-    this.selectedStyles = ["solo"];
-    this.selectedBudget = "mid";
-    this.complete();
+    localStorage.setItem("hasPersonalized", "false");
+    localStorage.setItem("hasSeenOnboarding", "true");
+    localStorage.setItem("isLoggedIn", "true");
+    localStorage.setItem("userName", "Khách");
+    localStorage.setItem("userAvatar", this.avatars[0]);
+    localStorage.removeItem("userPreferences");
+    localStorage.removeItem("userTravelStyles");
+    localStorage.removeItem("userBudget");
+    this.router.navigateByUrl("/home", { replaceUrl: true });
   }
 
   complete() {
