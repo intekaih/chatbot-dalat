@@ -62,7 +62,7 @@ app.use(
       callback(new Error(`CORS blocked: ${origin}`));
     },
     methods: ["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "device-id"],
+    allowedHeaders: ["Content-Type", "device-id", "Authorization"],
     credentials: true,
   }),
 );

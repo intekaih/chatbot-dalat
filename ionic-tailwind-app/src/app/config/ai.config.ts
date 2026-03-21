@@ -8,8 +8,9 @@ export interface AIModel {
 }
 
 /** Base URL của Backend (server) - đọc từ environment để hỗ trợ đa môi trường
- *  Dev:  environment.ts  → http://127.0.0.1:3001
- *  Prod: environment.prod.ts → giá trị từ window.__API_BASE_URL__ hoặc cùng origin
+ *  Dev (Replit): environment.ts  → "" (relative, proxy tới localhost:3001)
+ *  Dev (local):  environment.ts  → http://127.0.0.1:3001
+ *  Prod:         environment.prod.ts → window.__API_BASE_URL__ hoặc cùng origin
  */
 export const AI_CONFIG = {
   baseUrl: environment.apiBaseUrl,
