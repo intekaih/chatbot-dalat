@@ -1,27 +1,21 @@
 /**
  * Place Image Service
- * 
- * Cung cấp ảnh AI cho các địa điểm Đà Lạt.
- * Ảnh do AI tạo ra, lưu tại assets/places/, không phụ thuộc API bên ngoài.
+ *
+ * Lấy ảnh riêng biệt cho từng địa điểm Đà Lạt qua Pexels API.
+ * Fallback về ảnh tĩnh nếu Pexels thất bại hoặc không có key.
  */
 
-import { getCategoryDefaultImage, getCategoryImages } from "./pexels-service.js";
+import { searchPexelsImage, getCategoryDefaultImage, getCategoryImages } from "./pexels-service.js";
 
-// Cache trong memory để tránh tính toán lại
-const imageUrlCache = new Map<string, { imageUrl: string; imageUrls: string[] }>();
+// Cache trong memory (tên địa điểm → URL ảnh)
+const imageUrlCache = new Map<string, { imageUrl: string; source: "pexels" | "static" }>();
 
-/**
- * Xóa toàn bộ cache
- */
 export function clearImageCache() {
   imageUrlCache.clear();
   console.log("🗑️ [ImageCache] Cleared");
 }
 
-/**
- * Hash đơn giản để chọn index ảnh khác nhau cho mỗi place
- * → mỗi địa điểm trong cùng category sẽ luân phiên ảnh 1 / ảnh 2
- */
+/** Hash đơn giản → số nguyên dương */
 function hashString(str: string): number {
   let h = 0;
   for (let i = 0; i < str.length; i++) {
@@ -32,38 +26,54 @@ function hashString(str: string): number {
 }
 
 /**
- * Lấy ảnh AI cho 1 địa điểm theo category.
- * Dùng hash của tên để xoay vòng giữa các ảnh trong category,
- * đảm bảo mỗi địa điểm có ảnh ổn định (cùng tên → cùng ảnh).
+ * Lấy ảnh cho 1 địa điểm:
+ * 1. Kiểm tra cache
+ * 2. Gọi Pexels API tìm ảnh theo tên địa điểm
+ * 3. Fallback: ảnh tĩnh theo category (dùng hash để xoay vòng)
  */
 export async function getPlaceImageSmart(
   placeName: string,
   category?: string,
   _address?: string,
-  _skipValidation = false,
-): Promise<{ imageUrl: string; imageUrls?: string[]; source: "ai" | "placeholder" }> {
+  skipValidation = false,
+): Promise<{ imageUrl: string; imageUrls?: string[]; source: "ai" | "pexels" | "placeholder" }> {
   const cacheKey = `${placeName}::${category}`;
 
   if (imageUrlCache.has(cacheKey)) {
     const cached = imageUrlCache.get(cacheKey)!;
-    return { imageUrl: cached.imageUrl, imageUrls: cached.imageUrls, source: "ai" };
+    return {
+      imageUrl: cached.imageUrl,
+      source: cached.source === "pexels" ? "pexels" : "ai",
+    };
   }
 
   const cat = category || "signature";
-  const urls = getCategoryImages(cat);
 
-  // Chọn ảnh dựa trên hash của tên → mỗi địa điểm có ảnh riêng, nhất quán
-  const idx = hashString(placeName) % urls.length;
-  const imageUrl = urls[idx];
+  // Thử Pexels API
+  try {
+    const pexelsUrl = await searchPexelsImage(placeName, cat);
+    if (pexelsUrl) {
+      imageUrlCache.set(cacheKey, { imageUrl: pexelsUrl, source: "pexels" });
+      console.log(`🖼️ [Pexels] ${placeName} → OK`);
+      return { imageUrl: pexelsUrl, source: "pexels" };
+    }
+  } catch (err) {
+    console.warn(`⚠️ [Pexels] Failed for "${placeName}":`, (err as Error).message);
+  }
 
-  imageUrlCache.set(cacheKey, { imageUrl, imageUrls: urls });
+  // Fallback: ảnh tĩnh theo category (xoay vòng bằng hash tên)
+  const staticUrls = getCategoryImages(cat);
+  const idx = hashString(placeName) % staticUrls.length;
+  const imageUrl = staticUrls[idx];
 
-  console.log(`🖼️ [AIImage] ${placeName} (${cat}) → image #${idx + 1}`);
-  return { imageUrl, imageUrls: urls, source: "ai" };
+  imageUrlCache.set(cacheKey, { imageUrl, source: "static" });
+  console.log(`🖼️ [Static] ${placeName} (${cat}) → image #${idx + 1}`);
+
+  return { imageUrl, imageUrls: staticUrls, source: "ai" };
 }
 
 /**
- * Batch: Lấy ảnh cho nhiều địa điểm (synchronous, không cần rate limit).
+ * Batch: Lấy ảnh cho nhiều địa điểm tuần tự (tránh rate limit Pexels).
  */
 export async function batchGetPlaceImages(
   places: { name: string; category?: string; address?: string }[],
@@ -72,7 +82,10 @@ export async function batchGetPlaceImages(
 
   for (const place of places) {
     const result = await getPlaceImageSmart(place.name, place.category, place.address);
-    results.set(place.name, result);
+    results.set(place.name, { ...result, source: "ai" });
+
+    // Thêm delay nhỏ để tránh rate limit Pexels (~200 req/hour)
+    await new Promise((r) => setTimeout(r, 150));
   }
 
   return results;
