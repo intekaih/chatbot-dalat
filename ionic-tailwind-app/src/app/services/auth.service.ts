@@ -9,6 +9,8 @@ import {
   User as FirebaseUser,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   getIdToken
 } from '@angular/fire/auth';
 import { Firestore, doc, setDoc, getDoc, serverTimestamp } from '@angular/fire/firestore';
@@ -16,6 +18,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { User } from '../models/database.models';
 import { ApiService, User as ApiUser } from './api.service';
+import { Capacitor } from '@capacitor/core';
 
 @Injectable({
   providedIn: 'root'
@@ -45,6 +48,30 @@ export class AuthService {
       }
       this._loading.set(false);
     });
+
+    if (Capacitor.isNativePlatform()) {
+      getRedirectResult(this.auth).then(async (result) => {
+        if (result?.user) {
+          const user = result.user;
+          const userDoc = await getDoc(doc(this.firestore, 'users', user.uid));
+          if (!userDoc.exists()) {
+            await setDoc(doc(this.firestore, 'users', user.uid), {
+              uid: user.uid,
+              email: user.email || '',
+              displayName: user.displayName || 'User',
+              photoURL: user.photoURL || '',
+              preferences: [],
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+          }
+          localStorage.setItem('firebase_email', user.email || '');
+          localStorage.setItem('device_id', user.uid);
+          const idToken = await getIdToken(user);
+          await firstValueFrom(this.apiService.syncFirebaseUser(idToken, user.email || '', user.displayName || '', user.photoURL || ''));
+        }
+      }).catch(() => {});
+    }
   }
 
   private async loadUserProfile(uid: string) {
@@ -94,6 +121,12 @@ export class AuthService {
 
   async loginWithGoogle(): Promise<ApiUser | null> {
     const provider = new GoogleAuthProvider();
+
+    if (Capacitor.isNativePlatform()) {
+      await signInWithRedirect(this.auth, provider);
+      return null;
+    }
+
     const result = await signInWithPopup(this.auth, provider);
 
     const userDoc = await getDoc(doc(this.firestore, 'users', result.user.uid));
@@ -111,10 +144,8 @@ export class AuthService {
       await setDoc(doc(this.firestore, 'users', result.user.uid), userData);
     }
 
-    // Lưu Firebase email và sync với backend bằng ID Token
     localStorage.setItem('firebase_email', result.user.email || '');
-    localStorage.setItem('device_id', result.user.uid); // Override device_id
-    // Lấy ID Token và sync với backend
+    localStorage.setItem('device_id', result.user.uid);
     const idToken = await getIdToken(result.user);
     return firstValueFrom(this.apiService.syncFirebaseUser(idToken, result.user.email || '', result.user.displayName || '', result.user.photoURL || ''));
   }
