@@ -1442,29 +1442,21 @@ async function initDefaultPlaces() {
     return;
   }
 
-  console.log("🚀 DB chưa có default places — bắt đầu AI generation (background)...");
+  console.log("🚀 DB chưa có default places — bắt đầu AI generation (background, 7 batch nhỏ)...");
   try {
     const defaultPlaces = await generateDefaultPlaces();
-    const totalPlaces =
-      (defaultPlaces.checkin?.length || 0) + (defaultPlaces.nature?.length || 0) +
-      (defaultPlaces.homestay?.length || 0) + (defaultPlaces.cafe?.length || 0) +
-      (defaultPlaces.food?.length || 0) + (defaultPlaces.rental?.length || 0) +
-      (defaultPlaces.signature?.length || 0);
+    const categories = ["checkin", "nature", "homestay", "cafe", "food", "rental", "signature"] as const;
+    const totalPlaces = categories.reduce((s, k) => s + (defaultPlaces[k]?.length || 0), 0);
 
     if (totalPlaces > 0) {
       saveDefaultAIPlaces(defaultPlaces);
       console.log(`✅ Đã lưu ${totalPlaces} default places vào DB`);
 
-      // Background: sinh ảnh AI cho từng địa điểm
-      const allDefaultPlaces = [
-        ...(defaultPlaces.checkin || []).map((p: any) => ({ name: p.name, category: "checkin" })),
-        ...(defaultPlaces.nature || []).map((p: any) => ({ name: p.name, category: "nature" })),
-        ...(defaultPlaces.homestay || []).map((p: any) => ({ name: p.name, category: "homestay" })),
-        ...(defaultPlaces.cafe || []).map((p: any) => ({ name: p.name, category: "cafe" })),
-        ...(defaultPlaces.food || []).map((p: any) => ({ name: p.name, category: "food" })),
-        ...(defaultPlaces.rental || []).map((p: any) => ({ name: p.name, category: "rental" })),
-        ...(defaultPlaces.signature || []).map((p: any) => ({ name: p.name, category: "signature" })),
-      ];
+      // Background: sinh ảnh AI tuần tự cho từng địa điểm
+      const allDefaultPlaces = categories.flatMap((cat) =>
+        (defaultPlaces[cat] || []).map((p: any) => ({ name: p.name, category: cat }))
+      );
+      console.log(`🎨 [Imagen] Bắt đầu sinh ảnh background cho ${allDefaultPlaces.length} địa điểm...`);
       batchGeneratePlaceImages(allDefaultPlaces).catch((e) =>
         console.error("❌ [Imagen] Default places image generation error:", e)
       );

@@ -368,9 +368,106 @@ export async function generatePersonalizedPlaces(userData: {
 
 /**
  * Tạo bộ dữ liệu mẫu mặc định (tổng ${TOTAL_LIMIT} places) cho tất cả user mới.
- * Gọi 1 lần khi server khởi động lần đầu (DB chưa có default places).
- * Không phụ thuộc vào preferences của user cụ thể nào.
+ * Chia thành 7 request nhỏ (mỗi category 1 request) để tránh timeout proxy.
+ * Lưu DB ngay sau mỗi batch thành công — nếu 1 batch lỗi vẫn giữ dữ liệu đã có.
  */
+
+const CATEGORY_META: Record<string, { featured: boolean; hint: string; priceField: "priceRange" | "pricePerDay" }> = {
+  checkin: {
+    featured: true,
+    hint: "địa điểm check-in, bảo tàng, công trình kiến trúc nổi tiếng nhất Đà Lạt (VD: Dinh Bảo Đại, Chùa Linh Phước, Thung lũng Tình Yêu...)",
+    priceField: "priceRange",
+  },
+  nature: {
+    featured: true,
+    hint: "địa điểm thiên nhiên: hồ, thác, rừng, vườn, đồi chè Đà Lạt (VD: Hồ Tuyền Lâm, Đồi Chè Cầu Đất, Thác Datanla...)",
+    priceField: "priceRange",
+  },
+  homestay: {
+    featured: false,
+    hint: "homestay/resort/khách sạn Đà Lạt đa dạng mức giá từ bình dân đến cao cấp",
+    priceField: "pricePerDay",
+  },
+  cafe: {
+    featured: false,
+    hint: "quán cafe view đẹp, nổi tiếng nhất Đà Lạt (VD: The Married Beans, Windahills, Tinh Yêu Coffee...)",
+    priceField: "priceRange",
+  },
+  food: {
+    featured: false,
+    hint: "quán ăn đặc sản Đà Lạt (VD: lẩu gà lá é, bánh căn, bún bò, cơm niêu, sữa đậu nành...)",
+    priceField: "priceRange",
+  },
+  rental: {
+    featured: false,
+    hint: "địa điểm thuê xe máy/xe đạp uy tín nhất Đà Lạt",
+    priceField: "pricePerDay",
+  },
+  signature: {
+    featured: true,
+    hint: "địa điểm mang tính biểu tượng của Đà Lạt (VD: Quảng trường Lâm Viên, Ga Đà Lạt, Chợ Đà Lạt, Đỉnh Langbiang...)",
+    priceField: "priceRange",
+  },
+};
+
+/**
+ * Sinh places cho 1 category duy nhất — request nhỏ, nhanh, không timeout.
+ */
+async function generateSingleCategory(category: string, count: number): Promise<any[]> {
+  const meta = CATEGORY_META[category];
+  const isFeatured = meta?.featured ?? false;
+  const priceField = meta?.priceField ?? "priceRange";
+  const hint = meta?.hint ?? category;
+
+  const prompt = `Bạn là chuyên gia du lịch Đà Lạt. Hãy gợi ý ĐÚNG ${count} ${hint}.
+
+Trả về JSON array gồm ${count} phần tử, mỗi phần tử có đầy đủ:
+- id: string (slug "ten-dia-diem")
+- name: string (tên thật, tìm được trên Google Maps)
+- slug: string (giống id)
+- category: "${category}"
+- shortDescription: string (1-2 câu hấp dẫn)
+- fullDescription: string (3-5 câu đầy đủ)
+- tags: string[] (VD: ["#${category}", "#dalat"])
+- suitableFor: string[] (VD: ["Cặp đôi", "Nhóm bạn"])
+- rating: number (4.0 - 5.0)
+- reviewCount: number (100 - 5000)
+- ${priceField}: string${priceField === "pricePerDay" ? ' (VD: "200.000đ/ngày")' : ' (VD: "50.000đ - 150.000đ")'}
+- address: string (địa chỉ đầy đủ ở Đà Lạt, Lâm Đồng)
+- openingHours: string (VD: "7:00 - 22:00")
+- lat: number (tọa độ Đà Lạt, khoảng 11.9 - 12.0)
+- lng: number (tọa độ Đà Lạt, khoảng 108.4 - 108.5)
+${category === "rental" ? "- vehicleTypes: string[] (VD: [\"Xe máy\", \"Xe đạp\"])\n- depositRequired: \"CCCD gốc hoặc 500.000đ tiền cọc\"" : ""}
+- phoneNumber: string (nếu có, để trống nếu không biết)
+
+QUAN TRỌNG: Chỉ địa điểm THỰC TẾ ở Đà Lạt. KHÔNG có trường imageUrl. Trả về JSON array thuần, không giải thích thêm.`;
+
+  const response = await openai.chat.completions.create({
+    model: defaultModel,
+    messages: [
+      {
+        role: "system",
+        content: `Bạn là chuyên gia du lịch Đà Lạt. Chỉ trả về JSON array gồm đúng ${count} địa điểm loại "${category}". Không có trường imageUrl.`,
+      },
+      { role: "user", content: prompt },
+    ],
+    max_completion_tokens: 4096,
+    temperature: 0.7,
+  });
+
+  const content = response.choices[0]?.message?.content;
+  const places = safeParseAIJson<any[]>(content, []);
+
+  return places.map((p: any) => ({
+    ...p,
+    slug: slugify(p.name || category),
+    category,
+    featured: isFeatured,
+    imageUrl: getCategoryDefaultImage(category),
+    ...(category === "rental" ? { depositRequired: "CCCD gốc hoặc 500.000đ tiền cọc" } : {}),
+  }));
+}
+
 export async function generateDefaultPlaces(): Promise<{
   checkin: any[];
   nature: any[];
@@ -380,121 +477,31 @@ export async function generateDefaultPlaces(): Promise<{
   rental: any[];
   signature: any[];
 }> {
-  const defaultPrompt = `Bạn là chuyên gia du lịch Đà Lạt. Hãy gợi ý các địa điểm NỔI TIẾNG NHẤT, PHỔ BIẾN NHẤT ở Đà Lạt cho du khách mới.
+  console.log(`🤖 [DEFAULT] Bắt đầu tạo ${TOTAL_LIMIT} default places — chia ${Object.keys(CATEGORY_LIMITS).length} batch nhỏ...`);
 
-YÊU CẦU - TRẢ VỀ JSON VỚI ĐÚNG 7 KEY:
-1. "checkin": ĐÚNG ${CATEGORY_LIMITS.checkin} địa điểm check-in, bảo tàng, công trình kiến trúc nổi tiếng nhất Đà Lạt
-2. "nature": ĐÚNG ${CATEGORY_LIMITS.nature} địa điểm thiên nhiên: hồ, thác, rừng, vườn, đồi chè nổi tiếng nhất
-3. "homestay": ĐÚNG ${CATEGORY_LIMITS.homestay} chỗ ở/homestay/resort phổ biến nhất với đa dạng giá từ bình dân đến cao cấp
-4. "cafe": ĐÚNG ${CATEGORY_LIMITS.cafe} quán cafe view đẹp, nổi tiếng nhất Đà Lạt
-5. "food": ĐÚNG ${CATEGORY_LIMITS.food} quán ăn đặc sản Đà Lạt ngon và nổi tiếng nhất
-6. "rental": ĐÚNG ${CATEGORY_LIMITS.rental} địa điểm thuê xe máy/xe đạp uy tín nhất Đà Lạt
-7. "signature": ĐÚNG ${CATEGORY_LIMITS.signature} địa điểm mang tính biểu tượng "signature", nổi tiếng nhất của Đà Lạt (VD: Quảng trường Lâm Viên, Ga Đà Lạt, Chợ Biên Điền, Đỉnh Langbiang...)
+  const result: Record<string, any[]> = {
+    checkin: [], nature: [], homestay: [], cafe: [], food: [], rental: [], signature: [],
+  };
 
-MỖI ĐỊA ĐIỂM CẦN CÓ ĐẦY ĐỦ:
-- id: string (slug dạng "ten-diem-di")
-- name: string (tên thật, có thể search trên GG Maps)
-- slug: string (tương tự id)
-- category: CHỈ dùng 1 trong 7 giá trị: "cafe" | "food" | "checkin" | "nature" | "homestay" | "rental" | "signature"
-- shortDescription: string (1-2 câu, hấp dẫn)
-- fullDescription: string (mô tả đầy đủ, 3-5 câu)
-- tags: string[] (VD: ["#cafe", "#viewdep"])
-- suitableFor: string[] (VD: ["Cặp đôi", "Nhóm bạn"])
-- rating: number (rating GG Maps, VD: 4.5)
-- reviewCount: number (số review GG Maps, VD: 500)
-- priceRange: string (VD: "50.000đ - 100.000đ") - cho cafe/food/checkin/nature
-- pricePerDay: string (VD: "150.000đ/ngày") - cho homestay/rental
-- address: string (địa chỉ đầy đủ ở Đà Lạt, Lâm Đồng)
-- openingHours: string (VD: "7:00 - 22:00")
-- lat: number (tọa độ GPS Đà Lạt)
-- lng: number (tọa độ GPS Đà Lạt)
-- vehicleTypes: string[] (cho rental)
-- phoneNumber: string (nếu có)
-
-QUAN TRỌNG:
-- Chỉ gợi địa điểm THỰC TẾ ở Đà Lạt, có thể tìm trên GG Maps
-- Bao gồm ĐA DẠNG mức giá từ bình dân đến cao cấp
-- KHÔNG bao gồm trường imageUrl
-- Số lượng: checkin=${CATEGORY_LIMITS.checkin}, nature=${CATEGORY_LIMITS.nature}, homestay=${CATEGORY_LIMITS.homestay}, cafe=${CATEGORY_LIMITS.cafe}, food=${CATEGORY_LIMITS.food}, rental=${CATEGORY_LIMITS.rental}, signature=${CATEGORY_LIMITS.signature}
-- Mỗi địa điểm phải KHÁC NHAU, không trùng tên`;
-
-  console.log(`🤖 [DEFAULT] Bắt đầu tạo ${TOTAL_LIMIT} default places bằng AI...`);
-
-  try {
-    const response = await openai.chat.completions.create({
-      model: defaultModel,
-      messages: [
-        {
-          role: "system",
-          content:
-            "Bạn là chuyên gia du lịch Đà Lạt. Chỉ trả về JSON object với ĐÚNG 7 keys: checkin, nature, homestay, cafe, food, rental, signature. category mỗi place phải là 1 trong: cafe, food, checkin, nature, homestay, rental, signature. KHÔNG dùng category khác. KHÔNG bao gồm trường imageUrl. Số lượng: checkin=${CATEGORY_LIMITS.checkin}, nature=${CATEGORY_LIMITS.nature}, homestay=${CATEGORY_LIMITS.homestay}, cafe=${CATEGORY_LIMITS.cafe}, food=${CATEGORY_LIMITS.food}, rental=${CATEGORY_LIMITS.rental}, signature=${CATEGORY_LIMITS.signature}.",
-        },
-        { role: "user", content: defaultPrompt },
-      ],
-      max_completion_tokens: 8192,
-      temperature: 0.7,
-    });
-
-    const content = response.choices[0]?.message?.content;
-    const structuredData = safeParseAIJson<{
-      checkin?: any[];
-      nature?: any[];
-      homestay?: any[];
-      cafe?: any[];
-      food?: any[];
-      rental?: any[];
-      signature?: any[];
-    }>(content, { checkin: [], nature: [], homestay: [], cafe: [], food: [], rental: [], signature: [] });
-
-    saveAIMauJson("generateDefaultPlaces", { rawAI: content, parsed: structuredData });
-
-    // Validate & normalize
-    const normalize = (arr: any[] = [], category: string, isFeatured: boolean): any[] =>
-      arr.map((p: any) => ({
-        ...p,
-        slug: slugify(p.name || category),
-        category: validateCategory(p.category) || category,
-        featured: isFeatured,
-        depositRequired: category === "rental" ? "CCCD gốc hoặc 500.000đ tiền cọc" : p.depositRequired,
-      }));
-
-    const checkinList = normalize(structuredData.checkin, "checkin", true);
-    const natureList = normalize(structuredData.nature, "nature", true);
-    const homestayList = normalize(structuredData.homestay, "homestay", false);
-    const cafeList = normalize(structuredData.cafe, "cafe", false);
-    const foodList = normalize(structuredData.food, "food", false);
-    const rentalList = normalize(structuredData.rental, "rental", false);
-    const signatureList = normalize(structuredData.signature, "signature", true);
-
-    const allPlaces = [...checkinList, ...natureList, ...homestayList, ...cafeList, ...foodList, ...rentalList, ...signatureList];
-    console.log(`📸 [DEFAULT] Places generated: ${allPlaces.length} default places`);
-
-    // Gán placeholder image (Pexels URL sẽ được lấy riêng khi cần)
-    const placesWithImages = allPlaces.map((place) => {
-      return { ...place, imageUrl: getCategoryDefaultImage(place.category) };
-    });
-
-    const result = {
-      checkin: placesWithImages.filter(p => p.category === "checkin"),
-      nature: placesWithImages.filter(p => p.category === "nature"),
-      homestay: placesWithImages.filter(p => p.category === "homestay"),
-      cafe: placesWithImages.filter(p => p.category === "cafe"),
-      food: placesWithImages.filter(p => p.category === "food"),
-      rental: placesWithImages.filter(p => p.category === "rental"),
-      signature: placesWithImages.filter(p => p.category === "signature"),
-    };
-
-    console.log(
-      `✅ [DEFAULT] generateDefaultPlaces: ${result.checkin.length} checkin, ${result.nature.length} nature, ` +
-      `${result.homestay.length} homestay, ${result.cafe.length} cafe, ` +
-      `${result.food.length} food, ${result.rental.length} rental, ${result.signature.length} signature`
-    );
-    return result;
-  } catch (error) {
-    console.error("❌ [DEFAULT] Error generating default places:", error);
-    saveAIMauJson("generateDefaultPlaces_ERROR", { error: String(error) });
-    return { checkin: [], nature: [], homestay: [], cafe: [], food: [], rental: [], signature: [] };
+  for (const [category, count] of Object.entries(CATEGORY_LIMITS)) {
+    try {
+      console.log(`  ⏳ [DEFAULT] Đang tạo ${count} places cho category: ${category}...`);
+      const places = await generateSingleCategory(category, count);
+      result[category] = places;
+      console.log(`  ✅ [DEFAULT] ${category}: ${places.length}/${count} places`);
+    } catch (error: any) {
+      console.error(`  ❌ [DEFAULT] Lỗi category "${category}": ${error?.message || error}`);
+      saveAIMauJson(`generateDefaultPlaces_ERROR_${category}`, { error: String(error) });
+    }
   }
+
+  const total = Object.values(result).reduce((s, a) => s + a.length, 0);
+  console.log(
+    `✅ [DEFAULT] Hoàn tất: ${total}/${TOTAL_LIMIT} places — ` +
+    Object.entries(result).map(([k, v]) => `${k}:${v.length}`).join(", ")
+  );
+
+  return result as any;
 }
 
 export async function generatePersonalizedPrompts(userData: {
