@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from "@angular/core";
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { Observable, of, map, catchError, timeout } from "rxjs";
+import { Observable, of, map, catchError, timeout, startWith } from "rxjs";
 import { AI_CONFIG } from "../config/ai.config";
 
 // Types
@@ -190,6 +190,7 @@ export class ApiService {
 
   /** Get current user (auto creates if not exists) */
   getUser(): Observable<User> {
+    const cached = this.getUserFromLocalStorage();
     return this.http
       .get<any>(`${this.baseUrl}/api/user`, { headers: this.getHeaders() })
       .pipe(
@@ -202,9 +203,8 @@ export class ApiService {
           budget: res.budget || "mid",
           hasPersonalized: res.hasPersonalized || false,
         })),
-        catchError(() =>
-          of(this.getUserFromLocalStorage()),
-        ),
+        startWith(cached),
+        catchError(() => of(cached)),
       );
   }
 
