@@ -10,7 +10,7 @@ import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state
   standalone: true,
   imports: [CommonModule, EmptyStateComponent],
   template: `
-    <div class="bg-white">
+    <div class="bg-white" style="padding-bottom: calc(4rem + env(safe-area-inset-bottom))">
       <!-- Header -->
       <div
         class="px-4 pt-12 pb-4 flex items-center justify-between border-b border-gray-100"

@@ -7,8 +7,8 @@ import { RouterModule, Router } from '@angular/router';
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 h-16 safe-area-bottom">
-      <div class="flex items-center justify-around h-full px-2">
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50" style="padding-bottom: env(safe-area-inset-bottom)">
+      <div class="flex items-center justify-around h-16 px-2">
         
         <!-- Home Tab -->
         <a 

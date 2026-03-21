@@ -35,7 +35,7 @@ interface AppAIModel {
   standalone: true,
   imports: [CommonModule, FormsModule, ChatBubbleComponent, PlaceCardComponent],
   template: `
-    <div class="flex flex-col h-screen pb-16">
+    <div class="flex flex-col h-screen" style="padding-bottom: calc(4rem + env(safe-area-inset-bottom))">
       <!-- Header -->
       <div class="px-4 pt-12 pb-3 bg-white border-b border-gray-100">
         <div class="flex items-center gap-3">

@@ -8,7 +8,7 @@ import { ApiService, Trip } from "../../services/api.service";
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-white">
+    <div class="bg-white" style="padding-bottom: calc(4rem + env(safe-area-inset-bottom))">
       <!-- Header -->
       <div class="px-4 pt-12 pb-4 flex items-center justify-between">
         <div>

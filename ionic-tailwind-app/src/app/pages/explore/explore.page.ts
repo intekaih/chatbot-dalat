@@ -23,7 +23,7 @@ type SortOption = 'featured' | 'rating' | 'open';
     EmptyStateComponent
   ],
   template: `
-    <div class="bg-white">
+    <div class="bg-white" style="padding-bottom: calc(4rem + env(safe-area-inset-bottom))">
       <!-- Sticky Header -->
       <div class="sticky top-0 bg-white z-10 px-4 pt-12 pb-4 border-b border-gray-100">
         <div class="flex items-center justify-between mb-4">

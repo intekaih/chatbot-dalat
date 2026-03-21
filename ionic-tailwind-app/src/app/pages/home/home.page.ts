@@ -28,7 +28,7 @@ interface FoodItem {
     WeatherWidgetComponent,
   ],
   template: `
-    <div class="bg-white min-h-screen pb-20">
+    <div class="bg-white min-h-screen" style="padding-bottom: calc(4rem + env(safe-area-inset-bottom))">
       <!-- Header -->
       <div class="px-4 pt-12 pb-4 flex items-center justify-between">
         <div>

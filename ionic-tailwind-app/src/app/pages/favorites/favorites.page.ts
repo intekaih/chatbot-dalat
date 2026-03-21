@@ -12,7 +12,7 @@ import { FirestoreTripsService } from "../../services/firestore-trips.service";
   standalone: true,
   imports: [CommonModule, PlaceCardComponent, EmptyStateComponent],
   template: `
-    <div class="bg-white min-h-screen pb-20">
+    <div class="bg-white min-h-screen" style="padding-bottom: calc(4rem + env(safe-area-inset-bottom))">
       <!-- Header -->
       <div
         class="px-4 pt-12 pb-4 border-b border-gray-100 flex items-center justify-between"
