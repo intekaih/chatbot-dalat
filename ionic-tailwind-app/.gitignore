@@ -19,7 +19,7 @@ log.txt
 
 # Ionic
 /.ionic
-/www
+# /www — tracked in git for Replit deployment (no Angular build needed at deploy time)
 /platforms
 /plugins
 

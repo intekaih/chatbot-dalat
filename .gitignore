@@ -7,8 +7,8 @@ build/
 /server/node_modules/
 /ionic-tailwind-app/node_modules/
 
-# Build output
-www/
+# Build output (www/ được commit vào git để deployment không cần build Angular)
+# www/
 
 # Database files
 *.db
