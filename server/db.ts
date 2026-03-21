@@ -194,6 +194,13 @@ db.exec(`
     sort_order INTEGER DEFAULT 0
   );
 
+  -- Place image cache (AI-generated images, cached by place name)
+  CREATE TABLE IF NOT EXISTS place_images (
+    name_key TEXT PRIMARY KEY,
+    image_path TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+
   -- Favorites table
   CREATE TABLE IF NOT EXISTS favorites (
     id TEXT PRIMARY KEY,
@@ -953,6 +960,35 @@ export function deleteChatSession(userId: string, sessionId: string): boolean {
     userId,
   );
   return true;
+}
+
+// ── Place image cache helpers ──────────────────────────────────────────────
+
+/** Chuẩn hóa tên địa điểm thành cache key */
+export function normalizePlaceNameKey(name: string): string {
+  return name.toLowerCase().trim().replace(/\s+/g, " ");
+}
+
+/** Lấy path ảnh đã cache (null nếu chưa có) */
+export function getCachedPlaceImage(placeName: string): string | null {
+  const key = normalizePlaceNameKey(placeName);
+  const row = db.prepare("SELECT image_path FROM place_images WHERE name_key = ?").get(key) as { image_path: string } | undefined;
+  return row?.image_path ?? null;
+}
+
+/** Lưu path ảnh vào cache */
+export function savePlaceImageCache(placeName: string, imagePath: string): void {
+  const key = normalizePlaceNameKey(placeName);
+  db.prepare(`
+    INSERT INTO place_images (name_key, image_path)
+    VALUES (?, ?)
+    ON CONFLICT(name_key) DO UPDATE SET image_path = excluded.image_path
+  `).run(key, imagePath);
+}
+
+/** Cập nhật image_url cho tất cả places trong DB cùng tên */
+export function updatePlaceImageUrl(placeName: string, imageUrl: string): void {
+  db.prepare("UPDATE places SET image_url = ? WHERE name = ?").run(imageUrl, placeName);
 }
 
 // Initialize default data

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import express from "express";
@@ -41,6 +42,7 @@ import {
   generateDefaultPlaces,
 } from "./ai-generator.js";
 import { saveAIMauJson, openai, defaultModel, getAIConfigInfo, isUsingProxy, type OpenAI } from "./utils.js";
+import { batchGeneratePlaceImages } from "./place-image-service.js";
 
 const app = express();
 
@@ -551,6 +553,20 @@ async function generatePersonalizedData(
     // Lưu personalized places vào DB
     if (aiPlaces) {
       savePersonalizedPlaces(userId, aiPlaces);
+
+      // Background: sinh ảnh AI cho từng địa điểm (không chặn response)
+      const allPersonalizedPlaces = [
+        ...(aiPlaces.checkin || []).map((p: any) => ({ name: p.name, category: "checkin" })),
+        ...(aiPlaces.nature || []).map((p: any) => ({ name: p.name, category: "nature" })),
+        ...(aiPlaces.homestay || []).map((p: any) => ({ name: p.name, category: "homestay" })),
+        ...(aiPlaces.cafe || []).map((p: any) => ({ name: p.name, category: "cafe" })),
+        ...(aiPlaces.food || []).map((p: any) => ({ name: p.name, category: "food" })),
+        ...(aiPlaces.rental || []).map((p: any) => ({ name: p.name, category: "rental" })),
+        ...(aiPlaces.signature || []).map((p: any) => ({ name: p.name, category: "signature" })),
+      ];
+      batchGeneratePlaceImages(allPersonalizedPlaces).catch((e) =>
+        console.error("❌ [Imagen] Personalized places image generation error:", e)
+      );
     }
 
     const hasAiPlaces = aiPlaces &&
@@ -1438,6 +1454,20 @@ async function initDefaultPlaces() {
     if (totalPlaces > 0) {
       saveDefaultAIPlaces(defaultPlaces);
       console.log(`✅ Đã lưu ${totalPlaces} default places vào DB`);
+
+      // Background: sinh ảnh AI cho từng địa điểm
+      const allDefaultPlaces = [
+        ...(defaultPlaces.checkin || []).map((p: any) => ({ name: p.name, category: "checkin" })),
+        ...(defaultPlaces.nature || []).map((p: any) => ({ name: p.name, category: "nature" })),
+        ...(defaultPlaces.homestay || []).map((p: any) => ({ name: p.name, category: "homestay" })),
+        ...(defaultPlaces.cafe || []).map((p: any) => ({ name: p.name, category: "cafe" })),
+        ...(defaultPlaces.food || []).map((p: any) => ({ name: p.name, category: "food" })),
+        ...(defaultPlaces.rental || []).map((p: any) => ({ name: p.name, category: "rental" })),
+        ...(defaultPlaces.signature || []).map((p: any) => ({ name: p.name, category: "signature" })),
+      ];
+      batchGeneratePlaceImages(allDefaultPlaces).catch((e) =>
+        console.error("❌ [Imagen] Default places image generation error:", e)
+      );
     } else {
       console.warn("⚠️ AI trả về 0 default places — kiểm tra API key và kết nối");
     }
@@ -1448,6 +1478,18 @@ async function initDefaultPlaces() {
 
 // Gọi fire-and-forget ngay khi server khởi động
 initDefaultPlaces();
+
+// --- Serve AI-generated place images ---
+const generatedImagesDir = path.resolve("generated-images");
+app.get("/api/place-image/:filename", (req, res) => {
+  const filename = path.basename(req.params.filename); // chống path traversal
+  const filePath = path.join(generatedImagesDir, filename);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: "Image not found" });
+  }
+  res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+  res.sendFile(filePath);
+});
 
 // --- Static Serving: Angular build (production) ---
 // Khi deploy trên Replit, Express phục vụ cả frontend lẫn API trên cùng 1 port.
