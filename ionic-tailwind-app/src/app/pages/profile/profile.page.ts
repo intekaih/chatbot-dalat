@@ -264,11 +264,6 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
       <!-- Spacer: đẩy logout xuống cuối -->
       <div class="flex-1"></div>
 
-      <!-- App Info -->
-      <div class="px-4 py-4 text-center">
-        <p class="text-xs text-gray-400">Đà Lạt Travel AI v1.0.0</p>
-      </div>
-
       <!-- Logout -->
       <div class="px-4 pb-4">
         <button
