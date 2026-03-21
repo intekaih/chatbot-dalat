@@ -47,23 +47,52 @@ export interface FirestoreCategory {
     iconName: string;
 }
 
+const FS_PLACES_CACHE_KEY = 'fs_cache_places';
+const FS_CATEGORIES_CACHE_KEY = 'fs_cache_categories';
+const FS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 giờ
+
+function saveToLocalStorage(key: string, data: any): void {
+    try {
+        localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }));
+    } catch { /* quota exceeded */ }
+}
+
+function loadFromLocalStorage<T>(key: string): T | null {
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const { data, ts } = JSON.parse(raw);
+        if (Date.now() - ts > FS_CACHE_TTL_MS) return null;
+        return data as T;
+    } catch { return null; }
+}
+
 @Injectable({
     providedIn: 'root',
 })
 export class FirestorePlacesService {
     private firestore = inject(Firestore);
 
-    // Cache toàn bộ places để tránh re-read nhiều lần
+    // Cache toàn bộ places — Firestore offline persistence + localStorage backup
     private allPlaces$ = this.getAllPlacesOnce().pipe(shareReplay(1));
 
-    /** Lấy tất cả places một lần (snapshot, không realtime) */
+    /** Lấy tất cả places — Firestore (có IndexedDB cache) → localStorage backup */
     private getAllPlacesOnce(): Observable<FirestorePlace[]> {
         return from(
             getDocs(collection(this.firestore, 'places') as CollectionReference<FirestorePlace>)
         ).pipe(
-            map(snapshot => snapshot.docs.map(d => ({ ...d.data(), id: d.id }) as FirestorePlace)),
+            map(snapshot => {
+                const places = snapshot.docs.map(d => ({ ...d.data(), id: d.id }) as FirestorePlace);
+                if (places.length > 0) saveToLocalStorage(FS_PLACES_CACHE_KEY, places);
+                return places;
+            }),
             catchError(err => {
-                console.warn('[FirestorePlacesService] getAllPlaces error:', err);
+                console.warn('[FirestorePlacesService] offline — trying localStorage backup:', err.code || err.message);
+                const cached = loadFromLocalStorage<FirestorePlace[]>(FS_PLACES_CACHE_KEY);
+                if (cached && cached.length > 0) {
+                    console.log(`📵 [FirestorePlaces] Serving ${cached.length} places from localStorage backup`);
+                    return of(cached);
+                }
                 return of([]);
             })
         );
@@ -106,24 +135,25 @@ export class FirestorePlacesService {
         );
     }
 
-    /** Lấy danh sách categories */
+    /** Lấy danh sách categories — có localStorage backup */
     getCategories(): Observable<FirestoreCategory[]> {
         return from(
             getDocs(collection(this.firestore, 'categories') as CollectionReference<FirestoreCategory>)
         ).pipe(
             map(snapshot => {
                 const cats = snapshot.docs.map(d => ({ ...d.data(), id: d.id }) as FirestoreCategory);
-                // Đặt "signature" lên đầu
                 const sigIdx = cats.findIndex(c => c.id === 'signature');
                 if (sigIdx > 0) {
                     const [sig] = cats.splice(sigIdx, 1);
                     cats.unshift(sig);
                 }
+                if (cats.length > 0) saveToLocalStorage(FS_CATEGORIES_CACHE_KEY, cats);
                 return cats;
             }),
             catchError(err => {
-                console.warn('[FirestorePlacesService] getCategories error:', err);
-                return of([]);
+                console.warn('[FirestorePlacesService] getCategories offline:', err.code || err.message);
+                const cached = loadFromLocalStorage<FirestoreCategory[]>(FS_CATEGORIES_CACHE_KEY);
+                return of(cached ?? []);
             })
         );
     }
