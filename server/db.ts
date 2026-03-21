@@ -398,18 +398,9 @@ export function searchPlaces(query: string): ReturnType<typeof getPlaces> {
   const q = query.toLowerCase().trim();
   if (!q) return [];
 
-  return allPlaces.filter((p) => {
-    const name = p.name.toLowerCase();
-    const slug = p.slug.toLowerCase();
-    const category = (p.category || "").toLowerCase();
-    const tags = (p.tags || []).join(" ").toLowerCase();
-    return (
-      name.includes(q) ||
-      slug.includes(q) ||
-      category.includes(q) ||
-      tags.includes(q)
-    );
-  });
+  return allPlaces.filter((p) =>
+    p.name.toLowerCase().includes(q)
+  );
 }
 
 /**

@@ -268,10 +268,7 @@ export class SearchPage implements OnInit, AfterViewInit {
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
       filtered = filtered.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query) ||
-          (p.shortDescription || '').toLowerCase().includes(query) ||
-          (p.tags || []).some((t: string) => t.toLowerCase().includes(query)),
+        (p) => p.name.toLowerCase().includes(query),
       );
     }
 

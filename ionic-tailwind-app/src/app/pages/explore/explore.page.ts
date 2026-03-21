@@ -229,9 +229,7 @@ export class ExplorePage implements OnInit {
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
       filtered = filtered.filter(p =>
-        p.name.toLowerCase().includes(query) ||
-        p.shortDescription.toLowerCase().includes(query) ||
-        p.tags.some(t => t.toLowerCase().includes(query))
+        p.name.toLowerCase().includes(query)
       );
     }
 
