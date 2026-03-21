@@ -196,17 +196,25 @@ export class ApiService {
           hasPersonalized: res.hasPersonalized || false,
         })),
         catchError(() =>
-          of({
-            id: "",
-            name: "Khách",
-            avatar: "🧑‍💻",
-            preferences: [],
-            travelStyles: [],
-            budget: "mid",
-            hasPersonalized: false,
-          }),
+          of(this.getUserFromLocalStorage()),
         ),
       );
+  }
+
+  /** Fallback: đọc user từ localStorage khi API không khả dụng */
+  private getUserFromLocalStorage(): User {
+    const hasPersonalized = localStorage.getItem("hasPersonalized") === "true";
+    const prefsRaw = localStorage.getItem("userPreferences");
+    const stylesRaw = localStorage.getItem("userTravelStyles");
+    return {
+      id: localStorage.getItem("device_id") || "",
+      name: localStorage.getItem("userName") || "Khách",
+      avatar: localStorage.getItem("userAvatar") || "🧑‍💻",
+      preferences: prefsRaw ? JSON.parse(prefsRaw) : [],
+      travelStyles: stylesRaw ? JSON.parse(stylesRaw) : [],
+      budget: localStorage.getItem("userBudget") || "mid",
+      hasPersonalized,
+    };
   }
 
   /** Sync Firebase user with backend — dùng ID Token thay vì UID từ body */
