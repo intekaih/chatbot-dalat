@@ -50,6 +50,8 @@ export interface ChatCompletionResponse {
     completion_tokens: number;
     total_tokens: number;
   };
+  /** Địa điểm được trích xuất từ reply bởi BE (không cần gọi thêm HTTP request) */
+  suggestedPlaces?: Place[];
 }
 
 @Injectable({
@@ -129,6 +131,7 @@ export class AIService {
                 finish_reason: "stop",
               },
             ],
+            suggestedPlaces: beResponse.suggestedPlaces || [],
           } as ChatCompletionResponse;
         }),
         catchError((error) => {

@@ -14,10 +14,18 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
   template: `
     <div class="bg-white pb-8">
       <!-- Profile Card -->
-      <div class="bg-gradient-to-br from-gray-900 to-gray-800 px-4 pt-12 pb-8">
+      <div class="bg-gradient-to-br from-gray-900 to-gray-800 px-4 pt-12 pb-6 relative">
+        <button
+          *ngIf="user?.hasPersonalized"
+          (click)="goToWelcome()"
+          class="absolute top-12 right-4 text-xs font-medium text-white/60 bg-white/5 px-3 py-1.5 rounded-full hover:bg-white/10 transition-colors"
+        >
+          Chỉnh sửa
+        </button>
+
         <div class="flex items-center gap-4">
           <div
-            class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-3xl"
+            class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-3xl shrink-0"
           >
             {{ user?.avatar || "🧑‍💻" }}
           </div>
@@ -36,28 +44,28 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
           </div>
         </div>
 
-        <!-- Budget Badge -->
-        <div class="mt-4" *ngIf="user?.budget">
+        <!-- Personalization Tags (1-2 rows) -->
+        <div *ngIf="user?.hasPersonalized" class="mt-5 flex flex-wrap gap-2">
+          <!-- Budget -->
           <span
-            class="px-3 py-1 bg-white/10 rounded-full text-white/80 text-xs"
+            *ngIf="user?.budget"
+            class="px-2.5 py-1 bg-amber-500/20 border border-amber-500/30 rounded-lg text-amber-200 text-xs font-medium whitespace-nowrap"
           >
             💰 {{ getBudgetLabel(user!.budget) }}
           </span>
-        </div>
-      </div>
+          
+          <!-- Travel Styles -->
+          <span
+            *ngFor="let style of user?.travelStyles"
+            class="px-2.5 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-emerald-200 text-xs font-medium whitespace-nowrap"
+          >
+            {{ getTravelStyleLabel(style) }}
+          </span>
 
-      <!-- Preferences -->
-      <div
-        *ngIf="user?.preferences?.length"
-        class="px-4 py-4 border-b border-gray-100"
-      >
-        <p class="text-xs text-gray-400 mb-2">Sở thích</p>
-        <div
-          class="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4"
-        >
+          <!-- Preferences -->
           <span
             *ngFor="let pref of user?.preferences"
-            class="px-3 py-1.5 bg-gray-100 rounded-full text-sm whitespace-nowrap"
+            class="px-2.5 py-1 bg-white/10 border border-white/10 rounded-lg text-white/80 text-xs font-medium whitespace-nowrap"
           >
             {{ getPreferenceLabel(pref) }}
           </span>
@@ -251,41 +259,6 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
           </svg>
         </button>
 
-        <!-- Re-personalize -->
-        <button
-          (click)="goToWelcome()"
-          class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl"
-        >
-          <div class="flex items-center gap-3">
-            <svg
-              class="w-5 h-5 text-gray-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-              />
-            </svg>
-            <span class="text-sm font-medium">Cá nhân hóa lại</span>
-          </div>
-          <svg
-            class="w-5 h-5 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
       </div>
 
       <!-- App Info -->
@@ -299,7 +272,7 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
           (click)="logout()"
           class="w-full py-3 text-red-600 hover:bg-red-50 rounded-xl font-medium text-sm border border-red-100"
         >
-          Đặt lại & Bắt đầu lại
+          Đăng xuất
         </button>
       </div>
     </div>
@@ -358,6 +331,16 @@ export class ProfilePage implements OnInit {
       night: "🌙 Về đêm",
     };
     return labels[pref] || pref;
+  }
+
+  getTravelStyleLabel(style: string): string {
+    const labels: Record<string, string> = {
+      couple: "💑 Cặp đôi",
+      friends: "👥 Nhóm bạn",
+      family: "👨‍👩‍👧 Gia đình",
+      solo: "🎒 Solo",
+    };
+    return labels[style] || style;
   }
 
   goToTrips() {

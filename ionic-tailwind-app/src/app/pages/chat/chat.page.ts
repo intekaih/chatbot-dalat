@@ -667,11 +667,8 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
     this.inputMessage = "";
     this.previewImage = null;
     this.relatedPlaces = [];
-
-    setTimeout(() => {
-      this.isTyping = true;
-      this.markForScroll(); // Scroll to show typing indicator
-    }, 100);
+    this.isTyping = true;  // Hiển thị ngay, không delay
+    this.markForScroll();
 
     // Upload ảnh lên Firebase Storage nếu có (async, không block UI)
     if (imageToSend && imageToSend.startsWith('data:')) {
@@ -692,7 +689,8 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
       .map((m) => ({
         role: m.role as "user" | "assistant",
         content: m.content,
-      }));
+      }))
+      .slice(-10); // Giới hạn 10 messages (5 lần hỏi đáp) để giảm payload
 
     // Gửi tin nhắn — tạo session BE nếu chưa có (lazy creation)
     const doSend = (sessionId: string | null) => {
@@ -714,215 +712,48 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
             this.lastMessageRole = "assistant";
             this.isTripResponse = this.userRequestedTrip() && this.detectTripContent(content);
             this.markForScroll();
-            this.saveToSession(); // sessionStorage (nhanh, dùng trong session trình duyệt)
-            // Lưu vào Firestore (bền vững, hiện thị trong lịch sử chat)
+            this.saveToSession();
             this.saveMessageToFirestore({ role: 'assistant', content });
 
-            // Trích xuất địa điểm và fetch images
-            this.aiService.extractPlacesFromChat(content).subscribe((places) => {
-              this.relatedPlaces = (places || []).slice(0, 6);
+            // Dùng suggestedPlaces trực tiếp từ /api/chat (không gọi extract-places riêng)
+            const places = (response.suggestedPlaces || []).slice(0, 6);
+            this.relatedPlaces = places as any;
 
-              // Fetch images cho places tìm được trong DB
-              const fetchImagesForPlaces = (placesToFetch: Place[]) => {
-                if (placesToFetch.length === 0) return;
+            if (places.length > 0) {
+              // Fetch images cho places tìm được — async, không block UI
+              const imagePromises = places.slice(0, 4).map((place: any) =>
+                firstValueFrom(
+                  this.apiService.getPlaceImage(
+                    place.id, place.name, place.category, place.address, true
+                  )
+                ).catch(() => null)
+              );
 
-                const imagePromises = placesToFetch.map(place =>
-                  firstValueFrom(
-                    this.apiService.getPlaceImage(
-                      place.id,
-                      place.name,
-                      place.category,
-                      place.address,
-                      true // skipValidation = true → raw Pexels URL
-                    )
-                  ).catch((err) => {
-                    console.warn(`Failed to fetch image for ${place.name}:`, err);
-                    return null;
-                  })
-                );
-
-                Promise.all(imagePromises).then((results) => {
-                  const imageUrls: string[] = [];
-
-                  for (const result of results) {
-                    if (result) {
-                      console.log(`  📦 [Result] imageUrl: ${result.imageUrl?.substring(0, 60) || 'none'}...`);
-                      console.log(`  📦 [Result] imageUrls: ${result.imageUrls?.length || 0} URLs`);
-                      console.log(`  📦 [Result] source: ${result.source || 'n/a'}`);
-
-                      // Ưu tiên imageUrls (nhiều ảnh từ Pexels)
-                      if (result.imageUrls && result.imageUrls.length > 0) {
-                        const maxUrlsPerPlace = 2;
-                        const urlsToUse = result.imageUrls.slice(0, maxUrlsPerPlace);
-                        for (const imgUrl of urlsToUse) {
-                          imageUrls.push(imgUrl);
-                        }
-                        console.log(`  ✅ Using ${urlsToUse.length}/${result.imageUrls.length} Pexels URLs from this place`);
-                      } else if (result.imageUrl) {
-                        // Chỉ có 1 URL
-                        imageUrls.push(result.imageUrl);
-                        console.log(`  ⚠️ Using single Pexels URL`);
-                      }
-                    }
-                  }
-
-                  if (imageUrls.length > 0) {
-                    console.log(`✅ [Chat] Fetched ${imageUrls.length} images for places in DB`);
-                    const proxyImageUrls = this.apiService.getImageProxyUrls(imageUrls);
-
-                    const msgIndex = this.messages.findIndex(m => m.id === assistantMessage.id);
-                    if (msgIndex >= 0) {
-                      if (proxyImageUrls.length === 1) {
-                        this.messages[msgIndex].imageUrl = proxyImageUrls[0];
-                        console.log(`  → Single image URL (proxied): ${proxyImageUrls[0].substring(0, 80)}...`);
-                      } else {
-                        this.messages[msgIndex].imageUrls = proxyImageUrls;
-                        console.log(`  → Multiple images (${proxyImageUrls.length}) - proxied`);
-                      }
-                      this.saveToSession();
-                      this.markForScroll();
-                    }
-                  } else {
-                    console.warn(`⚠️ [Chat] No images fetched for ${placesToFetch.length} places`);
-                  }
-                }).catch((err) => {
-                  console.error('Error fetching place images:', err);
-                });
-              };
-
-              // Nếu có địa điểm được tìm thấy trong DB → fetch images
-              if (places && places.length > 0) {
-                fetchImagesForPlaces(places.slice(0, 4)); // Tối đa 4 ảnh
-              } else {
-                // Fallback: Parse place names trực tiếp từ AI response và fetch images
-                // Tìm các pattern như "Hồ Tuyền Lâm", "Hồ Xuân Hương", etc.
-                const placeNamePatterns = [
-                  /(?:Hồ|Hồ nước|Lake)\s+([A-ZĐ][a-zàáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ\s]+)/gi,
-                  /([A-ZĐ][a-zàáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ\s]+)\s+(?:Đà Lạt|Dalat)/gi,
-                  /\*\*([A-ZĐ][a-zàáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ\s]+)\*\*/g, // Bold text thường là tên địa điểm
-                  /(?:ảnh|hình|photo|image)\s+(?:của|về|tại)?\s*([A-ZĐ][a-zàáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ\s]+)/gi, // "ảnh Hồ Tuyền Lâm"
-                ];
-
-                // Cũng check user message để tìm place name
-                const lastUserMessage = [...this.messages].reverse().find(m => m.role === 'user');
-                const userContent = lastUserMessage?.content || '';
-
-                const foundNames = new Set<string>();
-
-                // Helper function to find matches with capture groups
-                const findMatches = (text: string, pattern: RegExp): string[] => {
-                  const results: string[] = [];
-                  let match;
-                  // Reset lastIndex for global patterns
-                  pattern.lastIndex = 0;
-                  while ((match = pattern.exec(text)) !== null) {
-                    if (match[1]) {
-                      results.push(match[1].trim());
-                    }
-                    // Prevent infinite loop for non-global patterns
-                    if (!pattern.global) break;
-                  }
-                  return results;
-                };
-
-                // Parse từ AI response
-                for (const pattern of placeNamePatterns) {
-                  const matches = findMatches(content, pattern);
-                  for (const name of matches) {
-                    if (name && name.length > 3 && name.length < 50) {
-                      foundNames.add(name);
-                    }
+              Promise.all(imagePromises).then((results) => {
+                const imageUrls: string[] = [];
+                for (const result of results) {
+                  if (!result) continue;
+                  if (result.imageUrls?.length) {
+                    imageUrls.push(...result.imageUrls.slice(0, 2));
+                  } else if (result.imageUrl) {
+                    imageUrls.push(result.imageUrl);
                   }
                 }
-
-                // Parse từ user message (nếu user hỏi trực tiếp về ảnh)
-                if (userContent) {
-                  // Normalize: capitalize first letter of each word
-                  const normalizeName = (name: string): string => {
-                    return name.split(/\s+/).map(word =>
-                      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-                    ).join(' ');
-                  };
-
-                  const userPatterns = [
-                    /(?:ảnh|hình|photo|image|cho tôi xem|show me)\s+(?:của|về|tại)?\s*([a-zàáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ\s]+)/gi,
-                    /([a-zàáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ\s]+)\s+(?:ảnh|hình)/gi, // "hồ tuyền lâm ảnh"
-                  ];
-
-                  for (const pattern of userPatterns) {
-                    const matches = findMatches(userContent, pattern);
-                    for (const name of matches) {
-                      if (name && name.length > 3 && name.length < 50) {
-                        // Normalize name (capitalize first letter)
-                        const normalized = normalizeName(name);
-                        foundNames.add(normalized);
-                        console.log(`🔍 [Chat] Found place name from user message: "${normalized}"`);
-                      }
-                    }
-                  }
-                }
-
-                // Nếu tìm được tên địa điểm → fetch images trực tiếp bằng tên
-                if (foundNames.size > 0) {
-                  console.log(`🔍 [Chat] Found place names in response: ${Array.from(foundNames).join(', ')}`);
-                  const namesArray = Array.from(foundNames).slice(0, 2); // Tối đa 2 ảnh từ fallback
-
-                  const fallbackPromises = namesArray.map(placeName =>
-                    firstValueFrom(
-                      this.apiService.getPlaceImage(
-                        `fallback-${placeName}`, // Fake ID
-                        placeName,
-                        'nature', // Default category
-                        'Đà Lạt, Lâm Đồng',
-                        true // skipValidation = true
-                      )
-                    ).catch((err) => {
-                      console.warn(`Failed to fetch image for ${placeName}:`, err);
-                      return null;
-                    })
-                  );
-
-                  Promise.all(fallbackPromises).then((results) => {
-                    const imageUrls: string[] = [];
-
-                    for (const result of results) {
-                      if (result) {
-                        // Ưu tiên imageUrls (nhiều ảnh từ Pexels)
-                        if (result.imageUrls && result.imageUrls.length > 0) {
-                          for (const imgUrl of result.imageUrls) {
-                            imageUrls.push(imgUrl);
-                          }
-                          console.log(`  → Using ${result.imageUrls.length} Pexels URLs`);
-                        } else if (result.imageUrl) {
-                          imageUrls.push(result.imageUrl);
-                          console.log(`  → Using single Pexels URL`);
-                        }
-                      }
-                    }
-
-                    if (imageUrls.length > 0) {
-                      console.log(`✅ [Chat] Fetched ${imageUrls.length} images via fallback (direct name parsing)`);
-                      const proxyImageUrls = this.apiService.getImageProxyUrls(imageUrls);
-
-                      const msgIndex = this.messages.findIndex(m => m.id === assistantMessage.id);
-                      if (msgIndex >= 0) {
-                        if (proxyImageUrls.length === 1) {
-                          this.messages[msgIndex].imageUrl = proxyImageUrls[0];
-                          console.log(`  → Single image URL (proxied): ${proxyImageUrls[0].substring(0, 80)}...`);
-                        } else {
-                          this.messages[msgIndex].imageUrls = proxyImageUrls;
-                          console.log(`  → Multiple images (${proxyImageUrls.length}) - proxied`);
-                        }
-                        this.saveToSession();
-                        this.markForScroll();
-                      }
+                if (imageUrls.length > 0) {
+                  const proxyUrls = this.apiService.getImageProxyUrls(imageUrls);
+                  const msgIndex = this.messages.findIndex(m => m.id === assistantMessage.id);
+                  if (msgIndex >= 0) {
+                    if (proxyUrls.length === 1) {
+                      this.messages[msgIndex].imageUrl = proxyUrls[0];
                     } else {
-                      console.warn(`⚠️ [Chat] Fallback: No images fetched for ${namesArray.length} place names`);
+                      this.messages[msgIndex].imageUrls = proxyUrls;
                     }
-                  });
+                    this.saveToSession();
+                    this.markForScroll();
+                  }
                 }
-              }
-            });
+              });
+            }
           },
           error: () => {
             this.isTyping = false;

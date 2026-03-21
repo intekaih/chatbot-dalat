@@ -6,12 +6,12 @@ Backend server cho ứng dụng Dalat Chatbot sử dụng OpenAI API hoặc API 
 
 Server hỗ trợ 3 phương thức kết nối AI, theo thứ tự ưu tiên:
 
-### 1. API Proxy (Antigravity Tools) - Khuyến nghị cho Local Development
+### 1. API Proxy (Custom Domain) - Khuyến nghị ✅
 
 **Ưu điểm:**
 - Không cần API key OpenAI
 - Hỗ trợ nhiều model: Gemini, Claude, OpenAI
-- Miễn phí hoặc chi phí thấp hơn
+- **Truy cập được từ mọi IP/môi trường** (local dev, deploy, CI/CD)
 - Hỗ trợ vision trong hầu hết các model
 
 **Cách cấu hình:**
@@ -21,11 +21,10 @@ Server hỗ trợ 3 phương thức kết nối AI, theo thứ tự ưu tiên:
 cp .env.example .env
 ```
 
-2. Sửa file `.env`, bỏ comment và điền thông tin:
+2. Sửa file `.env`:
 ```env
-# Bỏ comment và cấu hình các dòng sau
-API_PROXY_BASE_URL=http://123.0.0.1:8080/v1
-API_PROXY_KEY=k_edr07aakrohmshduabkehovaO00P
+API_PROXY_BASE_URL=https://api.intekaih.id.vn/v1
+API_PROXY_KEY=sk-92576e86b4664be298fb3c19e644756f
 API_PROXY_MODEL=gemini-3-flash
 ```
 

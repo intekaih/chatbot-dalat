@@ -274,7 +274,9 @@ app.post("/api/user/sync", async (req, res) => {
     }
 
     // Check if user already exists with this firebaseUid
+    console.log(`🔍 [Sync] Looking for user with firebaseUid: ${firebaseUid}`);
     const existingUser = db.prepare("SELECT * FROM users WHERE device_id = ?").get(firebaseUid) as UserRow | undefined;
+    console.log(`🔍 [Sync] Found existing user: ${existingUser ? `${existingUser.name} (hasPersonalized: ${existingUser.has_personalized})` : 'NOT FOUND'}`);
 
     if (existingUser) {
       // Update existing user
@@ -306,15 +308,44 @@ app.post("/api/user/sync", async (req, res) => {
       VALUES (?, ?, ?, ?, ?, '[]', '[]', 'mid', 0)
     `).run(userId, firebaseUid, displayName || "User", photoURL || "🧑‍💻", email || "");
 
-    const user = db.prepare("SELECT * FROM users WHERE id = ?").get(userId) as UserRow;
+    // Tìm user cũ cùng email (dùng device_id random trước đó) đã có cá nhân hóa → migrate data
+    if (email) {
+      const oldUser = db.prepare(
+        "SELECT * FROM users WHERE email = ? AND device_id != ? AND has_personalized = 1 ORDER BY updated_at DESC LIMIT 1"
+      ).get(email, firebaseUid) as UserRow | undefined;
+
+      if (oldUser) {
+        // Copy preferences, travelStyles, budget, name, avatar từ user cũ sang user mới
+        db.prepare(`
+          UPDATE users SET
+            preferences = ?,
+            travel_styles = ?,
+            budget = ?,
+            has_personalized = 1,
+            name = COALESCE(?, name),
+            avatar = COALESCE(NULLIF(?, '🧑\u200d💻'), avatar)
+          WHERE device_id = ?
+        `).run(
+          oldUser.preferences,
+          oldUser.travel_styles,
+          oldUser.budget,
+          oldUser.name || null,
+          oldUser.avatar || null,
+          firebaseUid
+        );
+        console.log(`✅ [Sync] Migrated personalization data from old user (${oldUser.id}) to Firebase UID (${firebaseUid})`);
+      }
+    }
+
+    const user = db.prepare("SELECT * FROM users WHERE device_id = ?").get(firebaseUid) as UserRow;
     res.json({
       id: user.id,
       name: user.name,
       avatar: user.avatar,
-      preferences: [],
-      travelStyles: [],
-      budget: "mid",
-      hasPersonalized: false,
+      preferences: JSON.parse(user.preferences || "[]"),
+      travelStyles: JSON.parse(user.travel_styles || "[]"),
+      budget: user.budget,
+      hasPersonalized: user.has_personalized === 1,
     });
   } catch (error) {
     console.error("Error syncing user:", error);
@@ -953,7 +984,20 @@ app.post("/api/chat", rateLimiter, async (req, res) => {
 
     saveAIMauJson("chat", { reply, message, sessionId });
 
-    // Note: Place extraction has been removed since the frontend already calls /api/extract-places separately off the main thread.
+    // Extract places từ reply bằng keyword search (không cần AI call thứ 2)
+    // Tìm tên in đậm (**...**) và các cụm danh từ riêng tiếng Việt trong reply
+    const suggestedPlaces: ReturnType<typeof searchPlaces> = [];
+    try {
+      const boldNames = [...reply.matchAll(/\*\*([^*]{3,40})\*\*/g)].map(m => m[1].trim());
+      const uniqueNames = [...new Set(boldNames)].slice(0, 6);
+      for (const name of uniqueNames) {
+        const found = searchPlaces(name);
+        if (found.length > 0 && !suggestedPlaces.find(p => p.id === found[0].id)) {
+          suggestedPlaces.push(found[0]);
+          if (suggestedPlaces.length >= 4) break;
+        }
+      }
+    } catch { /* bỏ qua nếu extraction fail */ }
 
     // Save assistant message to session — chỉ khi session đã được xác minh ở trên
     if (sessionId) {
@@ -964,7 +1008,7 @@ app.post("/api/chat", rateLimiter, async (req, res) => {
       }
     }
 
-    res.json({ reply });
+    res.json({ reply, suggestedPlaces });
   } catch (error) {
     console.error("OpenAI API error:", error);
     res.status(500).json({ error: "Failed to get AI response" });

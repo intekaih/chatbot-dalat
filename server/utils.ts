@@ -58,6 +58,10 @@ export const defaultModel = apiProxyBaseUrl && apiProxyKey
 export const openai = new OpenAI({
     apiKey,
     baseURL,
+    defaultHeaders: baseURL ? {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (compatible; DalatChatbot/1.0)",
+    } : undefined,
 });
 
 // Re-export OpenAI type cho index.ts dùng OpenAI.ChatCompletionMessageParam

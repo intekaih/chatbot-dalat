@@ -13,8 +13,9 @@ import {
 } from '@angular/fire/auth';
 import { Firestore, doc, setDoc, getDoc, serverTimestamp } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { User } from '../models/database.models';
-import { ApiService } from './api.service';
+import { ApiService, User as ApiUser } from './api.service';
 
 @Injectable({
   providedIn: 'root'
@@ -53,17 +54,18 @@ export class AuthService {
     }
   }
 
-  async login(email: string, password: string): Promise<void> {
+  async login(email: string, password: string): Promise<ApiUser | null> {
     const result = await signInWithEmailAndPassword(this.auth, email, password);
     await this.updateLastLogin(result.user.uid);
-    // Lưu Firebase email và sync backend bằng ID Token (không dùng UID từ localStorage)
+    // Lưu Firebase email và sync backend bằng ID Token
     localStorage.setItem('firebase_email', result.user.email || '');
+    localStorage.setItem('device_id', result.user.uid); // Override device_id to link with backend user
     // Lấy ID Token và sync với backend
     const idToken = await getIdToken(result.user);
-    this.apiService.syncFirebaseUser(idToken, result.user.email || '', result.user.displayName || '', result.user.photoURL || '').subscribe();
+    return firstValueFrom(this.apiService.syncFirebaseUser(idToken, result.user.email || '', result.user.displayName || '', result.user.photoURL || ''));
   }
 
-  async register(email: string, password: string, displayName: string): Promise<void> {
+  async register(email: string, password: string, displayName: string): Promise<ApiUser | null> {
     const result = await createUserWithEmailAndPassword(this.auth, email, password);
 
     const userData: User = {
@@ -84,12 +86,13 @@ export class AuthService {
 
     // Lưu Firebase email và sync với backend bằng ID Token
     localStorage.setItem('firebase_email', result.user.email || '');
+    localStorage.setItem('device_id', result.user.uid); // Override device_id
     // Lấy ID Token và sync với backend
     const idToken = await getIdToken(result.user);
-    this.apiService.syncFirebaseUser(idToken, result.user.email || '', displayName, '').subscribe();
+    return firstValueFrom(this.apiService.syncFirebaseUser(idToken, result.user.email || '', displayName, ''));
   }
 
-  async loginWithGoogle(): Promise<void> {
+  async loginWithGoogle(): Promise<ApiUser | null> {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(this.auth, provider);
 
@@ -110,21 +113,23 @@ export class AuthService {
 
     // Lưu Firebase email và sync với backend bằng ID Token
     localStorage.setItem('firebase_email', result.user.email || '');
+    localStorage.setItem('device_id', result.user.uid); // Override device_id
     // Lấy ID Token và sync với backend
     const idToken = await getIdToken(result.user);
-    this.apiService.syncFirebaseUser(idToken, result.user.email || '', result.user.displayName || '', result.user.photoURL || '').subscribe();
+    return firstValueFrom(this.apiService.syncFirebaseUser(idToken, result.user.email || '', result.user.displayName || '', result.user.photoURL || ''));
   }
 
   async logout(): Promise<void> {
     await signOut(this.auth);
     this._userProfile.set(null);
-    // Xóa tất cả localStorage
+    // Xóa tất cả localStorage (cả device_id để reset app)
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('hasSeenOnboarding');
     localStorage.removeItem('hasPersonalized');
     localStorage.removeItem('firebase_email');
     localStorage.removeItem('isFirebaseUser');
     localStorage.removeItem('isGuest');
+    localStorage.removeItem('device_id');
     this.router.navigateByUrl('/auth', { replaceUrl: true });
   }
 

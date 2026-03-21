@@ -450,12 +450,13 @@ export class AuthPage {
     this.isSubmitting = true;
 
     try {
+      let user = null;
       if (this.isLogin) {
-        await this.authService.login(this.email, this.password);
+        user = await this.authService.login(this.email, this.password);
       } else {
-        await this.authService.register(this.email, this.password, this.email.split('@')[0]);
+        user = await this.authService.register(this.email, this.password, this.email.split('@')[0]);
       }
-      this.navigateAfterAuth();
+      this.navigateAfterAuth(user);
     } catch (error: any) {
       this.isSubmitting = false;
       // Handle Firebase auth errors
@@ -480,8 +481,8 @@ export class AuthPage {
     this.isSubmitting = true;
 
     try {
-      await this.authService.loginWithGoogle();
-      this.navigateAfterAuth();
+      const user = await this.authService.loginWithGoogle();
+      this.navigateAfterAuth(user);
     } catch (error: any) {
       this.isSubmitting = false;
       if (error.code === 'auth/popup-closed-by-user') {
@@ -502,10 +503,19 @@ export class AuthPage {
     });
   }
 
-  private navigateAfterAuth() {
+  private navigateAfterAuth(user?: any) {
     // Đã đăng nhập bằng Firebase - lưu thông tin
     localStorage.setItem('isLoggedIn', 'true');
     localStorage.setItem('isFirebaseUser', 'true');
+
+    if (user) {
+      localStorage.setItem('hasPersonalized', user.hasPersonalized ? 'true' : 'false');
+      if (user.name) localStorage.setItem('userName', user.name);
+      if (user.avatar) localStorage.setItem('userAvatar', user.avatar);
+      if (user.budget) localStorage.setItem('userBudget', user.budget);
+      if (user.preferences) localStorage.setItem('userPreferences', JSON.stringify(user.preferences));
+      if (user.travelStyles) localStorage.setItem('userTravelStyles', JSON.stringify(user.travelStyles));
+    }
 
     const hasPersonalized = localStorage.getItem('hasPersonalized') === 'true';
     this.router.navigateByUrl(hasPersonalized ? '/home' : '/welcome', {
