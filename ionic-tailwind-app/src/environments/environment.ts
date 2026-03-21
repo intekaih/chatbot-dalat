@@ -5,6 +5,15 @@
 export const environment = {
   production: false,
   apiBaseUrl: "http://127.0.0.1:3001",
+  firebase: {
+    apiKey: "AIzaSyDen9SILPp9WXux0ABu7NUyMcFgnpCOmyw",
+    authDomain: "dalat-chatbot.firebaseapp.com",
+    projectId: "dalat-chatbot",
+    storageBucket: "dalat-chatbot.firebasestorage.app",
+    messagingSenderId: "336020606793",
+    appId: "1:336020606793:web:742c344687829d8bd81498",
+    measurementId: "G-X3JZGP9LHQ",
+  },
 };
 
 /*

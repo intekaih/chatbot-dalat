@@ -1,6 +1,6 @@
 import { Component, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { Router } from "@angular/router";
+import { Router, NavigationExtras } from "@angular/router";
 import { PlaceCardComponent } from "../../components/place/place-card/place-card.component";
 import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state.component";
 import { ApiService, Place, Trip } from "../../services/api.service";
@@ -10,7 +10,7 @@ import { ApiService, Place, Trip } from "../../services/api.service";
   standalone: true,
   imports: [CommonModule, PlaceCardComponent, EmptyStateComponent],
   template: `
-    <div class="bg-white">
+    <div class="bg-white min-h-screen pb-20">
       <!-- Header -->
       <div
         class="px-4 pt-12 pb-4 border-b border-gray-100 flex items-center justify-between"
@@ -77,14 +77,17 @@ import { ApiService, Place, Trip } from "../../services/api.service";
       <!-- Trips Tab -->
       <div *ngIf="!isLoading && activeTab === 'trips'" class="p-4">
         <div *ngIf="trips.length > 0" class="space-y-4">
-          <div
+          <button
+            type="button"
             *ngFor="let trip of trips"
-            class="flex items-center gap-4 p-3 border border-gray-100 rounded-xl cursor-pointer hover:bg-gray-50"
+            class="w-full flex items-center gap-4 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 text-left"
+            [attr.aria-label]="'Xem lịch trình: ' + trip.title"
             (click)="goToTrip(trip.id)"
           >
             <img
               [src]="trip.coverImage"
-              class="w-20 h-20 rounded-lg object-cover"
+              [alt]="trip.title"
+              class="w-20 h-20 rounded-lg object-cover flex-shrink-0"
               (error)="onImgError($event)"
             />
             <div class="flex-1 min-w-0">
@@ -126,7 +129,7 @@ import { ApiService, Place, Trip } from "../../services/api.service";
                 d="M9 5l7 7-7 7"
               />
             </svg>
-          </div>
+          </button>
 
           <button
             (click)="goToAllTrips()"
@@ -168,14 +171,23 @@ export class FavoritesPage implements OnInit {
   constructor(
     private router: Router,
     private apiService: ApiService,
-  ) {}
+  ) { }
 
   ngOnInit() {
+    // Check navigation state to auto-select tab
+    const nav = this.router.getCurrentNavigation();
+    const state = nav?.extras?.state as { tab?: string } | undefined;
+    if (state?.tab === 'trips') {
+      this.activeTab = 'trips';
+    }
+
     // Load favorite places from API
     this.apiService.getFavorites().subscribe({
       next: (places) => {
         this.favoritePlaces = places;
         this.isLoading = false;
+        // Refresh ảnh: DB chỉ có Pexels → thay bằng Gemini URL (load được ở browser)
+        this.apiService.refreshPlaceImages(this.favoritePlaces).subscribe();
       },
       error: () => {
         this.isLoading = false;
@@ -208,6 +220,6 @@ export class FavoritesPage implements OnInit {
   onImgError(event: Event) {
     const img = event.target as HTMLImageElement;
     img.src =
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80";
+      "https://placehold.co/400x300/e2e8f0/64748b?text=%C4%90%C3%A0+L%E1%BA%A1t";
   }
 }

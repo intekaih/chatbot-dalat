@@ -1,9 +1,9 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import OpenAI from "openai";
 import { v4 as uuidv4 } from "uuid";
 import {
+  default as db,
   getOrCreateUser,
   updateUserPreferences,
   getPlaces,
@@ -23,6 +23,11 @@ import {
   removeFavorite,
   isFavorite,
   deleteChatSession,
+  savePersonalizedPlaces,
+  getPersonalizedPlaces,
+  hasDefaultPlaces,
+  saveDefaultAIPlaces,
+  searchPlaces,
   type UserRow,
   type NotificationRow,
 } from "./db.js";
@@ -31,7 +36,9 @@ import {
   generatePersonalizedPrompts,
   generatePersonalizedWelcome,
   generatePersonalizedNotifications,
+  generateDefaultPlaces,
 } from "./ai-generator.js";
+import { saveAIMauJson, openai, defaultModel, getAIConfigInfo, isUsingProxy, type OpenAI } from "./utils.js";
 
 const app = express();
 
@@ -47,6 +54,8 @@ app.use(
     origin: (origin, callback) => {
       // Cho phép requests không có origin (curl, mobile app native, Capacitor)
       if (!origin) return callback(null, true);
+      // Cho phép wildcard (*) nếu có cấu hình
+      if (ALLOWED_ORIGINS.includes("*")) return callback(null, true);
       if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
       callback(new Error(`CORS blocked: ${origin}`));
     },
@@ -56,6 +65,22 @@ app.use(
   }),
 );
 app.use(express.json({ limit: "10mb" }));
+
+// --- Input Validation Helpers ---
+const VALID_BUDGETS = ["budget", "low", "mid", "luxury", "high"];
+const VALID_TRAVEL_STYLES = ["solo", "couple", "friends", "family"];
+const VALID_PREFERENCES = ["food", "cafe", "checkin", "relax", "nature", "night"];
+
+function isNonEmptyString(v: unknown): v is string {
+  return typeof v === "string" && v.trim().length > 0;
+}
+function isStringArray(v: unknown): v is string[] {
+  return Array.isArray(v) && v.every((i) => typeof i === "string");
+}
+function sanitizeString(v: unknown, maxLen = 200): string {
+  if (typeof v !== "string") return "";
+  return v.trim().slice(0, maxLen);
+}
 
 // --- Rate Limiter ---
 const RATE_LIMIT = 30;
@@ -97,147 +122,70 @@ function rateLimiter(
   return next();
 }
 
-// --- AI Configuration ---
-const apiProxyBaseUrl = process.env.API_PROXY_BASE_URL;
-const apiProxyKey = process.env.API_PROXY_KEY;
-const apiProxyModel = process.env.API_PROXY_MODEL || "gemini-3-flash";
 
-let apiKey: string | undefined;
-let baseURL: string | undefined;
-let defaultModel: string;
-
-if (apiProxyBaseUrl && apiProxyKey) {
-  console.log("🔧 Using API Proxy configuration");
-  apiKey = apiProxyKey;
-  baseURL = apiProxyBaseUrl;
-  defaultModel = apiProxyModel;
-} else if (process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
-  console.log("🔧 Using Replit AI Integration");
-  apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
-  baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || undefined;
-  defaultModel = "gpt-4o-mini";
-} else {
-  console.log("🔧 Using Direct OpenAI API");
-  apiKey = process.env.OPENAI_API_KEY;
-  baseURL = undefined;
-  defaultModel = "gpt-4o-mini";
-}
-
-const openai = new OpenAI({
-  apiKey: apiKey,
-  baseURL: baseURL,
-});
 
 // --- User & Device ID Middleware ---
 function getDeviceId(req: express.Request): string {
-  // Use device-id header or IP as fallback
-  return (
-    (req.headers["device-id"] as string) ||
-    req.ip ||
-    req.socket.remoteAddress ||
-    "unknown"
-  );
+  const deviceId = req.headers["device-id"] as string;
+  if (!deviceId) {
+    throw new Error("Missing device-id header");
+  }
+  return deviceId;
+}
+
+/** Map budget value từ DB/FE sang label tiếng Việt cho AI (FE dùng: budget, mid, luxury) */
+function getBudgetLabelForAI(budget: string | null | undefined): string {
+  if (!budget) return "trung bình";
+  switch (budget) {
+    case "budget":
+    case "low":
+      return "bình dân";
+    case "luxury":
+    case "high":
+      return "sang trọng";
+    case "mid":
+    default:
+      return "trung bình";
+  }
 }
 
 // --- System Prompt ---
-const DALAT_SYSTEM_PROMPT = `Bạn là trợ lý du lịch AI thông minh cho Đà Lạt - "Thành phố Ngàn Hoa". Bạn cần tư vấn tận tâm, chi tiết và cá nhân hóa cho từng khách du lịch.
+const DALAT_SYSTEM_PROMPT = `Bạn là một người thường xuyên đi du lịch, am hiểu tường tận như một "thổ địa" thực thụ tại Đà Lạt. Nhiệm vụ của bạn là tư vấn du lịch thật SÚC TÍCH, TRỰC QUAN và ĐÚNG TRỌNG TÂM, tránh dài dòng sáo rỗng gây mệt mỏi cho người đọc.
 
-## KIẾN THỨC CHUYÊN SÂU VỀ ĐÀ LẠT:
-
-### 📍 Địa điểm du lịch nổi tiếng:
-- **Hồ Xuân Hương** - Trung tâm thành phố, đi bộ dạo quanh hồ
-- **Thung Lũng Tình Yêu** - Địa điểm check-in lãng mạn
-- **Langbiang** - Núi cao nhất Đà Lạt, view 360°
-- **Đồi Chè Cầu Đất** - Cảnh đẹp bạt ngàn
-- **Crazy House (Nhà của Hang)** - Kiến trúc độc đáo
-- **Dinh Bảo Đại** - di tích lịch sử
-- **Đại học Đà Lạt** - Cổng trường check-in nổi tiếng
-- **Thác Datanla** - Thác nước tự nhiên
-- **Hồ Tuyền Lâm** - Hồ nước yên bình
-- **Chợ Đà Lạt** - Trải nghiệm văn hóa địa phương
-
-### 🍜 Ẩm thực đặc sản:
-- **Bánh tráng nướng** - Món ăn đường phố nổi tiếng
-- **Bánh mì xíu mại** - Bánh mì Việt-Pháp
-- **Lẩu gà lá é** - Đặc sản Đà Lạt
-- **Kem bơ** - Kem Đà Lạt nổi tiếng
-- **Dâu tây** - Trái cây địa phương
-- **Mực nướng** - Hải sản tương ngon
-- **Trà atiso** - Thức uống địa phương
-
-### ☕ Quán cà phê view đẹp:
-- **Quán Cối Xay Gió** - View toàn cảnh thành phố
-- **The Coffee House** - Không gian hiện đại
-- **Café Vintaso** - View đồi núi
-- **Windahills Coffee** - View thung lũng
-
-### 🎯 Trải nghiệm & hoạt động:
-- **Cắm trại** - Thung Lũng Tình Yêu, Langbiang
-- **Quad bike** - Mạo hiểm ở Langbiang
-- **Trồng rau** - Trải nghiệm nông trại
-- **Khám phá hang động** - Hang Địa Đàng
-- **Xem hoa** - Vườn hoa, phượng tím
+## KIẾN THỨC CHUYÊN SÂU:
+- Địa điểm: Hồ Xuân Hương, Langbiang, Đồi Chè Cầu Đất, Dinh Bảo Đại, Thác Datanla...
+- Ẩm thực: Bánh tráng nướng, Lẩu gà lá é, Bánh mì xíu mại, Kem bơ, Bún bò...
+- Trải nghiệm: Đón bình minh, cắm trại, cafe view thung lũng...
 
 ## QUY TẮC TƯ VẤN BẮT BUỘC:
 
-### 1. KHÔNG BAO GIỜ chỉ gợi ý 1 địa điểm duy nhất
-- Luôn cung cấp TỐI THIỂU 3-5 lựa chọn cho mỗi loại câu hỏi
-- Nếu user hỏi "địa điểm vui chơi" → phải liệt kê ít nhất 5-7 địa điểm
-- Nếu user hỏi "quán ăn" → phải liệt kê ít nhất 5-7 quán
+### 1. PHÂN LOẠI CÂU HỎI ĐỂ TRẢ LỜI ĐÚNG TRỌNG TÂM:
+- NẾU NHẬN DIỆN ẢNH HOẶC HỎI MỘT ĐIỂM CỤ THỂ: Chẩn đoán ngay địa điểm đó (tên, vị trí) bằng 1-2 câu cực kỳ ngắn gọn và chính xác. Trả lời ngay vào trọng tâm (ví dụ: "Đây là Hồ Xuân Hương"). Cung cấp 1-2 gợi ý nhỏ lân cận hoặc mẹo đi lại thật ngắn nếu cần thiết. TUYỆT ĐỐI không liệt kê dài dòng các danh sách không liên quan.
+- NẾU HỎI GỢI Ý CHUNG (Vd: "Đi đâu", "Ăn gì ngon"): Đưa ra ngay 3-5 lựa chọn nổi bật nhất. Không gợi ý dàn trải.
+  Format:
+  - **Tên địa điểm** - Mô tả 1 câu (Điểm đặc sắc nhất) - 💰 Giá tham khảo.
 
-### 2. CÁ NHÂN HÓA - LUÔN hỏi thông tin trước khi tư vấn:
-- Nếu user chưa nói rõ THỜI GIAN → Hỏi: "Bạn đi mấy ngày?"
-- Nếu user chưa nói rõ SỞ THÍCH → Hỏi: "Bạn thích chill nhẹ hay khám phá mạnh?"
-- Nếu user chưa nói rõ NGÂN SÁCH → Hỏi: "Ngân sách của bạn khoảng bao nhiêu?"
-- Nếu user đi NHÓM → Hỏi: "Đi cùng gia đình, bạn bè hay người yêu?"
+### 2. PHONG CÁCH TRẢ LỜI "THỔ ĐỊA" & NGẮN GỌN:
+- Vô thẳng vấn đề ngay từ câu đầu tiên.
+- Không nói vòng vo, không viết các đoạn văn dài lê thê. Thay vào đó dùng GẠCH ĐẦU DÒNG (bullet points) để người lười đọc cũng thấy dễ hiểu.
+- Giọng văn thân thiện, nhiệt tình nhưng "chất" và thực tế. Sử dụng một vài emoji hợp lý để nổi bật ý chính.
 
-### 3. FORMAT TRẢ LỜI HIỆN ĐẠI:
-Sử dụng cấu trúc rõ ràng như sau:
+### 3. CÁ NHÂN HÓA (Dựa vào User Context nếu có):
+- Khớp ngân sách: Người đi bình dân thì chỉ gợi ý quán vỉa hè, lẩu bò, nem nướng.
+- Khớp phong cách: Cặp đôi thì gợi ý chỗ chill lãng mạn, nhóm bạn thì chỗ rộng rãi ăn nhậu rôm rả.
 
-**🏷️ TÊN CATEGORY**
-- **Tên địa điểm 1** - Mô tả ngắn - 💰 Giá/Gợi ý giá
-- **Tên địa điểm 2** - Mô tả ngắn - 💰 Giá
-- ...
+### 4. TIPS INSIDER (CHỈ 1 COMMENT NGẮN DUY NHẤT Ở CUỐI):
+- Luôn kết thúc bằng 1 mẹo sống còn thực tế (Vd: "Nhớ dậy lúc 5h30 sáng mới có sương mờ", "Mang áo ấm vì mép hồ lạnh gió").
+- Đặt câu hỏi MỞ ngắn gọn để dẫn dắt tiếp (Vd: "Mình lên lịch trình nhé?").`;
 
-Các category có thể dùng:
-- 🏛️ Check-in &拍照
-- 🎢 Vui chơi & Mạo hiểm
-- ☕ Cafe & View đẹp
-- 🍜 Ẩm thực đường phố
-- 🍽️ Nhà hàng
-- 🌙 Nightlife & Bar
-- 🌿 Nature & Khám phá
-
-### 4. CTA MẠNH - Kết thúc bằng đề xuất hành động cụ thể:
-- "Mình tạo lịch trình chi tiết 2 ngày cho bạn nhé?"
-- "Bạn muốn mình gợi ý combo đi + ăn + cafe không?"
-- "Mình lưu các địa điểm này vào danh sách yêu thích luôn không?"
-- "Bạn có muốn đặt tour hoặc hướng dẫn đường đi không?"
-
-### 5. TIPS INSIDER (thêm vào cuối mỗi gợi ý):
-- ⏰ "Nên đi vào buổi sáng sớm (6-8h) để tránh đông"
-- 💡 "Mang theo áo khoác vì Đà Lạt lạnh về đêm"
-- 🎫 "Mua vé combo tiết kiệm hơn"
-- 📍 "Đỗ xe ở bãi rào Đồi Frai thuận tiện hơn"
-- 🌤️ "Tháng 3-5 hoa phượng tím nở rực rỡ"
-
-### 6. STYLE GIAO TIẾP:
-- Thân thiện, ấm áp như người bạn địa phương
-- Sử dụng emoji phù hợp để tạo không khí vui vẻ
-- Dùng **bold** cho tên địa điểm quan trọng
-- Trả lời đầy đủ, chi tiết, KHÔNG ngắn gọn quá
-- Nếu user hỏi chung → hỏi thêm thông tin để cá nhân hóa
-
-### 7. KHI GẶP ẢNH:
-- Phân tích ảnh để nhận diện địa điểm
-- Cung cấp thông tin chi tiết về địa điểm đó
-- Gợi ý các địa điểm lân cận tương tự`;
-
-const PLACE_EXTRACT_PROMPT = `Dựa vào cuộc trò chuyện, nếu có gợi ý nhiều địa điểm cụ thể, hãy trả về JSON array chứa tất cả các địa điểm được đề cập.
+const PLACE_EXTRACT_PROMPT = `Bạn là trợ lý du lịch Đà Lạt. Dựa vào câu trả lời của AI, trích xuất tất cả các địa điểm cụ thể được gợi ý.
 Trả về JSON array theo format:
-[{"name": "Tên địa điểm 1", "address": "Địa chỉ cụ thể nếu biết", "description": "Mô tả ngắn"}, {"name": "Tên địa điểm 2", "address": "Địa chỉ", "description": "Mô tả"}]
-QUAN TRỌNG: Trường "name" phải là tên chính xác của địa điểm để có thể tìm trên Google Maps.
-Nếu không có địa điểm cụ thể nào được gợi ý, trả về: []
+[{"name": "Tên địa điểm chính xác", "category": "danh_mục", "reason": "Tại sao gợi ý địa điểm này"}]
+QUAN TRỌNG:
+- Trường "name" phải là tên chính xác để tìm trong DB
+- Trường "category" phải là một trong: "cafe", "food", "checkin", "nature", "homestay", "rental" (hoặc bỏ trống nếu không rõ)
+- Chỉ trích xuất địa điểm thực tế, không trích xuất món ăn, dịch vụ, hay tips
+- Nếu không có địa điểm cụ thể nào, trả về: []
 Chỉ trả JSON array, không có text khác.`;
 
 // ========================
@@ -251,24 +199,11 @@ app.get("/api/health", (req, res) => {
 
 // Config
 app.get("/api/config", (req, res) => {
-  let mode: string;
-  let details: string;
-
-  if (apiProxyBaseUrl && apiProxyKey) {
-    mode = "API Proxy (Antigravity Tools)";
-    details = `Model: ${apiProxyModel}`;
-  } else if (process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
-    mode = "Replit AI Integration";
-    details = "Model: gpt-4o-mini";
-  } else {
-    mode = "Direct OpenAI API";
-    details = "Model: gpt-4o-mini";
-  }
-
+  const { mode, details } = getAIConfigInfo();
   res.json({ mode, details, model: defaultModel });
 });
 
-// Get or create user (device-based)
+// Get or create user (device-based or Firebase)
 app.get("/api/user", (req, res) => {
   try {
     const deviceId = getDeviceId(req);
@@ -288,44 +223,115 @@ app.get("/api/user", (req, res) => {
   }
 });
 
+// Sync Firebase user with backend database
+app.post("/api/user/sync", async (req, res) => {
+  try {
+    const deviceId = getDeviceId(req);
+    const { firebaseUid, email, displayName, photoURL } = req.body;
+
+    if (!isNonEmptyString(firebaseUid)) {
+      return res.status(400).json({ error: "firebaseUid is required and must be a non-empty string" });
+    }
+    if (email !== undefined && typeof email !== "string") {
+      return res.status(400).json({ error: "email must be a string" });
+    }
+
+    // Check if user already exists with this firebaseUid
+    const existingUser = db.prepare("SELECT * FROM users WHERE device_id = ?").get(firebaseUid) as UserRow | undefined;
+
+    if (existingUser) {
+      // Update existing user
+      db.prepare(`
+        UPDATE users SET 
+          name = COALESCE(?, name),
+          avatar = COALESCE(?, avatar),
+          email = COALESCE(?, email),
+          updated_at = CURRENT_TIMESTAMP
+        WHERE device_id = ?
+      `).run(displayName || null, photoURL || null, email || null, firebaseUid);
+
+      const user = db.prepare("SELECT * FROM users WHERE device_id = ?").get(firebaseUid) as UserRow;
+      return res.json({
+        id: user.id,
+        name: user.name,
+        avatar: user.avatar,
+        preferences: JSON.parse(user.preferences || "[]"),
+        travelStyles: JSON.parse(user.travel_styles || "[]"),
+        budget: user.budget,
+        hasPersonalized: user.has_personalized === 1,
+      });
+    }
+
+    // Create new user with firebaseUid as device_id
+    const userId = uuidv4();
+    db.prepare(`
+      INSERT INTO users (id, device_id, name, avatar, email, preferences, travel_styles, budget, has_personalized)
+      VALUES (?, ?, ?, ?, ?, '[]', '[]', 'mid', 0)
+    `).run(userId, firebaseUid, displayName || "User", photoURL || "🧑‍💻", email || "");
+
+    const user = db.prepare("SELECT * FROM users WHERE id = ?").get(userId) as UserRow;
+    res.json({
+      id: user.id,
+      name: user.name,
+      avatar: user.avatar,
+      preferences: [],
+      travelStyles: [],
+      budget: "mid",
+      hasPersonalized: false,
+    });
+  } catch (error) {
+    console.error("Error syncing user:", error);
+    res.status(500).json({ error: "Failed to sync user" });
+  }
+});
+
 // Save user preferences after /welcome
 app.post("/api/user/preferences", async (req, res) => {
   try {
     const deviceId = getDeviceId(req);
     const { name, avatar, preferences, travelStyles, budget } = req.body;
 
+    // --- Validate inputs ---
+    if (preferences !== undefined && !isStringArray(preferences)) {
+      return res.status(400).json({ error: "preferences must be a string array" });
+    }
+    if (travelStyles !== undefined && !isStringArray(travelStyles)) {
+      return res.status(400).json({ error: "travelStyles must be a string array" });
+    }
+    if (budget !== undefined && !VALID_BUDGETS.includes(budget)) {
+      return res.status(400).json({ error: `budget must be one of: ${VALID_BUDGETS.join(", ")}` });
+    }
+
     // Đảm bảo user tồn tại trước khi update (tránh lỗi undefined khi device mới)
     getOrCreateUser(deviceId);
 
     const user: UserRow = updateUserPreferences(deviceId, {
-      name,
-      avatar,
+      name: sanitizeString(name, 50),
+      avatar: sanitizeString(avatar, 10),
       preferences,
       travelStyles,
       budget,
     });
 
-    // Generate personalized data using AI
-    const personalizedData = await generatePersonalizedData({
-      preferences,
-      travelStyles,
-      budget,
-    });
+    const userRecord = getOrCreateUser(deviceId);
 
-    // Create personalized notifications
-    if (
-      personalizedData.notifications &&
-      personalizedData.notifications.length > 0
-    ) {
-      const userRecord = getOrCreateUser(deviceId);
-      for (const notif of personalizedData.notifications) {
-        createNotification(userRecord.id, notif);
-      }
+    // Xác định dữ liệu hiện tại để trả về ngay lập tức
+    const existingUserPlaces = getPersonalizedPlaces(userRecord.id);
+    const hasExistingData =
+      existingUserPlaces.checkin.length > 0 || existingUserPlaces.nature.length > 0 ||
+      existingUserPlaces.homestay.length > 0 || existingUserPlaces.cafe.length > 0 ||
+      existingUserPlaces.food.length > 0 || existingUserPlaces.rental.length > 0;
+
+    let currentData;
+    if (hasExistingData) {
+      // Trả dữ liệu cá nhân hóa CŨ
+      currentData = buildPersonalizedResponse(existingUserPlaces);
+    } else {
+      // Trả dữ liệu mặc định
+      currentData = getDefaultData();
     }
 
-    // Xóa cache cũ khi user cập nhật preferences
-    personalizedCache.delete(`personalized_${user.id}`);
-
+    // Trả response NGAY LẬP TỨC (không chờ AI)
     res.json({
       success: true,
       user: {
@@ -337,88 +343,113 @@ app.post("/api/user/preferences", async (req, res) => {
         budget: user.budget,
         hasPersonalized: true,
       },
-      personalizedData,
+      personalizedData: currentData,
     });
+
+    // Fire-and-forget: AI tạo dữ liệu mới ở background
+    console.log(`🤖 [BG] Bắt đầu tạo personalized data cho user ${userRecord.id}...`);
+    generatePersonalizedData({
+      preferences,
+      travelStyles,
+      budget,
+    }, userRecord.id)
+      .then((newData) => {
+        // Tạo notifications
+        if (newData.notifications && newData.notifications.length > 0) {
+          for (const notif of newData.notifications) {
+            createNotification(userRecord.id, notif);
+          }
+        }
+        console.log(`✅ [BG] Hoàn thành personalized data cho user ${userRecord.id}`);
+      })
+      .catch((err) => {
+        console.error(`❌ [BG] Lỗi tạo personalized data cho user ${userRecord.id}:`, err);
+      });
   } catch (error) {
     console.error("Error saving preferences:", error);
     res.status(500).json({ error: "Failed to save preferences" });
   }
 });
 
-// --- In-memory cache cho personalized data (tránh gọi AI 4 lần/request) ---
-interface CacheEntry {
-  data: any;
-  expiresAt: number;
-}
-const personalizedCache = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 phút
-
-function getCached(key: string): any | null {
-  const entry = personalizedCache.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.expiresAt) {
-    personalizedCache.delete(key);
-    return null;
-  }
-  return entry.data;
-}
-function setCache(key: string, data: any): void {
-  personalizedCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
-}
-
 // Get personalized data (for users who completed /welcome)
+// LOGIC MỚI: Chỉ đọc từ DB, KHÔNG BAO GIỜ gọi AI ở đây
 app.get("/api/personalized", async (req, res) => {
   try {
     const deviceId = getDeviceId(req);
     const user = getOrCreateUser(deviceId);
 
-    if (user.has_personalized !== 1) {
-      const defaultData = getDefaultData();
-      return res.json({ ...defaultData, isPersonalized: false });
+    // Nếu user đã personalized → kiểm tra DB có places riêng không
+    if (user.has_personalized === 1) {
+      const userPlaces = getPersonalizedPlaces(user.id);
+      const hasUserPlaces =
+        userPlaces.checkin.length > 0 || userPlaces.nature.length > 0 ||
+        userPlaces.homestay.length > 0 || userPlaces.cafe.length > 0 ||
+        userPlaces.food.length > 0 || userPlaces.rental.length > 0;
+
+      if (hasUserPlaces) {
+        // Trả personalized places từ DB
+        const response = buildPersonalizedResponse(userPlaces);
+        return res.json({ ...response, isPersonalized: true });
+      }
     }
 
-    // Trả cache nếu còn hạn
-    const cacheKey = `personalized_${user.id}`;
-    const cached = getCached(cacheKey);
-    if (cached) {
-      return res.json({ ...cached, isPersonalized: true });
-    }
-
-    const preferences = JSON.parse(user.preferences || "[]");
-    const travelStyles = JSON.parse(user.travel_styles || "[]");
-    const budget = user.budget ?? "mid";
-
-    const personalizedData = await generatePersonalizedData({
-      preferences,
-      travelStyles,
-      budget,
-    });
-
-    // Lưu cache
-    setCache(cacheKey, personalizedData);
-
-    res.json({
-      ...personalizedData,
-      isPersonalized: true,
-    });
+    // Fallback: trả default data từ DB (places có user_id IS NULL)
+    const defaultData = getDefaultData();
+    return res.json({ ...defaultData, isPersonalized: false });
   } catch (error) {
     console.error("Error getting personalized data:", error);
     res.status(500).json({ error: "Failed to get personalized data" });
   }
 });
 
-// Helper to generate personalized data
-async function generatePersonalizedData(userData: {
-  preferences: string[];
-  travelStyles: string[];
-  budget: string;
+// Helper: Build API response từ personalized places (DB format → FE format)
+function buildPersonalizedResponse(userPlaces: {
+  checkin: any[];
+  nature: any[];
+  homestay: any[];
+  cafe: any[];
+  food: any[];
+  rental: any[];
+  signature: any[];
 }) {
-  // Get default data first
+  const defaultData = getDefaultData();
+  return {
+    places: [
+      ...userPlaces.checkin,
+      ...userPlaces.nature,
+      ...userPlaces.homestay,
+      ...userPlaces.cafe,
+      ...userPlaces.food,
+      ...userPlaces.rental,
+      ...userPlaces.signature,
+    ],
+    checkinPlaces: userPlaces.checkin,
+    naturePlaces: userPlaces.nature,
+    homestays: userPlaces.homestay,
+    cafes: userPlaces.cafe,
+    foods: userPlaces.food,
+    rentals: userPlaces.rental,
+    signaturePlaces: userPlaces.signature,
+    quickPrompts: defaultData.quickPrompts,
+    welcomeMessage: defaultData.welcomeMessage,
+    notifications: defaultData.notifications,
+    categories: defaultData.categories,
+  };
+}
+
+// Helper to generate personalized data
+async function generatePersonalizedData(
+  userData: {
+    preferences: string[];
+    travelStyles: string[];
+    budget: string;
+  },
+  userId: string,
+) {
   const defaultData = getDefaultData();
 
   try {
-    // Gọi song song 4 AI requests thay vì tuần tự — giảm latency ~75%
-    const [aiPlaces, aiPrompts, aiWelcome, aiNotifications] = await Promise.all(
+    const [aiPlacesResult, aiPrompts, aiWelcome, aiNotifications] = await Promise.all(
       [
         generatePersonalizedPlaces(userData),
         generatePersonalizedPrompts(userData),
@@ -427,8 +458,41 @@ async function generatePersonalizedData(userData: {
       ],
     );
 
+    // AI trả về object với 7 keys: checkin, nature, homestay, cafe, food, rental, signature
+    const aiPlaces = aiPlacesResult;
+
+    // Lưu personalized places vào DB
+    if (aiPlaces) {
+      savePersonalizedPlaces(userId, aiPlaces);
+    }
+
+    const hasAiPlaces = aiPlaces &&
+      (aiPlaces.checkin?.length || aiPlaces.nature?.length ||
+        aiPlaces.homestay?.length || aiPlaces.cafe?.length ||
+        aiPlaces.food?.length || aiPlaces.rental?.length ||
+        aiPlaces.signature?.length);
+
+    const places = hasAiPlaces
+      ? [
+        ...(aiPlaces.checkin || []),
+        ...(aiPlaces.nature || []),
+        ...(aiPlaces.homestay || []),
+        ...(aiPlaces.cafe || []),
+        ...(aiPlaces.food || []),
+        ...(aiPlaces.rental || []),
+        ...(aiPlaces.signature || []),
+      ]
+      : defaultData.places;
+
     return {
-      places: aiPlaces.length > 0 ? aiPlaces : defaultData.places,
+      places,
+      checkinPlaces: aiPlaces?.checkin || [],
+      naturePlaces: aiPlaces?.nature || [],
+      homestays: aiPlaces?.homestay || [],
+      cafes: aiPlaces?.cafe || [],
+      foods: aiPlaces?.food || [],
+      rentals: aiPlaces?.rental || [],
+      signaturePlaces: aiPlaces?.signature || [],
       quickPrompts: aiPrompts.length > 0 ? aiPrompts : defaultData.quickPrompts,
       welcomeMessage: aiWelcome || defaultData.welcomeMessage,
       notifications:
@@ -464,7 +528,7 @@ function getDefaultData() {
       },
       {
         type: "weather",
-        title: "Thờ tiết hôm nay",
+        title: "Thời tiết hôm nay",
         content: "Hôm nay trời đẹp! Nhiệt độ 18-25°C, lý tưởng cho chuyến đi!",
         iconColor: "bg-sky-100 text-sky-700",
         icon: "☀️",
@@ -574,11 +638,47 @@ app.post("/api/trips", (req, res) => {
   try {
     const deviceId = getDeviceId(req);
     const user = getOrCreateUser(deviceId);
+
+    // --- Validate trip data ---
+    const { title, destination, startDate, endDate } = req.body;
+    if (!isNonEmptyString(title)) {
+      return res.status(400).json({ error: "title is required" });
+    }
+    if (!isNonEmptyString(destination)) {
+      return res.status(400).json({ error: "destination is required" });
+    }
+    if (!isNonEmptyString(startDate) || !isNonEmptyString(endDate)) {
+      return res.status(400).json({ error: "startDate and endDate are required" });
+    }
+
     const trip = createTrip(user.id, req.body);
     res.json(trip);
   } catch (error) {
     console.error("Error creating trip:", error);
     res.status(500).json({ error: "Failed to create trip" });
+  }
+});
+
+// Generate image via AI (for trip covers, etc.)
+app.post("/api/generate-image", async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) return res.status(400).json({ error: "prompt is required" });
+
+    const response = await (openai.images as any).generate({
+      model: process.env.API_IMAGE_MODEL || "gemini-3.1-flash-image",
+      prompt,
+      n: 1,
+      response_format: "b64_json",
+    });
+
+    const b64 = response.data?.[0]?.b64_json;
+    if (!b64) return res.status(500).json({ error: "No image returned" });
+
+    res.json({ dataUrl: `data:image/png;base64,${b64}` });
+  } catch (error: any) {
+    console.error("generate-image error:", error?.message || error);
+    res.status(500).json({ error: "Image generation failed" });
   }
 });
 
@@ -699,6 +799,11 @@ app.delete("/api/chat/sessions/:id", (req, res) => {
 
 // Chat endpoint
 app.post("/api/chat", rateLimiter, async (req, res) => {
+  const deviceId = req.headers["device-id"] as string;
+  if (!deviceId) {
+    return res.status(400).json({ error: "Missing device-id header" });
+  }
+
   try {
     const {
       message,
@@ -712,8 +817,23 @@ app.post("/api/chat", rateLimiter, async (req, res) => {
       return res.status(400).json({ error: "Message or image is required" });
     }
 
-    const deviceId = getDeviceId(req);
     const user = getOrCreateUser(deviceId);
+
+    // Lấy user preferences để cá nhân hóa chat
+    const userPreferences = JSON.parse(user.preferences || "[]");
+    const userTravelStyles = JSON.parse(user.travel_styles || "[]");
+    const userBudget = user.budget || "mid";
+
+    // Tạo context về user để AI hiểu đã có info hay chưa
+    // Context được truyền khi user CÓ preferences, không cần has_personalized flag
+    const hasUserInfo = userPreferences.length > 0 || userTravelStyles.length > 0 || userBudget !== "mid";
+    const userContext = hasUserInfo
+      ? `\n## THÔNG TIN NGƯỜI DÙNG (đã có từ trước - KHÔNG cần hỏi lại):
+- Sở thích: ${userPreferences.join(", ") || "chưa có"}
+- Phong cách du lịch: ${userTravelStyles.join(", ") || "chưa có"}
+- Ngân sách: ${getBudgetLabelForAI(userBudget)}
+\nNếu người dùng chưa cung cấp đủ thông tin, hãy dựa vào thông tin trên để gợi ý phù hợp.`
+      : "";
 
     // Save user message to session — kiểm tra session thuộc user hiện tại
     if (sessionId) {
@@ -754,7 +874,7 @@ app.post("/api/chat", rateLimiter, async (req, res) => {
     }
 
     const messages: OpenAI.ChatCompletionMessageParam[] = [
-      { role: "system", content: DALAT_SYSTEM_PROMPT },
+      { role: "system", content: DALAT_SYSTEM_PROMPT + userContext },
       ...historyMessages,
       {
         role: "user",
@@ -766,7 +886,7 @@ app.post("/api/chat", rateLimiter, async (req, res) => {
     ];
 
     let modelToUse: string;
-    if (apiProxyBaseUrl) {
+    if (isUsingProxy) {
       // Cho phép FE chọn model khi dùng proxy — validate whitelist
       const ALLOWED_MODELS = (process.env.ALLOWED_MODELS || "")
         .split(",")
@@ -794,6 +914,10 @@ app.post("/api/chat", rateLimiter, async (req, res) => {
       response.choices[0]?.message?.content ||
       "Xin lỗi, tôi không thể trả lời lúc này.";
 
+    saveAIMauJson("chat", { reply, message, sessionId });
+
+    // Note: Place extraction has been removed since the frontend already calls /api/extract-places separately off the main thread.
+
     // Save assistant message to session — chỉ khi session đã được xác minh ở trên
     if (sessionId) {
       const userSessions = getChatSessions(user.id);
@@ -803,7 +927,7 @@ app.post("/api/chat", rateLimiter, async (req, res) => {
       }
     }
 
-    res.json({ reply, suggestedPlace: null });
+    res.json({ reply });
   } catch (error) {
     console.error("OpenAI API error:", error);
     res.status(500).json({ error: "Failed to get AI response" });
@@ -820,7 +944,7 @@ app.post("/api/extract-place", rateLimiter, async (req, res) => {
     }
 
     const extractResponse = await openai.chat.completions.create({
-      model: apiProxyBaseUrl ? defaultModel : "gpt-4o-mini",
+      model: defaultModel,
       messages: [
         { role: "system", content: PLACE_EXTRACT_PROMPT },
         { role: "user", content: `Câu hỏi: ${message}\nTrả lời: ${reply}` },
@@ -834,6 +958,7 @@ app.post("/api/extract-place", rateLimiter, async (req, res) => {
     if (extractedText && extractedText !== "null" && extractedText !== "[]") {
       try {
         suggestedPlace = JSON.parse(extractedText);
+        saveAIMauJson("extractPlace", { message, reply, extracted: suggestedPlace });
       } catch (e) {
         console.log("Failed to parse place extraction result");
       }
@@ -846,6 +971,61 @@ app.post("/api/extract-place", rateLimiter, async (req, res) => {
   }
 });
 
+// Extract full Place data from AI reply — trả về đầy đủ Place fields cho FE hiển thị
+app.post("/api/extract-places", rateLimiter, async (req, res) => {
+  try {
+    const { reply } = req.body;
+
+    if (!reply) {
+      return res.status(400).json({ error: "Reply is required" });
+    }
+
+    const extractResponse = await openai.chat.completions.create({
+      model: defaultModel,
+      messages: [
+        { role: "system", content: PLACE_EXTRACT_PROMPT },
+        { role: "user", content: `Câu trả lời: ${reply}` },
+      ],
+      max_completion_tokens: 512,
+    });
+
+    const extractedText = extractResponse.choices[0]?.message?.content?.trim() || "";
+    let suggestedPlaces: ReturnType<typeof searchPlaces> = [];
+
+    if (extractedText && extractedText !== "[]" && extractedText !== "null") {
+      try {
+        const extracted: { name: string; category?: string; reason?: string }[] = JSON.parse(extractedText);
+        if (Array.isArray(extracted) && extracted.length > 0) {
+          for (const item of extracted.slice(0, 6)) {
+            const matched = searchPlaces(item.name);
+            if (matched.length > 0) {
+              // Ưu tiên đúng category nếu user chỉ định
+              if (item.category && matched.length > 1) {
+                const exact = matched.find((p) => p.category === item.category);
+                if (exact && !suggestedPlaces.includes(exact)) {
+                  suggestedPlaces.push(exact);
+                  continue;
+                }
+              }
+              if (!suggestedPlaces.includes(matched[0])) {
+                suggestedPlaces.push(matched[0]);
+              }
+            }
+          }
+          saveAIMauJson("suggestedPlaces", { reply, extracted, found: suggestedPlaces });
+        }
+      } catch (e) {
+        console.warn("Failed to parse place extraction result:", e);
+      }
+    }
+
+    res.json({ suggestedPlaces });
+  } catch (error) {
+    console.error("Extract places error:", error);
+    res.status(500).json({ error: "Failed to extract places" });
+  }
+});
+
 // Streaming chat
 app.post("/api/chat/stream", rateLimiter, async (req, res) => {
   try {
@@ -855,12 +1035,29 @@ app.post("/api/chat/stream", rateLimiter, async (req, res) => {
       return res.status(400).json({ error: "Message is required" });
     }
 
+    // Lấy user preferences để cá nhân hóa chat (streaming)
+    const deviceId = getDeviceId(req);
+    const user = getOrCreateUser(deviceId);
+    const userPreferences = JSON.parse(user.preferences || "[]");
+    const userTravelStyles = JSON.parse(user.travel_styles || "[]");
+    const userBudget = user.budget || "mid";
+
+    // Context được truyền khi user CÓ preferences, không cần has_personalized flag
+    const hasUserInfo = userPreferences.length > 0 || userTravelStyles.length > 0 || userBudget !== "mid";
+    const userContext = hasUserInfo
+      ? `\n## THÔNG TIN NGƯỜI DÙNG (đã có từ trước - KHÔNG cần hỏi lại):
+- Sở thích: ${userPreferences.join(", ") || "chưa có"}
+- Phong cách du lịch: ${userTravelStyles.join(", ") || "chưa có"}
+- Ngân sách: ${getBudgetLabelForAI(userBudget)}
+\nNếu người dùng chưa cung cấp đủ thông tin, hãy dựa vào thông tin trên để gợi ý phù hợp.`
+      : "";
+
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
     const messages: OpenAI.ChatCompletionMessageParam[] = [
-      { role: "system", content: DALAT_SYSTEM_PROMPT },
+      { role: "system", content: DALAT_SYSTEM_PROMPT + userContext },
       ...history.map((m: { role: string; content: string }) => ({
         role: m.role as "user" | "assistant",
         content: m.content,
@@ -869,7 +1066,7 @@ app.post("/api/chat/stream", rateLimiter, async (req, res) => {
     ];
 
     const stream = await openai.chat.completions.create({
-      model: apiProxyBaseUrl ? defaultModel : "gpt-4o-mini",
+      model: defaultModel,
       messages,
       max_completion_tokens: 1024,
       stream: true,
@@ -898,3 +1095,253 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 API Base: http://localhost:${PORT}/api`);
 });
+
+// ========================
+// IMAGE PROXY (Bypass CORS)
+// ========================
+
+// Proxy endpoint để fetch ảnh từ external URLs và serve lại (bypass CORS)
+app.get("/api/image-proxy", async (req, res) => {
+  try {
+    const { url } = req.query;
+    
+    if (!url || typeof url !== "string") {
+      return res.status(400).json({ error: "url parameter is required" });
+    }
+
+    // Validate URL format
+    let imageUrl: URL;
+    try {
+      imageUrl = new URL(url);
+    } catch {
+      return res.status(400).json({ error: "Invalid URL format" });
+    }
+
+    // Chỉ cho phép HTTPS để bảo mật
+    if (imageUrl.protocol !== "https:") {
+      return res.status(400).json({ error: "Only HTTPS URLs are allowed" });
+    }
+
+    console.log(`🖼️ [ImageProxy] Fetching: ${imageUrl.hostname}${imageUrl.pathname.substring(0, 50)}...`);
+
+    // Fetch ảnh từ external server (server-side không bị CORS)
+    // Thêm timeout 10s để tránh hang
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    try {
+      const imageResponse = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Referer": imageUrl.origin,
+        },
+        redirect: "follow",
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!imageResponse.ok) {
+        console.warn(`  ⚠️ Image fetch failed: ${imageResponse.status} ${imageResponse.statusText}`);
+        // Return 404 với proper CORS headers để frontend có thể handle
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("Access-Control-Allow-Methods", "GET");
+        return res.status(404).json({ 
+          error: "Image not found",
+          originalUrl: url,
+          status: imageResponse.status 
+        });
+      }
+
+      // Validate content type
+      const contentType = imageResponse.headers.get("content-type") || "";
+      if (!contentType.startsWith("image/")) {
+        console.warn(`  ⚠️ Invalid content type: ${contentType}`);
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("Access-Control-Allow-Methods", "GET");
+        return res.status(400).json({ error: "Not an image", contentType });
+      }
+
+      const imageBuffer = await imageResponse.arrayBuffer();
+
+      // Set CORS headers để frontend có thể load được
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET");
+      res.setHeader("Content-Type", contentType || "image/jpeg");
+      res.setHeader("Cache-Control", "public, max-age=86400"); // Cache 1 ngày
+
+      res.send(Buffer.from(imageBuffer));
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      
+      // Handle timeout
+      if (fetchError.name === "AbortError") {
+        console.warn(`  ⚠️ Image fetch timeout: ${url.substring(0, 60)}...`);
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("Access-Control-Allow-Methods", "GET");
+        return res.status(408).json({ error: "Request timeout", originalUrl: url });
+      }
+
+      // Handle DNS/network errors
+      if (fetchError.code === "EAI_AGAIN" || fetchError.code === "ENOTFOUND") {
+        console.warn(`  ⚠️ DNS lookup failed: ${imageUrl.hostname}`);
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("Access-Control-Allow-Methods", "GET");
+        return res.status(502).json({ error: "DNS lookup failed", hostname: imageUrl.hostname });
+      }
+
+      throw fetchError; // Re-throw để catch block bên ngoài handle
+    }
+  } catch (error: any) {
+    console.error("Image proxy error:", error);
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET");
+    res.status(500).json({ 
+      error: "Failed to proxy image",
+      message: error.message 
+    });
+  }
+});
+
+// ========================
+// SMART IMAGE ENDPOINTS (Pexels)
+// ========================
+
+// Clear image cache (dùng khi cần force refresh tất cả ảnh)
+app.post("/api/places/clear-image-cache", async (req, res) => {
+  try {
+    const { clearImageCache } = await import("./place-image-service.js");
+    clearImageCache();
+    res.json({ success: true, message: "Image cache cleared" });
+  } catch (error) {
+    console.error("Error clearing image cache:", error);
+    res.status(500).json({ error: "Failed to clear image cache" });
+  }
+});
+
+// Get image for a place — Pexels API làm nguồn chính, Placeholder là fallback
+app.post("/api/places/get-image", async (req, res) => {
+  try {
+    const { placeName, category, address, skipValidation } = req.body;
+
+    if (!placeName) {
+      return res.status(400).json({ error: "placeName is required" });
+    }
+
+    console.log(`🔍 [SmartImage] Getting image for: ${placeName} (${category}) [skipValidation=${skipValidation}]`);
+
+    const { getPlaceImageSmart } = await import("./place-image-service.js");
+    const result = await getPlaceImageSmart(placeName, category, address, skipValidation);
+
+    console.log(`  ✅ Source: ${result.source} | URL: ${result.imageUrl.substring(0, 80)}`);
+
+    res.json({
+      imageUrl: result.imageUrl,
+      imageUrls: result.imageUrls,
+      source: result.source,
+    });
+  } catch (error) {
+    console.error("Error getting place image:", error);
+    res.status(500).json({ error: "Failed to get place image" });
+  }
+});
+
+// Batch get images — dùng SmartImage (Pexels) theo từng place
+app.post("/api/places/batch-get-images", async (req, res) => {
+  try {
+    const { places, skipValidation } = req.body;
+
+    if (!places || !Array.isArray(places)) {
+      return res.status(400).json({ error: "places array is required" });
+    }
+
+    console.log(`🔍 [SmartImage] Batch fetching images for ${places.length} places [skipValidation=${skipValidation}]`);
+
+    const { getPlaceImageSmart } = await import("./place-image-service.js");
+
+    // Xử lý batch với giới hạn 3 concurrent để tránh rate limit
+    const BATCH_SIZE = 3;
+    const results: any[] = [];
+
+    for (let i = 0; i < places.length; i += BATCH_SIZE) {
+      const batch = places.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.all(
+        batch.map(async (place: any) => {
+          const result = await getPlaceImageSmart(place.name, place.category, place.address, skipValidation);
+          return { 
+            ...place, 
+            imageUrl: result.imageUrl, 
+            imageUrls: result.imageUrls,
+            source: result.source,
+          };
+        })
+      );
+      results.push(...batchResults);
+      if (i + BATCH_SIZE < places.length) {
+        await new Promise((r) => setTimeout(r, 300));
+      }
+    }
+
+    res.json({ places: results });
+  } catch (error) {
+    console.error("Error batch getting place images:", error);
+    res.status(500).json({ error: "Failed to batch get place images" });
+  }
+});
+
+// Pexels search endpoint
+app.get("/api/pexels/search", async (req, res) => {
+  try {
+    const { query, per_page = 5 } = req.query;
+
+    if (!query || typeof query !== "string") {
+      return res.status(400).json({ error: "query parameter is required" });
+    }
+
+    const { searchPexels } = await import("./pexels-service.js");
+    const results = await searchPexels(query, Number(per_page));
+
+    res.json(results);
+  } catch (error) {
+    console.error("Pexels search error:", error);
+    res.status(500).json({ error: "Failed to search Pexels" });
+  }
+});
+
+// ========================
+// SERVER STARTUP: AI tạo default places
+// ========================
+
+/**
+ * Kiểm tra DB có default places chưa.
+ * Nếu chưa → gọi AI background tạo 55 default places.
+ * Nếu có rồi → skip, không gọi AI.
+ */
+async function initDefaultPlaces() {
+  if (hasDefaultPlaces()) {
+    console.log("✅ Default places đã tồn tại trong DB — skip AI generation");
+    return;
+  }
+
+  console.log("🚀 DB chưa có default places — bắt đầu AI generation (background)...");
+  try {
+    const defaultPlaces = await generateDefaultPlaces();
+    const totalPlaces =
+      (defaultPlaces.checkin?.length || 0) + (defaultPlaces.nature?.length || 0) +
+      (defaultPlaces.homestay?.length || 0) + (defaultPlaces.cafe?.length || 0) +
+      (defaultPlaces.food?.length || 0) + (defaultPlaces.rental?.length || 0) +
+      (defaultPlaces.signature?.length || 0);
+
+    if (totalPlaces > 0) {
+      saveDefaultAIPlaces(defaultPlaces);
+      console.log(`✅ Đã lưu ${totalPlaces} default places vào DB`);
+    } else {
+      console.warn("⚠️ AI trả về 0 default places — kiểm tra API key và kết nối");
+    }
+  } catch (error) {
+    console.error("❌ Lỗi tạo default places:", error);
+  }
+}
+
+// Gọi fire-and-forget ngay khi server khởi động
+initDefaultPlaces();

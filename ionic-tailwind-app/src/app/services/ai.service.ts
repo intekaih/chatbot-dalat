@@ -9,12 +9,14 @@ import {
   Observable,
   Subject,
   BehaviorSubject,
+  firstValueFrom,
   map,
   catchError,
   throwError,
   of,
 } from "rxjs";
 import { AI_CONFIG, AIModel } from "../config/ai.config";
+import { ApiService, Place } from "./api.service";
 
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -55,6 +57,7 @@ export interface ChatCompletionResponse {
 })
 export class AIService {
   private http = inject(HttpClient);
+  private apiService = inject(ApiService);
 
   private _isLoading = signal<boolean>(false);
   private _currentModel = signal<string>(AI_CONFIG.defaultModel);
@@ -63,11 +66,12 @@ export class AIService {
   currentModel = this._currentModel.asReadonly();
 
   private getHeaders(): HttpHeaders {
-    const headers = new HttpHeaders({
+    let headers = new HttpHeaders({
       "Content-Type": "application/json",
+      "device-id": this.apiService.getDeviceId(),
     });
     if (AI_CONFIG.apiKey) {
-      return headers.set("Authorization", `Bearer ${AI_CONFIG.apiKey}`);
+      headers = headers.set("Authorization", `Bearer ${AI_CONFIG.apiKey}`);
     }
     return headers;
   }
@@ -108,7 +112,7 @@ export class AIService {
     return this.http
       .post<{
         reply: string;
-        suggestedPlace: unknown;
+        suggestedPlaces: Place[];
       }>(`${AI_CONFIG.baseUrl}/api/chat`, body, { headers: this.getHeaders() })
       .pipe(
         map((beResponse) => {
@@ -132,6 +136,20 @@ export class AIService {
           console.error("AI Chat Error:", error);
           return throwError(() => error);
         }),
+      );
+  }
+
+  /** Trả về places đầy đủ Place data từ chat response (gọi kèm sau chat). */
+  extractPlacesFromChat(reply: string): Observable<Place[]> {
+    return this.http
+      .post<{ suggestedPlaces: Place[] }>(
+        `${AI_CONFIG.baseUrl}/api/extract-places`,
+        { reply },
+        { headers: this.getHeaders() },
+      )
+      .pipe(
+        map((res) => res.suggestedPlaces || []),
+        catchError(() => of([])),
       );
   }
 
@@ -211,29 +229,6 @@ export class AIService {
     return eventSubject.asObservable();
   }
 
-  /** Trích xuất địa điểm từ cặp tin nhắn user + reply (BE /api/extract-place). */
-  extractPlace(
-    message: string,
-    reply: string,
-  ): Observable<{
-    name?: string;
-    address?: string;
-    description?: string;
-  } | null> {
-    return this.http
-      .post<{
-        suggestedPlace: {
-          name?: string;
-          address?: string;
-          description?: string;
-        } | null;
-      }>(`${AI_CONFIG.baseUrl}/api/extract-place`, { message, reply }, { headers: this.getHeaders() })
-      .pipe(
-        map((res) => res.suggestedPlace),
-        catchError(() => of(null)),
-      );
-  }
-
   /** Gửi tin nhắn (gọi chat qua BE). */
   async sendMessage(
     content: string,
@@ -242,7 +237,7 @@ export class AIService {
     const messages: ChatMessage[] = [...history, { role: "user", content }];
 
     try {
-      const response = await this.chat(messages).toPromise();
+      const response = await firstValueFrom(this.chat(messages));
       return (
         response?.choices[0]?.message?.content ||
         "Xin lỗi, tôi không thể trả lời lúc này."

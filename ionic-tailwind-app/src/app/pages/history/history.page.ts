@@ -9,7 +9,7 @@ import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state
   standalone: true,
   imports: [CommonModule, EmptyStateComponent],
   template: `
-    <div class="bg-white">
+    <div class="bg-white min-h-screen pb-20">
       <!-- Header -->
       <div
         class="px-4 pt-12 pb-4 border-b border-gray-100 flex items-center justify-between"
@@ -35,45 +35,53 @@ import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state
       <!-- Chat Sessions -->
       <div *ngIf="!isLoading && sessions.length > 0" class="p-4">
         <div class="space-y-2">
-          <div
+          <article
             *ngFor="let session of sessions"
-            class="relative p-4 border border-gray-100 rounded-xl cursor-pointer hover:bg-gray-50"
-            (click)="openChat(session)"
+            class="relative p-4 border border-gray-100 rounded-xl"
           >
-            <div class="flex items-center gap-3">
-              <div
-                class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center"
-              >
-                <svg
-                  class="w-5 h-5 text-gray-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                  />
-                </svg>
-              </div>
-              <div class="flex-1 min-w-0">
-                <h3 class="font-medium text-gray-900 text-sm truncate">
-                  {{ session.title }}
-                </h3>
-                <p class="text-xs text-gray-400">
-                  {{ session.messages.length }} tin nhắn
-                </p>
-              </div>
-              <div class="text-right flex-shrink-0">
-                <p class="text-xs text-gray-400">
-                  {{ formatDate(session.updatedAt) }}
-                </p>
-              </div>
-            </div>
             <button
+              type="button"
+              class="w-full flex items-center gap-3 text-left"
+              [attr.aria-label]="'Mở cuộc trò chuyện: ' + session.title"
+              (click)="openChat(session)"
+            >
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center"
+                >
+                  <svg
+                    class="w-5 h-5 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="font-medium text-gray-900 text-sm truncate">
+                    {{ session.title }}
+                  </h3>
+                  <p class="text-xs text-gray-400">
+                    {{ session.messages.length }} tin nhắn
+                  </p>
+                </div>
+                <div class="text-right flex-shrink-0">
+                  <p class="text-xs text-gray-400">
+                    {{ formatDate(session.updatedAt) }}
+                  </p>
+                </div>
+              </div>
+            </button>
+            <button
+              type="button"
               (click)="deleteSession($event, session)"
+              aria-label="Xóa cuộc trò chuyện"
               class="absolute top-2 right-2 p-2 text-gray-400 hover:text-red-500"
             >
               <svg
@@ -90,7 +98,7 @@ import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state
                 />
               </svg>
             </button>
-          </div>
+          </article>
         </div>
       </div>
 
@@ -111,7 +119,7 @@ export class HistoryPage implements OnInit {
   constructor(
     private router: Router,
     private apiService: ApiService,
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.apiService.getChatSessions().subscribe({

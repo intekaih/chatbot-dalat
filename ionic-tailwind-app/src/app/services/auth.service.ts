@@ -13,6 +13,7 @@ import {
 import { Firestore, doc, setDoc, getDoc, serverTimestamp } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
 import { User } from '../models/database.models';
+import { ApiService } from './api.service';
 
 @Injectable({
   providedIn: 'root'
@@ -21,6 +22,7 @@ export class AuthService {
   private auth = inject(Auth);
   private firestore = inject(Firestore);
   private router = inject(Router);
+  private apiService = inject(ApiService);
 
   private _currentUser = signal<FirebaseUser | null>(null);
   private _userProfile = signal<User | null>(null);
@@ -53,6 +55,11 @@ export class AuthService {
   async login(email: string, password: string): Promise<void> {
     const result = await signInWithEmailAndPassword(this.auth, email, password);
     await this.updateLastLogin(result.user.uid);
+    // Lưu Firebase UID và sync với backend
+    localStorage.setItem('firebase_uid', result.user.uid);
+    localStorage.setItem('firebase_email', result.user.email || '');
+    // Sync với backend database
+    this.apiService.syncFirebaseUser().subscribe();
   }
 
   async register(email: string, password: string, displayName: string): Promise<void> {
@@ -73,6 +80,12 @@ export class AuthService {
     if (result.user) {
       await updateProfile(result.user, { displayName });
     }
+    
+    // Lưu Firebase UID và sync với backend
+    localStorage.setItem('firebase_uid', result.user.uid);
+    localStorage.setItem('firebase_email', result.user.email || '');
+    // Sync với backend database
+    this.apiService.syncFirebaseUser().subscribe();
   }
 
   async loginWithGoogle(): Promise<void> {
@@ -93,14 +106,25 @@ export class AuthService {
       };
       await setDoc(doc(this.firestore, 'users', result.user.uid), userData);
     }
+    
+    // Lưu Firebase UID và sync với backend
+    localStorage.setItem('firebase_uid', result.user.uid);
+    localStorage.setItem('firebase_email', result.user.email || '');
+    // Sync với backend database
+    this.apiService.syncFirebaseUser().subscribe();
   }
 
   async logout(): Promise<void> {
     await signOut(this.auth);
     this._userProfile.set(null);
+    // Xóa tất cả localStorage
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('hasSeenOnboarding');
     localStorage.removeItem('hasPersonalized');
+    localStorage.removeItem('firebase_uid');
+    localStorage.removeItem('firebase_email');
+    localStorage.removeItem('isFirebaseUser');
+    localStorage.removeItem('isGuest');
     this.router.navigateByUrl('/auth', { replaceUrl: true });
   }
 

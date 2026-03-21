@@ -2,6 +2,7 @@ import { Component, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
 import { ApiService, User } from "../../services/api.service";
+import { AuthService } from "../../services/auth.service";
 
 @Component({
   selector: "app-profile",
@@ -321,6 +322,7 @@ export class ProfilePage implements OnInit {
   constructor(
     private router: Router,
     private apiService: ApiService,
+    private authService: AuthService,
   ) {}
 
   ngOnInit() {
@@ -372,7 +374,14 @@ export class ProfilePage implements OnInit {
   }
 
   logout() {
-    localStorage.clear();
-    this.router.navigateByUrl("/splash", { replaceUrl: true });
+    // Kiểm tra nếu là Firebase user thì logout khỏi Firebase
+    const isFirebaseUser = localStorage.getItem('firebase_uid');
+    if (isFirebaseUser) {
+      this.authService.logout();
+    } else {
+      // Guest user - chỉ xóa localStorage
+      localStorage.clear();
+      this.router.navigateByUrl("/splash", { replaceUrl: true });
+    }
   }
 }

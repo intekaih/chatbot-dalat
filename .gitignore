@@ -6,3 +6,17 @@ build/
 .ionic/
 /server/node_modules/
 /ionic-tailwind-app/node_modules/
+
+# Build output
+www/
+
+# Database files
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Debug/test output
+ai-response.json
+ai-result.json
+maujson.txt

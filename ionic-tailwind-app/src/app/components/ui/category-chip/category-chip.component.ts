@@ -8,7 +8,7 @@ import { CommonModule } from '@angular/common';
   template: `
     <button 
       [class]="active 
-        ? 'bg-black text-white border-transparent' 
+        ? (isPremium ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white border-transparent shadow-md font-medium' : 'bg-black text-white border-transparent') 
         : 'bg-white text-gray-600 border-gray-200'"
       class="px-3 py-1.5 rounded-full border text-sm whitespace-nowrap transition-colors flex items-center gap-1.5"
     >
@@ -21,4 +21,5 @@ export class CategoryChipComponent {
   @Input() label = '';
   @Input() icon = '';
   @Input() active = false;
+  @Input() isPremium = false;
 }

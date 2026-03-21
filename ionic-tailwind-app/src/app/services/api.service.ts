@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from "@angular/core";
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { Observable, of, map, catchError } from "rxjs";
+import { Observable, of, map, catchError, timeout } from "rxjs";
 import { AI_CONFIG } from "../config/ai.config";
 
 // Types
@@ -22,6 +22,7 @@ export interface Place {
   shortDescription: string;
   fullDescription: string;
   imageUrl: string;
+  pexelsUrl?: never;  // Pexels URL không còn dùng — chỉ dùng imageUrl
   tags: string[];
   suitableFor: string[];
   featured?: boolean;
@@ -132,8 +133,40 @@ export class ApiService {
   private http = inject(HttpClient);
   private baseUrl = AI_CONFIG.baseUrl;
 
-  // Device ID for user identification
-  private getDeviceId(): string {
+  /**
+   * Convert external image URL thành proxy URL để bypass CORS
+   * @param imageUrl - URL ảnh từ external source (Gemini, etc.)
+   * @returns Proxy URL hoặc original URL nếu là placeholder
+   */
+  getImageProxyUrl(imageUrl: string | null | undefined): string | null {
+    if (!imageUrl) return null;
+    
+    // Không proxy placeholder URLs
+    if (imageUrl.includes('placehold.co') || imageUrl.includes('images.pexels.com')) {
+      return imageUrl;
+    }
+    
+    // Convert external URL thành proxy URL
+    return `${this.baseUrl}/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
+  }
+
+  /**
+   * Convert array of image URLs thành proxy URLs
+   */
+  getImageProxyUrls(imageUrls: string[] | null | undefined): string[] {
+    if (!imageUrls || imageUrls.length === 0) return [];
+    return imageUrls.map(url => this.getImageProxyUrl(url) || url).filter(Boolean) as string[];
+  }
+
+  // Device ID for user identification (public để AIService dùng khi gọi /api/chat)
+  getDeviceId(): string {
+    // Ưu tiên sử dụng Firebase UID nếu có
+    const firebaseUid = localStorage.getItem('firebase_uid');
+    if (firebaseUid) {
+      return firebaseUid;
+    }
+
+    // Fallback về device-id cho guest users
     let deviceId = localStorage.getItem("device_id");
     if (!deviceId) {
       deviceId =
@@ -182,6 +215,34 @@ export class ApiService {
       );
   }
 
+  /** Sync Firebase user with backend */
+  syncFirebaseUser(): Observable<User | null> {
+    const firebaseUid = localStorage.getItem('firebase_uid');
+    const email = localStorage.getItem('firebase_email');
+
+    if (!firebaseUid) {
+      return of(null);
+    }
+
+    return this.http
+      .post<any>(`${this.baseUrl}/api/user/sync`, {
+        firebaseUid,
+        email,
+      }, { headers: this.getHeaders() })
+      .pipe(
+        map((res) => ({
+          id: res.id,
+          name: res.name,
+          avatar: res.avatar,
+          preferences: res.preferences || [],
+          travelStyles: res.travelStyles || [],
+          budget: res.budget || "mid",
+          hasPersonalized: res.hasPersonalized || false,
+        })),
+        catchError(() => of(null)),
+      );
+  }
+
   /** Save user preferences after /welcome - generates personalized data via AI */
   savePreferences(data: {
     name: string;
@@ -224,13 +285,30 @@ export class ApiService {
       );
   }
 
-  /** Get personalized data (or default if skipped /welcome) */
-  getPersonalizedData(): Observable<PersonalizedData> {
+  /** Get personalized data (or default if skipped /welcome)
+   * @param lat - Vĩ độ của user
+   * @param lng - Kinh độ của user
+   */
+  getPersonalizedData(lat?: number, lng?: number): Observable<PersonalizedData> {
+    let url = `${this.baseUrl}/api/personalized`;
+    const params: string[] = [];
+
+    // Thêm location nếu có
+    if (lat !== undefined && lng !== undefined) {
+      params.push(`lat=${lat}`);
+      params.push(`lng=${lng}`);
+    }
+
+    if (params.length > 0) {
+      url += "?" + params.join("&");
+    }
+
     return this.http
-      .get<any>(`${this.baseUrl}/api/personalized`, {
+      .get<any>(url, {
         headers: this.getHeaders(),
       })
       .pipe(
+        timeout(20000), // 20s: nếu BE chậm (AI/Pexels) vẫn trả fallback
         map((res) => this.mapPersonalizedData(res)),
         catchError(() => of(this.getDefaultPersonalizedData())),
       );
@@ -251,13 +329,9 @@ export class ApiService {
     return {
       places: [],
       categories: [
+        { id: "signature", label: "Nhất định phải đến", icon: "⭐", iconName: "star" },
         { id: "cafe", label: "Cafe", icon: "☕", iconName: "coffee" },
-        {
-          id: "restaurant",
-          label: "Ăn uống",
-          icon: "🍜",
-          iconName: "restaurant",
-        },
+        { id: "food", label: "Ăn uống", icon: "🍜", iconName: "restaurant" },
         { id: "checkin", label: "Check-in", icon: "📸", iconName: "camera" },
         { id: "nature", label: "Thiên nhiên", icon: "🌲", iconName: "tree" },
         { id: "homestay", label: "Homestay", icon: "🏠", iconName: "home" },
@@ -283,7 +357,7 @@ export class ApiService {
         },
         {
           type: "weather",
-          title: "Thờ tiết hôm nay",
+          title: "Thời tiết hôm nay",
           content:
             "Hôm nay trời đẹp! Nhiệt độ 18-25°C, lý tưởng cho chuyến đi!",
           iconColor: "bg-sky-100 text-sky-700",
@@ -321,10 +395,18 @@ export class ApiService {
   /** Get categories */
   getCategories(): Observable<Category[]> {
     return this.http
-      .get<
-        Category[]
-      >(`${this.baseUrl}/api/categories`, { headers: this.getHeaders() })
-      .pipe(catchError(() => of([])));
+      .get<Category[]>(`${this.baseUrl}/api/categories`, { headers: this.getHeaders() })
+      .pipe(
+        map((categories) => {
+          const sigIndex = categories.findIndex((c) => c.id === 'signature');
+          if (sigIndex > -1) {
+            const [sig] = categories.splice(sigIndex, 1);
+            categories.unshift(sig);
+          }
+          return categories;
+        }),
+        catchError(() => of([]))
+      );
   }
 
   /** Get reviews for a place */
@@ -552,6 +634,137 @@ export class ApiService {
     return this.http.get<{ status: string }>(`${this.baseUrl}/api/health`).pipe(
       map((res) => res.status === "ok"),
       catchError(() => of(false)),
+    );
+  }
+
+  // ========== SMART IMAGE (Pexels) ==========
+
+  /**
+   * Lấy ảnh mới cho một địa điểm qua SmartImage API.
+   * Nguồn: Pexels → Placeholder (fallback)
+   * @param placeId - ID của place (để trả về trong response)
+   * @param placeName - Tên địa điểm (để hỏi Pexels)
+   * @param category - Category
+   * @param address - Địa chỉ
+   * @param skipValidation - true = trả raw Pexels URL (dùng ở frontend)
+   */
+  getPlaceImage(
+    placeId: string,
+    placeName: string,
+    category?: string,
+    address?: string,
+    skipValidation = false,
+  ): Observable<{ placeId: string; imageUrl: string; imageUrls?: string[]; source: string }> {
+    return this.http
+      .post<{ imageUrl: string; imageUrls?: string[]; source: string }>(
+        `${this.baseUrl}/api/places/get-image`,
+        { placeName, category, address, skipValidation },
+        { headers: this.getHeaders() },
+      )
+      .pipe(
+        map((res) => ({
+          placeId,
+          imageUrl: res.imageUrl,
+          imageUrls: res.imageUrls,
+          source: res.source,
+        })),
+        catchError(() => of({ placeId, imageUrl: "", imageUrls: undefined, source: "error" })),
+      );
+  }
+
+  /**
+   * Batch refresh ảnh cho nhiều địa điểm qua SmartImage API.
+   * Nguồn: Pexels → Placeholder (fallback)
+   */
+  batchGetImages(
+    places: { id: string; name: string; category?: string; address?: string }[],
+    skipValidation = false,
+  ): Observable<Map<string, { imageUrl: string; imageUrls?: string[]; source: string }>> {
+    return this.http
+      .post<{ places: { id: string; imageUrl: string; imageUrls?: string[]; source: string }[] }>(
+        `${this.baseUrl}/api/places/batch-get-images`,
+        { places, skipValidation },
+        { headers: this.getHeaders() },
+      )
+      .pipe(
+        map((res) => {
+          const map = new Map<string, { imageUrl: string; imageUrls?: string[]; source: string }>();
+          for (const p of res.places || []) {
+            map.set(p.id, { imageUrl: p.imageUrl, imageUrls: p.imageUrls, source: p.source });
+          }
+          return map;
+        }),
+        catchError(() => of(new Map())),
+      );
+  }
+
+  /**
+   * Refresh imageUrl cho tất cả place trong mảng.
+   * Gọi batchGetImages, sau đó merge kết quả vào mảng place gốc.
+   * Nguồn: Pexels → Placeholder (fallback)
+   *
+   * @param places - Mảng place cần refresh
+   * @param skipValidation - true = dùng raw Pexels URL cho frontend
+   */
+  refreshPlaceImages(
+    places: Place[],
+    skipValidation = true,
+  ): Observable<Place[]> {
+    if (!places || places.length === 0) return of(places);
+
+    console.log(`🔄 [Frontend] Refreshing images for ${places.length} places (skipValidation=${skipValidation})`);
+
+    return this.batchGetImages(
+      places.map((p) => ({ id: p.id, name: p.name, category: p.category, address: p.address })),
+      skipValidation,
+    ).pipe(
+      map((imageMap) => {
+        let pexelsCount = 0;
+        let placeholderCount = 0;
+        for (const place of places) {
+          const refreshed = imageMap.get(place.id);
+          if (refreshed) {
+            const oldUrl = place.imageUrl;
+            if (refreshed.imageUrl) {
+              place.imageUrl = refreshed.imageUrl;
+              if (refreshed.imageUrls && refreshed.imageUrls.length > 0) {
+                (place as any).imageUrls = refreshed.imageUrls;
+              }
+              if (refreshed.imageUrl.includes("placehold.co")) {
+                placeholderCount++;
+                if (oldUrl !== refreshed.imageUrl) {
+                  console.log(`  ⚠️ [${place.name}] Using placeholder: ${refreshed.imageUrl.substring(0, 60)}...`);
+                }
+              } else {
+                pexelsCount++;
+                if (oldUrl !== refreshed.imageUrl) {
+                  console.log(`  ✅ [${place.name}] Updated to Pexels URL: ${refreshed.imageUrl.substring(0, 60)}...`);
+                }
+              }
+            }
+          }
+        }
+        console.log(`  📊 [Result] Pexels: ${pexelsCount}, Placeholder: ${placeholderCount}, Total: ${places.length}`);
+        return places;
+      }),
+      catchError((err) => {
+        console.error("❌ [Frontend] Error refreshing place images:", err);
+        return of(places);
+      }),
+    );
+  }
+
+  // ========== AI IMAGE GENERATION ==========
+
+  /** Generate an image via AI and return a base64 data URL */
+  generateImage(prompt: string): Observable<string> {
+    return this.http.post<{ dataUrl: string }>(
+      `${this.baseUrl}/api/generate-image`,
+      { prompt },
+      { headers: this.getHeaders() },
+    ).pipe(
+      map((res) => res.dataUrl),
+      catchError(() => of('')),
     );
   }
 }

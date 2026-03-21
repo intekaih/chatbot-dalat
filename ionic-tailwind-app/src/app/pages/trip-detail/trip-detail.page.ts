@@ -16,7 +16,12 @@ import {
     <div class="bg-white">
       <!-- Hero -->
       <div class="relative aspect-video overflow-hidden">
-        <img [src]="trip?.coverImage" class="w-full h-full object-cover" />
+        <img
+          [src]="trip?.coverImage"
+          [alt]="trip?.title || 'Ảnh chuyến đi'"
+          class="w-full h-full object-cover"
+          (error)="onHeroImgError($event)"
+        />
         <div
           class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"
         ></div>
@@ -89,18 +94,19 @@ import {
               >{{ trip?.startDate }} - {{ trip?.endDate }}</span
             >
           </div>
-          <span class="px-2 py-0.5 bg-gray-100 rounded-full text-xs"
-            >{{ trip?.days?.length }}N{{ trip?.days?.length! - 1 }}Đ</span
+          <span *ngIf="tripNights > 0" class="px-2 py-0.5 bg-gray-100 rounded-full text-xs"
+            >{{ tripNights + 1 }}N{{ tripNights }}Đ</span
           >
         </div>
       </div>
 
       <!-- Notes Banner -->
       <div
-        *ngIf="trip?.notes"
+        *ngIf="trip?.notes && (trip?.days?.length || 0) > 0"
         class="px-4 py-3 bg-amber-50 border-b border-amber-100"
       >
-        <p class="text-sm text-amber-800">📝 {{ trip?.notes }}</p>
+        <p class="text-xs font-medium text-amber-700 mb-1">📝 Ghi chú từ AI</p>
+        <p class="text-sm text-amber-800 line-clamp-3">{{ trip?.notes }}</p>
       </div>
 
       <!-- Tabs -->
@@ -129,6 +135,7 @@ import {
 
       <!-- Itinerary Tab -->
       <div *ngIf="activeTab === 'itinerary'" class="p-4">
+        <!-- Structured days -->
         <div *ngFor="let day of trip?.days; let i = index" class="mb-4">
           <!-- Day Header -->
           <button
@@ -209,6 +216,35 @@ import {
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- AI Notes view: when trip has no structured days but has notes -->
+        <div *ngIf="(trip?.days?.length || 0) === 0 && trip?.notes" class="space-y-3">
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+              <span class="text-base">🤖</span>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-gray-900">Gợi ý từ AI</p>
+              <p class="text-xs text-gray-500">Lịch trình do AI tạo ra</p>
+            </div>
+          </div>
+          <div class="bg-gray-50 rounded-2xl p-4">
+            <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line" [innerHTML]="notesHtml">
+            </div>
+          </div>
+          <button
+            (click)="goToChat()"
+            class="w-full py-3 border border-gray-200 rounded-xl text-sm text-gray-600 flex items-center justify-center gap-2"
+          >
+            <span>✏️</span> Hỏi AI để chỉnh sửa lịch trình này
+          </button>
+        </div>
+
+        <!-- Empty state: no days and no notes -->
+        <div *ngIf="(trip?.days?.length || 0) === 0 && !trip?.notes" class="py-12 text-center">
+          <span class="text-4xl mb-3 block">🗓️</span>
+          <p class="text-gray-500 text-sm">Chưa có lịch trình. Hỏi AI để bắt đầu!</p>
         </div>
       </div>
 
@@ -311,12 +347,14 @@ export class TripDetailPage implements OnInit {
   trip: Trip | undefined;
   activeTab: "itinerary" | "budget" = "itinerary";
   expandedDays: boolean[] = [];
+  notesHtml = "";
+  tripNights = 0;
 
   constructor(
     private router: Router,
     private route: ActivatedRoute,
     private apiService: ApiService,
-  ) {}
+  ) { }
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get("id");
@@ -324,16 +362,19 @@ export class TripDetailPage implements OnInit {
       this.apiService.getTrips().subscribe({
         next: (trips) => {
           this.trip = trips.find((t) => t.id === id);
-          this.expandedDays = new Array(this.trip?.days?.length || 0).fill(
-            true,
-          );
+          this.expandedDays = new Array(this.trip?.days?.length || 0).fill(true);
+          if (this.trip?.notes) {
+            this.notesHtml = this.renderMarkdown(this.trip.notes);
+          }
+          // Compute trip nights from days array
+          this.tripNights = Math.max(0, (this.trip?.days?.length || 1) - 1);
         },
       });
     }
   }
 
   goBack() {
-    this.router.navigate(["/home/trips"]);
+    this.router.navigate(["/home/favorites"], { state: { tab: 'trips' } });
   }
 
   goToChat() {
@@ -370,5 +411,21 @@ export class TripDetailPage implements OnInit {
     if (percentage >= 0.9) return "bg-red-400";
     if (percentage >= 0.7) return "bg-amber-400";
     return "bg-gray-800";
+  }
+
+  onHeroImgError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    const title = encodeURIComponent(this.trip?.destination || 'Đà Lạt');
+    img.src = `https://placehold.co/800x450/1a1a2e/ffffff?text=${title}`;
+    img.onerror = null;
+  }
+
+  private renderMarkdown(text: string): string {
+    return text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/^#{1,3}\s+(.+)$/gm, '<p class="font-semibold text-gray-900 mt-3 mb-1">$1</p>')
+      .replace(/^[-•]\s+(.+)$/gm, '<li class="ml-3 list-disc">$1</li>')
+      .replace(/\n/g, '<br/>');
   }
 }

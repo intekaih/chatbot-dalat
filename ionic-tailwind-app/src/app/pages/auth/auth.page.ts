@@ -2,6 +2,7 @@ import { Component } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { Router } from "@angular/router";
+import { AuthService } from "../../services/auth.service";
 
 @Component({
   selector: "app-auth",
@@ -94,6 +95,7 @@ import { Router } from "@angular/router";
               [(ngModel)]="email"
               name="email"
               placeholder="Email"
+              aria-label="Địa chỉ email"
               autocomplete="email"
               (blur)="touchedEmail = true; validateEmail()"
               [class]="
@@ -140,6 +142,7 @@ import { Router } from "@angular/router";
               [(ngModel)]="password"
               name="password"
               placeholder="Mật khẩu"
+              aria-label="Mật khẩu"
               autocomplete="current-password"
               (blur)="touchedPassword = true; validatePassword()"
               [class]="
@@ -226,6 +229,7 @@ import { Router } from "@angular/router";
               [(ngModel)]="confirmPassword"
               name="confirmPassword"
               placeholder="Xác nhận mật khẩu"
+              aria-label="Xác nhận mật khẩu"
               autocomplete="new-password"
               (blur)="touchedConfirm = true; validateConfirm()"
               [class]="
@@ -356,7 +360,10 @@ export class AuthPage {
 
   private readonly EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private authService: AuthService
+  ) {}
 
   switchMode(login: boolean) {
     this.isLogin = login;
@@ -438,36 +445,72 @@ export class AuthPage {
 
   // ── Submit ────────────────────────────────────────────────────────────────
 
-  onSubmit() {
+  async onSubmit() {
     this.globalError = "";
     if (!this.isFormValid()) return;
 
     this.isSubmitting = true;
 
-    // Mô phỏng độ trễ network nhỏ để UX tốt hơn
-    setTimeout(() => {
-      this.isSubmitting = false;
+    try {
+      if (this.isLogin) {
+        await this.authService.login(this.email, this.password);
+      } else {
+        await this.authService.register(this.email, this.password, this.email.split('@')[0]);
+      }
       this.navigateAfterAuth();
-    }, 400);
+    } catch (error: any) {
+      this.isSubmitting = false;
+      // Handle Firebase auth errors
+      if (error.code === 'auth/invalid-email') {
+        this.emailError = 'Email không hợp lệ';
+      } else if (error.code === 'auth/user-not-found') {
+        this.emailError = 'Tài khoản không tồn tại';
+      } else if (error.code === 'auth/wrong-password') {
+        this.passwordError = 'Mật khẩu không đúng';
+      } else if (error.code === 'auth/email-already-in-use') {
+        this.emailError = 'Email đã được sử dụng';
+      } else if (error.code === 'auth/weak-password') {
+        this.passwordError = 'Mật khẩu quá yếu';
+      } else {
+        this.globalError = 'Đã xảy ra lỗi. Vui lòng thử lại.';
+      }
+    }
   }
 
-  loginWithGoogle() {
+  async loginWithGoogle() {
     this.globalError = "";
     this.isSubmitting = true;
-    setTimeout(() => {
-      this.isSubmitting = false;
+
+    try {
+      await this.authService.loginWithGoogle();
       this.navigateAfterAuth();
-    }, 400);
+    } catch (error: any) {
+      this.isSubmitting = false;
+      if (error.code === 'auth/popup-closed-by-user') {
+        this.globalError = 'Cửa sổ đăng nhập đã bị đóng';
+      } else {
+        this.globalError = 'Đã xảy ra lỗi. Vui lòng thử lại.';
+      }
+    }
   }
 
   loginAsGuest() {
-    this.navigateAfterAuth();
+    // Guest login - sử dụng device-based auth (không dùng Firebase)
+    localStorage.setItem('isGuest', 'true');
+    localStorage.setItem('isLoggedIn', 'true');
+    const hasPersonalized = localStorage.getItem('hasPersonalized') === 'true';
+    this.router.navigateByUrl(hasPersonalized ? '/home' : '/welcome', {
+      replaceUrl: true,
+    });
   }
 
   private navigateAfterAuth() {
-    localStorage.setItem("isLoggedIn", "true");
-    const hasPersonalized = localStorage.getItem("hasPersonalized") === "true";
-    this.router.navigateByUrl(hasPersonalized ? "/home" : "/welcome", {
+    // Đã đăng nhập bằng Firebase - lưu thông tin
+    localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('isFirebaseUser', 'true');
+    
+    const hasPersonalized = localStorage.getItem('hasPersonalized') === 'true';
+    this.router.navigateByUrl(hasPersonalized ? '/home' : '/welcome', {
       replaceUrl: true,
     });
   }

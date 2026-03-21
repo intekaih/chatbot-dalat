@@ -12,10 +12,11 @@ import { ApiService, Place, Review } from "../../services/api.service";
     <div class="bg-white pb-24">
       <!-- Hero Image -->
       <div class="relative aspect-video overflow-hidden">
-        <img
+        <img loading="lazy"
           [src]="place?.imageUrl"
           [alt]="place?.name"
           class="w-full h-full object-cover"
+          (error)="onHeroImgError($event)"
         />
 
         <!-- Back Button -->
@@ -81,11 +82,12 @@ import { ApiService, Place, Review } from "../../services/api.service";
         </div>
       </div>
 
-      <!-- Content -->
-      <div class="px-4 -mt-6 relative">
+      <!-- Content Sheet -->
+      <div class="px-5 pt-6 relative bg-white -mt-5 rounded-t-3xl z-10">
         <!-- Category Badge -->
         <span
-          class="inline-block px-3 py-1 bg-gray-100 rounded-full text-sm mb-3"
+          class="inline-block px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider mb-3 shadow-sm border"
+          [ngClass]="getCategoryClasses(place?.category)"
           >{{ getCategoryLabel(place?.category) }}</span
         >
 
@@ -113,42 +115,42 @@ import { ApiService, Place, Review } from "../../services/api.service";
         </div>
 
         <!-- Meta Chips -->
-        <div class="flex flex-wrap gap-2 mb-4">
+        <div class="flex flex-wrap gap-2.5 mb-5">
           <span
             *ngIf="place?.priceRange"
-            class="px-3 py-1 bg-gray-100 rounded-full text-sm"
-            >{{ place?.priceRange }}</span
+            class="px-3 py-1.5 bg-gray-50 border border-gray-100 text-gray-700 rounded-xl text-[13px] font-medium flex items-center gap-2"
+            >💰 {{ place?.priceRange }}</span
           >
           <span
             *ngIf="place?.openingHours"
-            class="px-3 py-1 bg-gray-100 rounded-full text-sm"
-            >{{ place?.openingHours }}</span
+            class="px-3 py-1.5 bg-gray-50 border border-gray-100 text-gray-700 rounded-xl text-[13px] font-medium flex items-center gap-2"
+            >⏰ {{ place?.openingHours }}</span
           >
         </div>
 
         <!-- Description -->
-        <p class="text-gray-600 text-sm mb-4">{{ place?.shortDescription }}</p>
-        <p class="text-gray-600 text-sm mb-4">{{ place?.fullDescription }}</p>
+        <p class="text-gray-600 leading-relaxed text-[15px] mb-4">{{ place?.shortDescription }}</p>
+        <p class="text-gray-600 leading-relaxed text-[15px] mb-6">{{ place?.fullDescription }}</p>
 
         <!-- Tags -->
-        <div *ngIf="place?.tags?.length" class="mb-4">
-          <h3 class="text-sm font-medium text-gray-700 mb-2">Điểm nổi bật</h3>
+        <div *ngIf="place?.tags?.length" class="mb-5">
+          <h3 class="text-sm font-bold text-gray-900 mb-3">Điểm nổi bật</h3>
           <div class="flex flex-wrap gap-2">
             <span
               *ngFor="let tag of place?.tags"
-              class="px-3 py-1 bg-gray-50 border border-gray-100 rounded-full text-sm"
+              class="px-3.5 py-1.5 bg-blue-50/70 text-blue-600 border border-blue-100/80 rounded-xl text-[13px] font-medium tracking-wide"
               >{{ tag }}</span
             >
           </div>
         </div>
 
         <!-- Suitable For -->
-        <div *ngIf="place?.suitableFor?.length" class="mb-4">
-          <h3 class="text-sm font-medium text-gray-700 mb-2">Phù hợp với</h3>
+        <div *ngIf="place?.suitableFor?.length" class="mb-6">
+          <h3 class="text-sm font-bold text-gray-900 mb-3">Phù hợp với</h3>
           <div class="flex flex-wrap gap-2">
             <span
               *ngFor="let item of place?.suitableFor"
-              class="px-3 py-1 bg-black text-white rounded-full text-sm"
+              class="px-3.5 py-1.5 bg-gray-800 text-white rounded-xl text-[13px] font-medium tracking-wide shadow-sm"
               >{{ item }}</span
             >
           </div>
@@ -322,13 +324,13 @@ import { ApiService, Place, Review } from "../../services/api.service";
 
       <!-- Fixed Bottom Bar -->
       <div
-        class="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 z-40"
+        class="fixed bottom-16 pb-4 pt-3 px-5 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100/50 z-40"
       >
         <button
           (click)="goToChat()"
-          class="w-full py-3 bg-black text-white rounded-xl font-medium"
+          class="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 shadow-[0_8px_16px_-4px_rgba(79,70,229,0.3)] shadow-blue-500/25 active:scale-[0.98] transition-transform text-white rounded-2xl font-semibold flex items-center justify-center text-sm tracking-wide gap-2"
         >
-          Hỏi AI về địa điểm này
+          ✨ Hỏi AI về địa điểm này
         </button>
       </div>
     </div>
@@ -345,7 +347,7 @@ export class PlaceDetailPage implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private apiService: ApiService,
-  ) {}
+  ) { }
 
   ngOnInit() {
     const slug = this.route.snapshot.paramMap.get("slug");
@@ -368,6 +370,16 @@ export class PlaceDetailPage implements OnInit {
           this.apiService.checkFavorite(this.place.id).subscribe((isFav) => {
             this.isFavorite = isFav;
           });
+          // Refresh ảnh: DB chỉ có Pexels → thay bằng Gemini URL cho hero
+          this.apiService.getPlaceImage(
+            this.place.id,
+            this.place.name,
+            this.place.category,
+            this.place.address,
+            true, // skipValidation = true → raw Pexels URL
+          ).subscribe((res) => {
+            if (res.imageUrl) this.place!.imageUrl = res.imageUrl;
+          });
         }
       },
       error: () => {
@@ -386,14 +398,36 @@ export class PlaceDetailPage implements OnInit {
 
   getCategoryLabel(category?: string): string {
     const labels: Record<string, string> = {
-      cafe: "Cafe",
-      restaurant: "Ăn uống",
-      checkin: "Check-in",
-      nature: "Thiên nhiên",
-      homestay: "Homestay",
-      rental: "🛵 Thuê xe",
+      signature: "⭐ Đặc Trưng (Must-visit)",
+      cafe: "☕ Cafe View Đẹp",
+      food: "🍜 Ẩm Thực",
+      checkin: "📸 Điểm Check-in",
+      nature: "🌲 Thiên Nhiên",
+      homestay: "🏡 Homestay",
+      rental: "🛵 Thuê Xe",
     };
     return labels[category || ""] || category || "";
+  }
+
+  getCategoryClasses(category?: string): string {
+    switch (category) {
+      case "signature":
+        return "bg-gradient-to-r from-amber-400 to-orange-500 text-white border-transparent shadow-sm shadow-orange-500/20";
+      case "cafe":
+        return "bg-amber-50 text-amber-700 border-amber-200";
+      case "food":
+        return "bg-orange-50 text-orange-700 border-orange-200";
+      case "checkin":
+        return "bg-pink-50 text-pink-700 border-pink-200";
+      case "nature":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case "homestay":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "rental":
+        return "bg-violet-50 text-violet-700 border-violet-200";
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200";
+    }
   }
 
   goBack() {
@@ -410,10 +444,11 @@ export class PlaceDetailPage implements OnInit {
   }
 
   openMaps() {
-    const q =
-      this.place?.lat && this.place?.lng
-        ? `${this.place.lat},${this.place.lng}`
-        : encodeURIComponent(`${this.place?.name} Đà Lạt`);
+    const defaultQuery = encodeURIComponent(`${this.place?.name} Đà Lạt`);
+    const q = this.place?.address
+      ? encodeURIComponent(`${this.place.name}, ${this.place.address}`)
+      : defaultQuery;
+
     window.open(
       `https://www.google.com/maps/search/?api=1&query=${q}`,
       "_blank",
@@ -427,5 +462,21 @@ export class PlaceDetailPage implements OnInit {
 
   toggleHelpful(review: Review) {
     review.isHelpful = !review.isHelpful;
+  }
+
+  onHeroImgError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    img.onerror = null;
+    const categoryPlaceholders: Record<string, string> = {
+      signature: "https://placehold.co/1200x600/e2e8f0/64748b?text=Đặc+trưng",
+      cafe: "https://placehold.co/1200x600/e2e8f0/64748b?text=Cafe",
+      food: "https://placehold.co/1200x600/e2e8f0/64748b?text=Ăn+uống",
+      checkin: "https://placehold.co/1200x600/e2e8f0/64748b?text=Check-in",
+      nature: "https://placehold.co/1200x600/e2e8f0/64748b?text=Thiên+nhiên",
+      homestay: "https://placehold.co/1200x600/e2e8f0/64748b?text=Homestay",
+      rental: "https://placehold.co/1200x600/e2e8f0/64748b?text=Thuê+xe",
+    };
+    img.src = categoryPlaceholders[this.place?.category || ""] ||
+      "https://placehold.co/1200x600/e2e8f0/64748b?text=Đà+Lạt";
   }
 }

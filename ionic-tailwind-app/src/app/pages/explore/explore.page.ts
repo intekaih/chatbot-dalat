@@ -14,10 +14,10 @@ type SortOption = 'featured' | 'rating' | 'open';
   selector: 'app-explore',
   standalone: true,
   imports: [
-    CommonModule, 
-    FormsModule, 
-    SearchBarComponent, 
-    CategoryChipComponent, 
+    CommonModule,
+    FormsModule,
+    SearchBarComponent,
+    CategoryChipComponent,
     PlaceCardComponent,
     EmptyStateComponent
   ],
@@ -77,6 +77,7 @@ type SortOption = 'featured' | 'rating' | 'open';
             [label]="cat.label"
             [icon]="cat.icon"
             [active]="selectedCategory === cat.id"
+            [isPremium]="cat.id === 'signature'"
             (click)="selectCategory(cat.id)"
           ></app-category-chip>
         </div>
@@ -126,7 +127,7 @@ type SortOption = 'featured' | 'rating' | 'open';
 })
 export class ExplorePage implements OnInit {
   @ViewChild('filterDropdown') filterDropdown!: ElementRef;
-  
+
   categories: Category[] = [];
   places: Place[] = [];
   filteredPlaces: Place[] = [];
@@ -146,7 +147,7 @@ export class ExplorePage implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private apiService: ApiService
-  ) {}
+  ) { }
 
   ngOnInit() {
     // Load categories from API
@@ -166,6 +167,8 @@ export class ExplorePage implements OnInit {
         this.places = places;
         this.applyFilters();
         this.isLoading = false;
+        // Refresh ảnh: DB chỉ có Pexels → thay bằng Gemini URL (load được ở browser)
+        this.apiService.refreshPlaceImages(this.places).subscribe();
       },
       error: () => {
         // Fallback
@@ -173,7 +176,7 @@ export class ExplorePage implements OnInit {
         this.isLoading = false;
       }
     });
-    
+
     this.route.queryParams.subscribe(params => {
       if (params['category']) {
         this.selectedCategory = params['category'];
@@ -206,7 +209,7 @@ export class ExplorePage implements OnInit {
       const clickedInside = this.filterDropdown.nativeElement.contains(event.target);
       const filterButton = (event.target as HTMLElement).closest('button');
       const isFilterButton = filterButton?.textContent?.includes('Lọc');
-      
+
       if (!clickedInside && !isFilterButton) {
         this.showFilter = false;
       }
@@ -233,7 +236,7 @@ export class ExplorePage implements OnInit {
 
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter(p =>
         p.name.toLowerCase().includes(query) ||
         p.shortDescription.toLowerCase().includes(query) ||
         p.tags.some(t => t.toLowerCase().includes(query))
