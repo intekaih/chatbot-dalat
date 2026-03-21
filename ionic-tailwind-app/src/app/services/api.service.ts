@@ -141,8 +141,13 @@ export class ApiService {
   getImageProxyUrl(imageUrl: string | null | undefined): string | null {
     if (!imageUrl) return null;
 
-    // Không proxy placeholder URLs
-    if (imageUrl.includes('placehold.co') || imageUrl.includes('images.pexels.com')) {
+    // Không proxy: placeholder, Pexels, ảnh AI từ dev server hoặc Firebase Hosting
+    if (
+      imageUrl.includes('placehold.co') ||
+      imageUrl.includes('images.pexels.com') ||
+      imageUrl.includes('replit.dev') ||
+      imageUrl.includes('dalat-chatbot.web.app')
+    ) {
       return imageUrl;
     }
 
