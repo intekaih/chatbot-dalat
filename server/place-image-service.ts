@@ -63,8 +63,38 @@ function buildPrompt(placeName: string, category: string): string {
   return catPrompts[category] || `A beautiful destination called "${placeName}" in Da Lat, Vietnam. Scenic highland atmosphere, travel photography style.`;
 }
 
-/** In-memory cache (tránh gọi DB lần nữa trong cùng session) */
+/** In-memory cache: placeName::category → imageUrl */
 const memCache = new Map<string, string>();
+
+/** Tracker để tránh ảnh trùng: category → Set<index đã dùng> */
+const categoryUsedIndices = new Map<string, Set<number>>();
+
+/**
+ * Chọn ảnh tĩnh duy nhất trong category.
+ * Dùng hash làm điểm bắt đầu, tự dịch chuyển nếu index đã dùng.
+ */
+function getUniqueStaticImage(placeName: string, category: string): string {
+  const urls = getCategoryImages(category);
+
+  if (!categoryUsedIndices.has(category)) {
+    categoryUsedIndices.set(category, new Set());
+  }
+  const used = categoryUsedIndices.get(category)!;
+
+  // Reset khi đã dùng hết pool
+  if (used.size >= urls.length) used.clear();
+
+  // Bắt đầu từ index ưa thích (hash tên), tìm index chưa dùng
+  let idx = hashString(placeName) % urls.length;
+  let tries = 0;
+  while (used.has(idx) && tries < urls.length) {
+    idx = (idx + 1) % urls.length;
+    tries++;
+  }
+
+  used.add(idx);
+  return urls[idx];
+}
 
 /**
  * Lấy ảnh AI cho 1 địa điểm.
@@ -119,11 +149,10 @@ export async function getPlaceImageSmart(
     console.warn(`⚠️ [Imagen] Failed for "${placeName}": ${err?.message || err}`);
   }
 
-  // 4. Fallback ảnh tĩnh theo category
-  const urls = getCategoryImages(category);
-  const imageUrl = urls[hashString(placeName) % urls.length];
+  // 4. Fallback ảnh tĩnh theo category — chọn ảnh chưa dùng để tránh trùng
+  const imageUrl = getUniqueStaticImage(placeName, category);
   memCache.set(cacheKey, imageUrl);
-  console.log(`🖼️ [Imagen] Fallback static for: ${placeName}`);
+  console.log(`🖼️ [Imagen] Fallback static for: ${placeName} → ${path.basename(imageUrl)}`);
   return { imageUrl, source: "static" };
 }
 
@@ -158,5 +187,6 @@ export async function batchGetPlaceImages(
 
 export function clearImageCache() {
   memCache.clear();
-  console.log("🗑️ [ImageCache] Memory cache cleared");
+  categoryUsedIndices.clear();
+  console.log("🗑️ [ImageCache] Memory cache + index tracker cleared");
 }
