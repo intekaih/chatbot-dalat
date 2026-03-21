@@ -54,6 +54,6 @@ localPort = 5000
 externalPort = 80
 
 [deployment]
-deploymentTarget = "autoscale"
-run = ["bash", "-c", "cd server && npm start & cd ionic-tailwind-app && npx ng build && npx http-server www -p 5000 --cors -s"]
-build = ["bash", "-c", "cd server && npm install && cd ../ionic-tailwind-app && npm install --legacy-peer-deps"]
+deploymentTarget = "vm"
+run = ["bash", "-c", "cd server && npm start"]
+build = ["bash", "-c", "cd ionic-tailwind-app && npx ng build --configuration production"]

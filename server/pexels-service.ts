@@ -6,12 +6,17 @@
  */
 
 function getHostingBase(): string {
-  // Trong dev (Replit): dùng Angular dev server domain
+  // Ưu tiên 1: APP_URL — set trong Replit Secrets khi deploy production
+  const appUrl = process.env.APP_URL;
+  if (appUrl) {
+    return `${appUrl.replace(/\/$/, "")}/assets/places`;
+  }
+  // Ưu tiên 2: REPLIT_DEV_DOMAIN — tự động có trong Replit dev workspace
   const replitDomain = process.env.REPLIT_DEV_DOMAIN;
   if (replitDomain) {
     return `https://${replitDomain}/assets/places`;
   }
-  // Production / Firebase Hosting
+  // Fallback: Firebase Hosting (nếu ảnh đã được upload lên đó)
   return "https://dalat-chatbot.web.app/assets/places";
 }
 

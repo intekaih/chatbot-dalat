@@ -1,4 +1,6 @@
 import "dotenv/config";
+import path from "path";
+import { fileURLToPath } from "url";
 import express from "express";
 import cors from "cors";
 import { v4 as uuidv4 } from "uuid";
@@ -57,8 +59,8 @@ app.use(
       // Cho phép wildcard (*) nếu có cấu hình
       if (ALLOWED_ORIGINS.includes("*")) return callback(null, true);
       if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-      // Cho phép Replit dev domain
-      if (origin && origin.includes(".replit.dev")) return callback(null, true);
+      // Cho phép Replit dev domain và production domain
+      if (origin && (origin.includes(".replit.dev") || origin.includes(".replit.app"))) return callback(null, true);
       callback(new Error(`CORS blocked: ${origin}`));
     },
     methods: ["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"],
@@ -67,6 +69,21 @@ app.use(
   }),
 );
 app.use(express.json({ limit: "10mb" }));
+
+// --- Auto-detect APP_URL in production (dùng cho HOSTING_BASE của ảnh) ---
+let appUrlDetected = false;
+app.use((req, _res, next) => {
+  if (!appUrlDetected && !process.env.APP_URL) {
+    const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
+    const host = (req.headers["x-forwarded-host"] as string) || req.get("host");
+    if (host && !host.includes("localhost") && !host.includes("127.0.0.1")) {
+      process.env.APP_URL = `${proto}://${host}`;
+      appUrlDetected = true;
+      console.log(`🌐 [AutoDetect] APP_URL set to: ${process.env.APP_URL}`);
+    }
+  }
+  next();
+});
 
 // --- Input Validation Helpers ---
 const VALID_BUDGETS = ["budget", "low", "mid", "luxury", "high"];
@@ -1431,3 +1448,22 @@ async function initDefaultPlaces() {
 
 // Gọi fire-and-forget ngay khi server khởi động
 initDefaultPlaces();
+
+// --- Static Serving: Angular build (production) ---
+// Khi deploy trên Replit, Express phục vụ cả frontend lẫn API trên cùng 1 port.
+// Angular được build vào thư mục ionic-tailwind-app/www/
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const angularDist = path.join(__dirname, "..", "ionic-tailwind-app", "www");
+
+app.use(express.static(angularDist));
+
+// SPA fallback: mọi route không khớp /api/* đều trả index.html để Angular Router xử lý
+app.get(/^(?!\/api).*$/, (_req, res) => {
+  res.sendFile(path.join(angularDist, "index.html"), (err) => {
+    if (err) {
+      // www chưa được build — chỉ xảy ra trong dev khi chạy frontend riêng
+      res.status(404).json({ message: "Angular build not found. Run: ng build --configuration production" });
+    }
+  });
+});

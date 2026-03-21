@@ -40,7 +40,7 @@ export class StorageService {
             // Upload lên Storage
             const ext = mimeString.split('/')[1] || 'jpg';
             const filename = `${Date.now()}.${ext}`;
-            const storagePath = `chat-images/${this.uid}/${filename}`;
+            const storagePath = `chats/${this.uid}/${filename}`;
             const storageRef = ref(this.storage, storagePath);
 
             uploadBytes(storageRef, blob)
