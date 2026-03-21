@@ -1,0 +1,3 @@
+GitHub Secrets: Vào repo → Settings → Secrets → Actions, thêm: FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN, FIREBASE_PROJECT_ID, FIREBASE_STORAGE_BUCKET, FIREBASE_MESSAGING_SENDER_ID, FIREBASE_APP_ID, FIREBASE_MEASUREMENT_ID
+Build APK: Mở ionic-tailwind-app/android/ bằng Android Studio → Build → Generate Signed APK
+Deploy Firestore Rules: cd ionic-tailwind-app && npx firebase deploy --only firestore:rules

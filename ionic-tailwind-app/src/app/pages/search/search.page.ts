@@ -1,17 +1,12 @@
-import {
-  Component,
-  OnInit,
-  AfterViewInit,
-  ViewChild,
-  ElementRef,
-} from "@angular/core";
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
 import { FormsModule } from "@angular/forms";
 import { CategoryChipComponent } from "../../components/ui/category-chip/category-chip.component";
 import { PlaceCardComponent } from "../../components/place/place-card/place-card.component";
 import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state.component";
-import { ApiService, Category, Place } from "../../services/api.service";
+import { ApiService } from "../../services/api.service";
+import { FirestorePlacesService, FirestorePlace, FirestoreCategory } from "../../services/firestore-places.service";
 
 @Component({
   selector: "app-search",
@@ -185,12 +180,16 @@ import { ApiService, Category, Place } from "../../services/api.service";
   ],
 })
 export class SearchPage implements OnInit, AfterViewInit {
+  private router = inject(Router);
+  private firestorePlaces = inject(FirestorePlacesService);
+
   searchQuery = "";
   selectedCategory = "all";
   selectedSort = "default";
   showSort = false;
-  results: Place[] = [];
-  categories: Category[] = [];
+  allPlaces: FirestorePlace[] = [];  // cache toàn bộ
+  results: FirestorePlace[] = [];
+  categories: FirestoreCategory[] = [];
   isLoading = true;
 
   sortOptions = [
@@ -201,11 +200,6 @@ export class SearchPage implements OnInit, AfterViewInit {
 
   @ViewChild("searchInput") searchInput!: ElementRef<HTMLInputElement>;
 
-  constructor(
-    private router: Router,
-    private apiService: ApiService,
-  ) {}
-
   ngAfterViewInit() {
     requestAnimationFrame(() => {
       this.searchInput?.nativeElement?.focus();
@@ -213,20 +207,17 @@ export class SearchPage implements OnInit, AfterViewInit {
   }
 
   ngOnInit() {
-    // Load categories from API
-    this.apiService.getCategories().subscribe({
-      next: (cats) => {
-        this.categories = cats;
-      },
+    // Load categories từ Firestore
+    this.firestorePlaces.getCategories().subscribe({
+      next: (cats) => { this.categories = cats; },
     });
 
-    // Load places from API
-    this.apiService.getPlaces().subscribe({
+    // Load places từ Firestore
+    this.firestorePlaces.getPlaces().subscribe({
       next: (places) => {
+        this.allPlaces = places;
         this.results = places;
         this.isLoading = false;
-        // Refresh ảnh: DB chỉ có Pexels → thay bằng Gemini URL (load được ở browser)
-        this.apiService.refreshPlaceImages(this.results).subscribe();
       },
       error: () => {
         this.results = [];
@@ -249,12 +240,7 @@ export class SearchPage implements OnInit, AfterViewInit {
 
   clearSearch() {
     this.searchQuery = "";
-    this.apiService.getPlaces().subscribe({
-      next: (places) => {
-        this.results = places;
-        this.apiService.refreshPlaceImages(this.results).subscribe();
-      },
-    });
+    this.results = [...this.allPlaces];
   }
 
   selectCategory(category: string) {
@@ -273,7 +259,7 @@ export class SearchPage implements OnInit, AfterViewInit {
   }
 
   applyFilters() {
-    let filtered = [...this.results];
+    let filtered = [...this.allPlaces];
 
     if (this.selectedCategory !== "all") {
       filtered = filtered.filter((p) => p.category === this.selectedCategory);
@@ -284,8 +270,8 @@ export class SearchPage implements OnInit, AfterViewInit {
       filtered = filtered.filter(
         (p) =>
           p.name.toLowerCase().includes(query) ||
-          p.shortDescription.toLowerCase().includes(query) ||
-          p.tags.some((t: string) => t.toLowerCase().includes(query)),
+          (p.shortDescription || '').toLowerCase().includes(query) ||
+          (p.tags || []).some((t: string) => t.toLowerCase().includes(query)),
       );
     }
 

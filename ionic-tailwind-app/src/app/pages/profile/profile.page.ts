@@ -1,8 +1,11 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
 import { ApiService, User } from "../../services/api.service";
 import { AuthService } from "../../services/auth.service";
+import { FirestoreTripsService } from "../../services/firestore-trips.service";
+import { FirestoreChatService } from "../../services/firestore-chat.service";
+import { FirestoreFavoritesService } from "../../services/firestore-favorites.service";
 
 @Component({
   selector: "app-profile",
@@ -314,26 +317,26 @@ import { AuthService } from "../../services/auth.service";
   ],
 })
 export class ProfilePage implements OnInit {
+  private router = inject(Router);
+  private apiService = inject(ApiService);
+  private authService = inject(AuthService);
+
   user: User | null = null;
   tripCount = 0;
   chatCount = 0;
   favoritesCount = 0;
 
-  constructor(
-    private router: Router,
-    private apiService: ApiService,
-    private authService: AuthService,
-  ) {}
+  private tripsService = inject(FirestoreTripsService);
+  private chatService = inject(FirestoreChatService);
+  private favoritesService = inject(FirestoreFavoritesService);
 
   ngOnInit() {
+    // User info: lấy từ Firebase Auth (realtime)
     this.apiService.getUser().subscribe((u) => (this.user = u));
-    this.apiService.getTrips().subscribe((t) => (this.tripCount = t.length));
-    this.apiService
-      .getChatSessions()
-      .subscribe((s) => (this.chatCount = s.length));
-    this.apiService
-      .getFavorites()
-      .subscribe((f) => (this.favoritesCount = f.length));
+    // Counts từ Firestore
+    this.tripsService.getTrips().subscribe((t) => (this.tripCount = t.length));
+    this.chatService.getSessions().subscribe((s) => (this.chatCount = s.length));
+    this.favoritesService.getFavoriteIds().subscribe((ids) => (this.favoritesCount = ids.length));
   }
 
   getBudgetLabel(budget: string): string {

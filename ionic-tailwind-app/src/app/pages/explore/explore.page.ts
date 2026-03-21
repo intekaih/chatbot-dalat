@@ -1,4 +1,4 @@
-import { Component, OnInit, HostListener, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, HostListener, ElementRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -7,6 +7,7 @@ import { CategoryChipComponent } from '../../components/ui/category-chip/categor
 import { PlaceCardComponent } from '../../components/place/place-card/place-card.component';
 import { EmptyStateComponent } from '../../components/ui/empty-state/empty-state.component';
 import { ApiService, Category, Place } from '../../services/api.service';
+import { FirestorePlacesService, FirestorePlace, FirestoreCategory } from '../../services/firestore-places.service';
 
 type SortOption = 'featured' | 'rating' | 'open';
 
@@ -126,11 +127,15 @@ type SortOption = 'featured' | 'rating' | 'open';
   `]
 })
 export class ExplorePage implements OnInit {
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private firestorePlaces = inject(FirestorePlacesService);
+
   @ViewChild('filterDropdown') filterDropdown!: ElementRef;
 
-  categories: Category[] = [];
-  places: Place[] = [];
-  filteredPlaces: Place[] = [];
+  categories: FirestoreCategory[] = [];
+  places: FirestorePlace[] = [];
+  filteredPlaces: FirestorePlace[] = [];
   searchQuery = '';
   selectedCategory = 'all';
   selectedSort: SortOption = 'featured';
@@ -143,35 +148,21 @@ export class ExplorePage implements OnInit {
     { value: 'open' as SortOption, label: 'Đang mở cửa', icon: '🕐' },
   ];
 
-  constructor(
-    private router: Router,
-    private route: ActivatedRoute,
-    private apiService: ApiService
-  ) { }
-
   ngOnInit() {
-    // Load categories from API
-    this.apiService.getCategories().subscribe({
-      next: (cats) => {
-        this.categories = cats;
-      },
-      error: () => {
-        // Fallback - use empty array, will use default
-        this.categories = [];
-      }
+    // Load categories từ Firestore
+    this.firestorePlaces.getCategories().subscribe({
+      next: (cats) => { this.categories = cats; },
+      error: () => { this.categories = []; }
     });
 
-    // Load places from API
-    this.apiService.getPlaces().subscribe({
+    // Load places từ Firestore
+    this.firestorePlaces.getPlaces().subscribe({
       next: (places) => {
         this.places = places;
         this.applyFilters();
         this.isLoading = false;
-        // Refresh ảnh: DB chỉ có Pexels → thay bằng Gemini URL (load được ở browser)
-        this.apiService.refreshPlaceImages(this.places).subscribe();
       },
       error: () => {
-        // Fallback
         this.places = [];
         this.isLoading = false;
       }
@@ -180,6 +171,7 @@ export class ExplorePage implements OnInit {
     this.route.queryParams.subscribe(params => {
       if (params['category']) {
         this.selectedCategory = params['category'];
+        this.applyFilters();
       }
     });
   }

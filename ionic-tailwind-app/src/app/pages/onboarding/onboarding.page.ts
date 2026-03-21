@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 
@@ -45,6 +45,8 @@ interface Slide {
   `
 })
 export class OnboardingPage {
+  private router = inject(Router);
+
   slides: Slide[] = [
     { emoji: '🌲', title: 'Khám phá Đà Lạt', description: 'Trợ lý AI giúp bạn tìm kiếm địa điểm, lên lịch trình và khám phá Đà Lạt một cách thông minh.' },
     { emoji: '💬', title: 'Chat với AI', description: 'Hỏi bất cứ điều gì về du lịch Đà Lạt, AI sẽ tư vấn cho bạn ngay lập tức.' },
@@ -52,8 +54,6 @@ export class OnboardingPage {
   ];
 
   currentSlide = 0;
-
-  constructor(private router: Router) {}
 
   next() {
     if (this.currentSlide < this.slides.length - 1) {

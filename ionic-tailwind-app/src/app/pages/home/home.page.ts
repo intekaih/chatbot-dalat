@@ -1,8 +1,10 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { Router, RouterModule } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { SearchBarComponent } from "../../components/ui/search-bar/search-bar.component";
 import { WeatherWidgetComponent } from "../../components/weather/weather-widget/weather-widget.component";
+import { FirestoreTripsService } from "../../services/firestore-trips.service";
+import { FirestorePlacesService } from "../../services/firestore-places.service";
 import { ApiService, Trip, Place, Category } from "../../services/api.service";
 
 interface FoodItem {
@@ -21,7 +23,7 @@ interface FoodItem {
   standalone: true,
   imports: [
     CommonModule,
-    RouterModule,
+    RouterLink,
     SearchBarComponent,
     WeatherWidgetComponent,
   ],
@@ -616,6 +618,9 @@ interface FoodItem {
   ],
 })
 export class HomePage implements OnInit {
+  private router = inject(Router);
+  private apiService = inject(ApiService);
+
   quickPrompts: string[] = [];
   categories: Category[] = [];
   checkinPlaces: Place[] = [];
@@ -636,10 +641,8 @@ export class HomePage implements OnInit {
   userName = "";
   userAvatar = "";
 
-  constructor(
-    private router: Router,
-    private apiService: ApiService,
-  ) { }
+  private tripsService = inject(FirestoreTripsService);
+  private firestorePlaces = inject(FirestorePlacesService);
 
   ngOnInit() {
     this.loadData();
@@ -715,46 +718,38 @@ export class HomePage implements OnInit {
         }));
       this.isLoading = false;
 
-      // Nếu không có places (API lỗi/timeout/empty), load từ /api/places
+      // Nếu không có places (API lỗi/timeout/empty), load từ Firestore
       if (data.places.length === 0) {
-        this.apiService.getCategories().subscribe((cats) => {
+        this.firestorePlaces.getCategories().subscribe((cats) => {
           if (this.categories.length === 0) this.categories = cats.filter((c: any) => c.id !== "signature");
         });
-        this.apiService.getPlaces("signature").subscribe((places) => {
+        this.firestorePlaces.getPlaces('signature').subscribe((places) => {
           this.signaturePlaces = places.slice(0, 10);
-          this.apiService.refreshPlaceImages(this.signaturePlaces).subscribe();
         });
-        this.apiService.getPlaces("checkin").subscribe((places) => {
+        this.firestorePlaces.getPlaces('checkin').subscribe((places) => {
           this.checkinPlaces = places.slice(0, 20);
-          this.apiService.refreshPlaceImages(this.checkinPlaces).subscribe();
         });
-        this.apiService.getPlaces("nature").subscribe((places) => {
+        this.firestorePlaces.getPlaces('nature').subscribe((places) => {
           this.naturePlaces = places.slice(0, 10);
-          this.apiService.refreshPlaceImages(this.naturePlaces).subscribe();
         });
-        this.apiService.getPlaces("rental").subscribe((places) => {
+        this.firestorePlaces.getPlaces('rental').subscribe((places) => {
           this.rentalPlaces = places;
-          this.apiService.refreshPlaceImages(this.rentalPlaces).subscribe();
         });
-        this.apiService.getPlaces("homestay").subscribe((places) => {
+        this.firestorePlaces.getPlaces('homestay').subscribe((places) => {
           this.homestayPlaces = places.slice(0, 20);
-          this.apiService.refreshPlaceImages(this.homestayPlaces).subscribe();
         });
-        this.apiService.getPlaces("food").subscribe((places) => {
+        this.firestorePlaces.getPlaces('food').subscribe((places) => {
           this.dalatFoods = places.slice(0, 20).map((p) => ({
-            id: p.id,
-            name: p.name,
+            id: p.id, name: p.name,
             desc: p.shortDescription || "",
             price: p.priceRange || "Liên hệ",
             rating: p.rating || 4.5,
-            tag: p.tags?.[0] || "🍜 Ẩm thực",
-            image: p.imageUrl,
-            slug: p.slug,
+            tag: p.tags?.[0] || "🍜 Ẩm thỳc",
+            image: p.imageUrl, slug: p.slug,
           }));
         });
-        this.apiService.getPlaces("cafe").subscribe((places) => {
+        this.firestorePlaces.getPlaces('cafe').subscribe((places) => {
           this.cafePlaces = places.slice(0, 20);
-          this.apiService.refreshPlaceImages(this.cafePlaces).subscribe();
         });
       }
     };
@@ -763,56 +758,37 @@ export class HomePage implements OnInit {
       this.apiService.getPersonalizedData().subscribe({
         next: (data) => applyPersonalizedData(data),
         error: () => {
-          this.apiService.getCategories().subscribe((cats) => {
+          // Fallback: load từ Firestore khi getPersonalizedData fail
+          this.firestorePlaces.getCategories().subscribe((cats) => {
             this.categories = cats;
           });
-          this.apiService.getPlaces("checkin").subscribe((places) => {
-            this.checkinPlaces = places.slice(0, 20);
-            this.apiService.refreshPlaceImages(this.checkinPlaces).subscribe();
-          });
-          this.apiService.getPlaces("nature").subscribe((places) => {
-            this.naturePlaces = places.slice(0, 10);
-            this.apiService.refreshPlaceImages(this.naturePlaces).subscribe();
-          });
-          this.apiService.getPlaces("rental").subscribe((places) => {
-            this.rentalPlaces = places;
-            this.apiService.refreshPlaceImages(this.rentalPlaces).subscribe();
-          });
-          this.apiService.getPlaces("homestay").subscribe((places) => {
-            this.homestayPlaces = places.slice(0, 20);
-            this.apiService.refreshPlaceImages(this.homestayPlaces).subscribe();
-          });
-          this.apiService.getPlaces("food").subscribe((places) => {
-            this.dalatFoods = places.slice(0, 20).map((p) => ({
-              id: p.id,
-              name: p.name,
+          this.firestorePlaces.getPlacesGrouped().subscribe((grouped) => {
+            this.checkinPlaces = (grouped['checkin'] || []).slice(0, 20);
+            this.naturePlaces = (grouped['nature'] || []).slice(0, 10);
+            this.rentalPlaces = grouped['rental'] || [];
+            this.homestayPlaces = (grouped['homestay'] || []).slice(0, 20);
+            this.cafePlaces = (grouped['cafe'] || []).slice(0, 20);
+            this.signaturePlaces = (grouped['signature'] || []).slice(0, 10);
+            this.dalatFoods = (grouped['food'] || []).slice(0, 20).map((p) => ({
+              id: p.id, name: p.name,
               desc: p.shortDescription || "",
               price: p.priceRange || "Liên hệ",
               rating: p.rating || 4.5,
-              tag: p.tags?.[0] || "🍜 Ẩm thực",
-              image: p.imageUrl,
-              slug: p.slug,
+              tag: p.tags?.[0] || "🍜 Ẩm thỳc",
+              image: p.imageUrl, slug: p.slug,
             }));
+            this.isLoading = false;
           });
-          this.apiService.getPlaces("cafe").subscribe((places) => {
-            this.cafePlaces = places.slice(0, 20);
-            this.apiService.refreshPlaceImages(this.cafePlaces).subscribe();
-          });
-          this.apiService.getPlaces("signature").subscribe((places) => {
-            this.signaturePlaces = places.slice(0, 10);
-            this.apiService.refreshPlaceImages(this.signaturePlaces).subscribe();
-          });
-          this.isLoading = false;
         },
       });
     };
 
     loadPersonalized();
 
-    // Load trips từ BE
-    this.apiService.getTrips().subscribe({
+    // Load trips từ Firestore
+    this.tripsService.getTrips().subscribe({
       next: (trips) => {
-        this.upcomingTrip = trips.find((t) => t.status === "upcoming") || null;
+        this.upcomingTrip = trips.find((t) => t.status === 'upcoming') || null;
       },
     });
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from "@angular/core";
+import { Component, OnInit, OnDestroy, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { WeatherService, WeatherData } from "../../../services/weather.service";
 import { Subscription } from "rxjs";
@@ -205,6 +205,8 @@ import { Subscription } from "rxjs";
   `,
 })
 export class WeatherWidgetComponent implements OnInit, OnDestroy {
+  private weatherService = inject(WeatherService);
+
   weather: WeatherData | null = null;
   isLoading = true;
   isRefreshing = false;
@@ -212,8 +214,6 @@ export class WeatherWidgetComponent implements OnInit, OnDestroy {
 
   private sub: Subscription | null = null;
   private updateTimer: ReturnType<typeof setInterval> | null = null;
-
-  constructor(private weatherService: WeatherService) {}
 
   ngOnInit(): void {
     this.loadWeather();

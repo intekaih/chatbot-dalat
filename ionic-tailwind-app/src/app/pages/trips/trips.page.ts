@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
 import { ApiService, Trip } from "../../services/api.service";
@@ -162,15 +162,13 @@ import { ApiService, Trip } from "../../services/api.service";
   `,
 })
 export class TripsPage implements OnInit {
+  private router = inject(Router);
+  private apiService = inject(ApiService);
+
   trips: Trip[] = [];
   upcomingTrips: Trip[] = [];
   completedTrips: Trip[] = [];
   isLoading = true;
-
-  constructor(
-    private router: Router,
-    private apiService: ApiService,
-  ) {}
 
   ngOnInit() {
     this.apiService.getTrips().subscribe({

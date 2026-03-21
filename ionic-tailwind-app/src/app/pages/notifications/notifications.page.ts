@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
 import { ApiService, Notification } from "../../services/api.service";
@@ -113,15 +113,13 @@ import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state
   ],
 })
 export class NotificationsPage implements OnInit {
+  private router = inject(Router);
+  private apiService = inject(ApiService);
+  private weatherService = inject(WeatherService);
+
   notifications: Notification[] = [];
   unreadCount = 0;
   isLoading = true;
-
-  constructor(
-    private router: Router,
-    private apiService: ApiService,
-    private weatherService: WeatherService,
-  ) { }
 
   ngOnInit() {
     this.apiService.getNotifications().subscribe({

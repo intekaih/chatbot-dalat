@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, RouterOutlet } from '@angular/router';
 import { BottomTabBarComponent } from '../bottom-tab-bar/bottom-tab-bar.component';
@@ -17,8 +17,6 @@ import { ThemeService } from '../../../services/theme.service';
     </div>
   `
 })
-export class MainLayoutComponent implements OnInit {
+export class MainLayoutComponent {
   themeService = inject(ThemeService);
-
-  ngOnInit() {}
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Router, ActivatedRoute } from "@angular/router";
 import { Browser } from '@capacitor/browser';
@@ -339,18 +339,16 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
   `,
 })
 export class PlaceDetailPage implements OnInit {
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private apiService = inject(ApiService);
+  private favoritesService = inject(FirestoreFavoritesService);
+
   place: Place | undefined;
   reviews: Review[] = [];
   relatedPlaces: Place[] = [];
   isFavorite = false;
   isLoading = true;
-
-  constructor(
-    private router: Router,
-    private route: ActivatedRoute,
-    private apiService: ApiService,
-    private favoritesService: FirestoreFavoritesService,
-  ) { }
 
   ngOnInit() {
     const slug = this.route.snapshot.paramMap.get("slug");

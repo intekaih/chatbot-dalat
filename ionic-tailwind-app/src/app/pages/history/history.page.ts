@@ -1,8 +1,8 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
-import { ApiService, ChatSession } from "../../services/api.service";
 import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state.component";
+import { FirestoreChatService, FirestoreChatSession } from "../../services/firestore-chat.service";
 
 @Component({
   selector: "app-history",
@@ -67,9 +67,9 @@ import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state
                   <h3 class="font-medium text-gray-900 text-sm truncate">
                     {{ session.title }}
                   </h3>
-                  <p class="text-xs text-gray-400">
-                    {{ session.messages.length }} tin nhắn
-                  </p>
+                   <p class="text-xs text-gray-400">
+                    {{ session.messageCount || 0 }} tin nhắn
+                   </p>
                 </div>
                 <div class="text-right flex-shrink-0">
                   <p class="text-xs text-gray-400">
@@ -113,16 +113,15 @@ import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state
   `,
 })
 export class HistoryPage implements OnInit {
-  sessions: ChatSession[] = [];
+  private router = inject(Router);
+
+  sessions: FirestoreChatSession[] = [];
   isLoading = true;
 
-  constructor(
-    private router: Router,
-    private apiService: ApiService,
-  ) { }
+  private firestoreChat = inject(FirestoreChatService);
 
   ngOnInit() {
-    this.apiService.getChatSessions().subscribe({
+    this.firestoreChat.getSessions().subscribe({
       next: (sessions) => {
         this.sessions = sessions;
         this.isLoading = false;
@@ -134,31 +133,32 @@ export class HistoryPage implements OnInit {
     });
   }
 
-  openChat(session: ChatSession) {
+  openChat(session: FirestoreChatSession) {
     this.router.navigate(["/home/chat"], { state: { prompt: session.title } });
   }
 
-  deleteSession(event: Event, session: ChatSession) {
+  deleteSession(event: Event, session: FirestoreChatSession) {
     event.stopPropagation();
     // Xóa khỏi UI ngay để UX nhanh
     this.sessions = this.sessions.filter((s) => s.id !== session.id);
-    // Gọi BE để xóa thật
+    // Xóa trên Firestore
     if (session.id) {
-      this.apiService.deleteChatSession(session.id).subscribe();
+      this.firestoreChat.deleteSession(session.id);
     }
   }
 
   clearAll() {
     const toDelete = [...this.sessions];
     this.sessions = [];
-    // Xóa tất cả session trên BE
+    // Xóa tất cả sessions trên Firestore
     toDelete.forEach((s) => {
-      if (s.id) this.apiService.deleteChatSession(s.id).subscribe();
+      if (s.id) this.firestoreChat.deleteSession(s.id);
     });
   }
 
-  formatDate(date: Date): string {
-    const d = new Date(date);
+  formatDate(date: Date | any): string {
+    // Hỗ trợ cả Firestore Timestamp lẫn Date bình thường
+    const d = date?.toDate ? date.toDate() : new Date(date);
     const now = new Date();
     const diffDays = Math.floor(
       (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24),

@@ -1,9 +1,11 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { Router, NavigationExtras } from "@angular/router";
+import { Router } from "@angular/router";
 import { PlaceCardComponent } from "../../components/place/place-card/place-card.component";
 import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state.component";
 import { ApiService, Place, Trip } from "../../services/api.service";
+import { FirestoreFavoritesService } from "../../services/firestore-favorites.service";
+import { FirestoreTripsService } from "../../services/firestore-trips.service";
 
 @Component({
   selector: "app-favorites",
@@ -163,39 +165,43 @@ import { ApiService, Place, Trip } from "../../services/api.service";
   `,
 })
 export class FavoritesPage implements OnInit {
+  private router = inject(Router);
+  private apiService = inject(ApiService);
+  private favoritesService = inject(FirestoreFavoritesService);
+  private tripsService = inject(FirestoreTripsService);
+
   activeTab: "places" | "trips" = "places";
   favoritePlaces: Place[] = [];
   trips: Trip[] = [];
   isLoading = true;
 
-  constructor(
-    private router: Router,
-    private apiService: ApiService,
-  ) { }
-
   ngOnInit() {
-    // Check navigation state to auto-select tab
+    // Kiểm tra navigation state để auto-select tab
     const nav = this.router.getCurrentNavigation();
     const state = nav?.extras?.state as { tab?: string } | undefined;
     if (state?.tab === 'trips') {
       this.activeTab = 'trips';
     }
 
-    // Load favorite places from API
-    this.apiService.getFavorites().subscribe({
-      next: (places) => {
-        this.favoritePlaces = places;
+    // Load favorite places từ Firestore (realtime)
+    this.favoritesService.getFavoriteIds().subscribe((ids) => {
+      if (ids.length === 0) {
         this.isLoading = false;
-        // Refresh ảnh: DB chỉ có Pexels → thay bằng Gemini URL (load được ở browser)
-        this.apiService.refreshPlaceImages(this.favoritePlaces).subscribe();
-      },
-      error: () => {
-        this.isLoading = false;
-      },
+        this.favoritePlaces = [];
+        return;
+      }
+      // Lấy thông tin địa điểm từ ApiService (places data vẫn ở backend)
+      this.apiService.getPlaces().subscribe({
+        next: (places) => {
+          this.favoritePlaces = places.filter(p => ids.includes(p.id));
+          this.isLoading = false;
+        },
+        error: () => { this.isLoading = false; },
+      });
     });
 
-    // Load trips from API
-    this.apiService.getTrips().subscribe({
+    // Load trips từ Firestore (realtime)
+    this.tripsService.getTrips().subscribe({
       next: (trips) => {
         this.trips = trips;
       },

@@ -42,20 +42,20 @@ export class FirestoreTripsService {
         );
     }
 
-    /** Tạo trip mới */
-    async createTrip(trip: Partial<Trip>): Promise<Trip | null> {
+    /** Tạo trip mới, trả về ID của trip mới tạo */
+    async createTrip(trip: Partial<Trip>): Promise<string> {
         const uid = this.uid;
-        if (!uid) return null;
+        if (!uid) return '';
         try {
             const ref = await addDoc(this.tripsCol(uid), {
                 ...trip,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
-            return { id: ref.id, ...trip } as Trip;
+            return ref.id;
         } catch (e) {
             console.error('FirestoreTripsService.createTrip error:', e);
-            return null;
+            return '';
         }
     }
 

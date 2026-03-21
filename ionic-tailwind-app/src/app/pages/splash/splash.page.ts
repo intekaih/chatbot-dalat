@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 
@@ -30,9 +30,9 @@ import { Router } from '@angular/router';
   `
 })
 export class SplashPage implements OnInit {
-  isLeaving = false;
+  private router = inject(Router);
 
-  constructor(private router: Router) {}
+  isLeaving = false;
 
   ngOnInit() {
     setTimeout(() => {

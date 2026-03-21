@@ -1,4 +1,4 @@
-import { Component } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { Router } from "@angular/router";
@@ -232,6 +232,9 @@ interface ChoiceItem {
   `,
 })
 export class WelcomePage {
+  private router = inject(Router);
+  private apiService = inject(ApiService);
+
   steps = [0, 1, 2, 3];
   step = 0;
   isSubmitting = false;
@@ -279,11 +282,6 @@ export class WelcomePage {
     { id: "luxury", emoji: "✨", label: "Sang trọng", desc: "Trên 1.5tr/ngày" },
   ];
   selectedBudget = "";
-
-  constructor(
-    private router: Router,
-    private apiService: ApiService,
-  ) {}
 
   selectAvatar(av: string) {
     this.avatar = av;

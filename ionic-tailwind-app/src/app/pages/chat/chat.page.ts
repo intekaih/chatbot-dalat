@@ -1,12 +1,4 @@
-import {
-  Component,
-  OnInit,
-  OnDestroy,
-  ViewChild,
-  ElementRef,
-  AfterViewChecked,
-  HostListener,
-} from "@angular/core";
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked, HostListener, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Router, ActivatedRoute } from "@angular/router";
 import { FormsModule } from "@angular/forms";
@@ -19,6 +11,7 @@ import { ApiService, Place } from "../../services/api.service";
 import { AI_CONFIG } from "../../config/ai.config";
 import { FirestoreChatService } from "../../services/firestore-chat.service";
 import { StorageService } from "../../services/storage.service";
+import { FirestoreTripsService } from "../../services/firestore-trips.service";
 
 interface Message {
   id: string;
@@ -410,6 +403,14 @@ interface AppAIModel {
   ],
 })
 export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private aiService = inject(AIService);
+  private apiService = inject(ApiService);
+  private firestoreChat = inject(FirestoreChatService);
+  private storageService = inject(StorageService);
+  private firestoreTrips = inject(FirestoreTripsService);
+
   @ViewChild("messagesEnd") messagesEnd!: ElementRef;
   @ViewChild("messageInput") messageInput!: ElementRef;
   @ViewChild("cameraInput") cameraInput!: ElementRef;
@@ -456,15 +457,6 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
       this.showModelPicker = false;
     }
   };
-
-  constructor(
-    private router: Router,
-    private route: ActivatedRoute,
-    private aiService: AIService,
-    private apiService: ApiService,
-    private firestoreChat: FirestoreChatService,
-    private storageService: StorageService,
-  ) { }
 
   ngOnInit() {
     // Use window.history.state — works for lazy-loaded routes where getCurrentNavigation() returns null
@@ -1004,7 +996,7 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
     const imagePrompt = `Beautiful travel photo of Da Lat Vietnam, ${title}, scenic landscape, cinematic, high quality`;
 
     const doCreate = (coverImage: string) => {
-      this.apiService.createTrip({
+      this.firestoreTrips.createTrip({
         title,
         destination: 'Đà Lạt, Lâm Đồng',
         coverImage,
@@ -1012,31 +1004,28 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
         endDate,
         status: 'upcoming',
         notes: lastAI!.content,
-      }).subscribe({
-        next: (trip: any) => {
-          this.isSaving = false;
-          this.isTripResponse = false;
-          this.saveTripToast = 'Đã lưu vào Lịch trình!';
-          setTimeout(() => {
-            this.saveTripToast = '';
-            if (trip?.id) {
-              this.router.navigate(['/home/trips', trip.id]);
-            } else {
-              this.router.navigate(['/home/trips']);
-            }
-          }, 1500);
-        },
-        error: () => {
-          this.isSaving = false;
-          this.saveTripToast = 'Không thể lưu. Thử lại sau!';
-          setTimeout(() => this.saveTripToast = '', 3000);
-        },
+      }).then((tripId) => {
+        this.isSaving = false;
+        this.isTripResponse = false;
+        this.saveTripToast = 'Đã lưu vào Lịch trình!';
+        setTimeout(() => {
+          this.saveTripToast = '';
+          if (tripId) {
+            this.router.navigate(['/home/trips', tripId]);
+          } else {
+            this.router.navigate(['/home/trips']);
+          }
+        }, 1500);
+      }).catch(() => {
+        this.isSaving = false;
+        this.saveTripToast = 'Không thể lưu. Thử lại sau!';
+        setTimeout(() => this.saveTripToast = '', 3000);
       });
     };
 
     // Generate cover image first, then create trip
     this.apiService.generateImage(imagePrompt).subscribe({
-      next: (dataUrl) => doCreate(dataUrl || fallbackImage),
+      next: (dataUrl: string) => doCreate(dataUrl || fallbackImage),
       error: () => doCreate(fallbackImage),
     });
   }

@@ -1,4 +1,4 @@
-import { Component, Input } from "@angular/core";
+import { Component, Input, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
 import { Place } from "../../../services/api.service";
@@ -157,8 +157,7 @@ import { Place } from "../../../services/api.service";
 })
 export class RentalCardComponent {
   @Input() place!: Place;
-
-  constructor(private router: Router) {}
+  private router = inject(Router);
 
   navigateToPlace() {
     this.router.navigate(["/home/place", this.place.slug]);

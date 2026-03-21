@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Router, ActivatedRoute } from "@angular/router";
 import {
@@ -344,17 +344,15 @@ import {
   `,
 })
 export class TripDetailPage implements OnInit {
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private apiService = inject(ApiService);
+
   trip: Trip | undefined;
   activeTab: "itinerary" | "budget" = "itinerary";
   expandedDays: boolean[] = [];
   notesHtml = "";
   tripNights = 0;
-
-  constructor(
-    private router: Router,
-    private route: ActivatedRoute,
-    private apiService: ApiService,
-  ) { }
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get("id");

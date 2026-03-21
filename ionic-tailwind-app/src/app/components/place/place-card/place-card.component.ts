@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit } from "@angular/core";
+import { Component, Input, Output, EventEmitter, OnInit, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
 import { Place, ApiService } from "../../../services/api.service";
@@ -134,12 +134,13 @@ import { Place, ApiService } from "../../../services/api.service";
   `],
 })
 export class PlaceCardComponent implements OnInit {
+  private router = inject(Router);
+  private apiService = inject(ApiService);
+
   @Input() place!: Place;
   @Input() variant: "default" | "compact" = "default";
   @Input() isFavorite = false;
   @Output() favorite = new EventEmitter<Place>();
-
-  constructor(private router: Router, private apiService: ApiService) { }
 
   ngOnInit() {
     if (this.place?.id) {

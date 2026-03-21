@@ -132,10 +132,10 @@ import { ThemeService } from '../../services/theme.service';
   `
 })
 export class SettingsPage {
+  private router = inject(Router);
+
   themeService = inject(ThemeService);
   notifications = true;
-
-  constructor(private router: Router) {}
 
   goBack() {
     this.router.navigate(['/home/profile']);
