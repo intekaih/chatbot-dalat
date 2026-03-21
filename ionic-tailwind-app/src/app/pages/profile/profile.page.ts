@@ -12,7 +12,7 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-white pb-8">
+    <div class="bg-white min-h-screen flex flex-col">
       <!-- Profile Card -->
       <div class="bg-gradient-to-br from-gray-900 to-gray-800 px-4 pt-12 pb-6 relative">
         <button
@@ -261,13 +261,16 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
 
       </div>
 
+      <!-- Spacer: đẩy logout xuống cuối -->
+      <div class="flex-1"></div>
+
       <!-- App Info -->
       <div class="px-4 py-4 text-center">
         <p class="text-xs text-gray-400">Đà Lạt Travel AI v1.0.0</p>
       </div>
 
       <!-- Logout -->
-      <div class="px-4 pb-4">
+      <div class="px-4 pb-24">
         <button
           (click)="logout()"
           class="w-full py-3 text-red-600 hover:bg-red-50 rounded-xl font-medium text-sm border border-red-100"
