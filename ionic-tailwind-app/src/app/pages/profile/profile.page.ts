@@ -12,7 +12,7 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-white min-h-screen flex flex-col">
+    <div class="bg-white flex flex-col overflow-hidden" style="height: calc(100vh - 4rem - env(safe-area-inset-bottom))">
       <!-- Profile Card -->
       <div class="bg-gradient-to-br from-gray-900 to-gray-800 px-4 pt-12 pb-6 relative">
         <button
@@ -270,7 +270,7 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
       </div>
 
       <!-- Logout -->
-      <div class="px-4 pb-24">
+      <div class="px-4 pb-4">
         <button
           (click)="logout()"
           class="w-full py-3 text-red-600 hover:bg-red-50 rounded-xl font-medium text-sm border border-red-100"
