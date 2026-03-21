@@ -45,7 +45,7 @@ const app = express();
 // --- CORS: chỉ cho phép các origin được liệt kê ---
 const ALLOWED_ORIGINS = (
   process.env.CORS_ORIGIN ||
-  "http://localhost:8100,http://127.0.0.1:8100,http://localhost:4200,http://127.0.0.1:4200"
+  "http://localhost:8100,http://127.0.0.1:8100,http://localhost:4200,http://127.0.0.1:4200,http://localhost:5000,http://0.0.0.0:5000"
 )
   .split(",")
   .map((o) => o.trim());
@@ -57,6 +57,8 @@ app.use(
       // Cho phép wildcard (*) nếu có cấu hình
       if (ALLOWED_ORIGINS.includes("*")) return callback(null, true);
       if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+      // Cho phép Replit dev domain
+      if (origin && origin.includes(".replit.dev")) return callback(null, true);
       callback(new Error(`CORS blocked: ${origin}`));
     },
     methods: ["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"],

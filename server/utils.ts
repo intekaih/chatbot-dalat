@@ -56,7 +56,7 @@ export const defaultModel = apiProxyBaseUrl && apiProxyKey
     : "gpt-4o-mini";
 
 export const openai = new OpenAI({
-    apiKey,
+    apiKey: apiKey || "placeholder-no-key",
     baseURL,
     defaultHeaders: baseURL ? {
         "Content-Type": "application/json",

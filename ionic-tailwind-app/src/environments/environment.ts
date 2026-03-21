@@ -4,7 +4,7 @@
 
 export const environment = {
   production: false,
-  apiBaseUrl: "http://127.0.0.1:3001",
+  apiBaseUrl: "https://9b4f023a-fdcf-4eac-a6ca-69a3fca14ca7-00-31t02ztydllnw.spock.replit.dev:3001",
   firebase: {
     apiKey: "AIzaSyDen9SILPp9WXux0ABu7NUyMcFgnpCOmyw",
     authDomain: "dalat-chatbot.firebaseapp.com",
