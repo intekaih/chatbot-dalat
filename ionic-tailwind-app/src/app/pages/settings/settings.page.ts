@@ -34,12 +34,12 @@ import { ThemeService } from '../../services/theme.service';
               </div>
               <button 
                 (click)="toggleDarkMode()"
-                class="w-12 h-7 rounded-full transition-colors relative"
+                class="w-12 h-7 rounded-full transition-colors relative overflow-hidden"
                 [class]="themeService.darkMode() ? 'bg-black' : 'bg-gray-200'"
               >
                 <span 
-                  class="absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform"
-                  [class]="themeService.darkMode() ? 'translate-x-6' : 'translate-x-1'"
+                  class="absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform"
+                  [class]="themeService.darkMode() ? 'translate-x-5' : 'translate-x-0'"
                 ></span>
               </button>
             </div>
@@ -69,12 +69,12 @@ import { ThemeService } from '../../services/theme.service';
               </div>
               <button 
                 (click)="toggleNotifications()"
-                class="w-12 h-7 rounded-full transition-colors relative"
+                class="w-12 h-7 rounded-full transition-colors relative overflow-hidden"
                 [class]="notifications ? 'bg-black' : 'bg-gray-200'"
               >
                 <span 
-                  class="absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform"
-                  [class]="notifications ? 'translate-x-6' : 'translate-x-1'"
+                  class="absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform"
+                  [class]="notifications ? 'translate-x-5' : 'translate-x-0'"
                 ></span>
               </button>
             </div>
