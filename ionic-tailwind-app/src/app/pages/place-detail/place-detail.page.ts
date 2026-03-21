@@ -1,8 +1,10 @@
 import { Component, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Router, ActivatedRoute } from "@angular/router";
+import { Browser } from '@capacitor/browser';
 import { PlaceCardComponent } from "../../components/place/place-card/place-card.component";
 import { ApiService, Place, Review } from "../../services/api.service";
+import { FirestoreFavoritesService } from "../../services/firestore-favorites.service";
 
 @Component({
   selector: "app-place-detail",
@@ -347,6 +349,7 @@ export class PlaceDetailPage implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private apiService: ApiService,
+    private favoritesService: FirestoreFavoritesService,
   ) { }
 
   ngOnInit() {
@@ -367,7 +370,8 @@ export class PlaceDetailPage implements OnInit {
         // Load reviews for this place
         if (this.place) {
           this.loadReviews(this.place.id);
-          this.apiService.checkFavorite(this.place.id).subscribe((isFav) => {
+          // Kiểm tra favorites từ Firestore
+          this.favoritesService.isFavorite(this.place.id).then(isFav => {
             this.isFavorite = isFav;
           });
           // Refresh ảnh: DB chỉ có Pexels → thay bằng Gemini URL cho hero
@@ -436,23 +440,27 @@ export class PlaceDetailPage implements OnInit {
 
   toggleFavorite() {
     if (!this.place) return;
-    this.apiService
-      .toggleFavorite(this.place.id, this.isFavorite)
-      .subscribe((newState) => {
-        this.isFavorite = newState;
-      });
+    this.favoritesService.toggleFavorite({
+      id: this.place.id,
+      name: this.place.name,
+      category: this.place.category,
+      imageUrl: this.place.imageUrl,
+    }).then((newState) => {
+      this.isFavorite = newState;
+    });
   }
 
-  openMaps() {
+  async openMaps() {
     const defaultQuery = encodeURIComponent(`${this.place?.name} Đà Lạt`);
     const q = this.place?.address
       ? encodeURIComponent(`${this.place.name}, ${this.place.address}`)
       : defaultQuery;
 
-    window.open(
-      `https://www.google.com/maps/search/?api=1&query=${q}`,
-      "_blank",
-    );
+    // Dùng @capacitor/browser để mở Google Maps (native browser trên thiết bị)
+    await Browser.open({
+      url: `https://www.google.com/maps/search/?api=1&query=${q}`,
+      presentationStyle: 'popover',
+    });
   }
 
   goToChat() {

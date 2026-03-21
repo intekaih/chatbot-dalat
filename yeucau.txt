@@ -1,0 +1,63 @@
+Chào bạn, đề tài "Ứng dụng chatbot tư vấn du lịch Đà Lạt" của bạn thuộc Đề tài số 20 trong danh sách của học phần Phát triển ứng dụng di động nâng cao
+.
+Dưới đây là chi tiết các yêu cầu kỹ thuật (Frontend, Backend, Database, Quản lý...) mà dự án của bạn cần đáp ứng:
+1. Yêu cầu nền tảng và kiến trúc chung
+Framework chính: Bắt buộc sử dụng nền tảng Ionic Framework và Angular phiên bản mới nhất
+.
+Ngôn ngữ lập trình: Sử dụng TypeScript, HTML5 và SCSS
+.
+Kiến trúc: Áp dụng kiến trúc hệ thống hiện đại, phân tách rõ ràng mô hình MVC (hoặc MVVM trong Ionic), tuân thủ nguyên lý "Separation of Concerns"
+,
+,
+.
+2. Yêu cầu về Front-end (UI/UX)
+Thiết kế giao diện: Thiết kế giao diện bằng SCSS và HTML5, xây dựng các component, page, và layout
+.
+Xử lý nghiệp vụ UI: Xử lý các logic giao diện, ràng buộc dữ liệu (Two-way data binding), quản lý forms và validation để lấy dữ liệu từ người dùng (ví dụ: khung chat, form tìm kiếm)
+,
+.
+Tối ưu hiệu năng & UX: Tối ưu hóa trải nghiệm người dùng, cấu hình Lazy Loading để ứng dụng khởi động nhanh hơn, tải các module/trang theo yêu cầu
+,
+. Sử dụng CSS Variables để linh hoạt tuỳ biến giao diện (Theming)
+.
+3. Yêu cầu về Back-end & Database Học phần yêu cầu sử dụng Google Firebase làm nền tảng Backend-as-a-Service (BaaS) thay vì tự xây dựng server riêng
+,
+.
+Cơ sở dữ liệu (Database): Tích hợp Firestore (cơ sở dữ liệu NoSQL) hoặc Real-time Database để lưu trữ thông tin văn bản, lịch sử chat, dữ liệu về địa điểm du lịch Đà Lạt
+.
+Xác thực người dùng (Authentication): Tích hợp tính năng đăng ký, đăng nhập người dùng (thông qua Email/Password, Google hoặc Facebook...)
+,
+,
+.
+Lưu trữ tệp tin (Storage): Sử dụng Firebase Cloud Storage để lưu trữ các hình ảnh, video (ví dụ ảnh đại diện hoặc ảnh các địa điểm du lịch gửi trong khung chat)
+,
+.
+Bảo mật: Thiết lập Firebase Security Rules (Quy tắc bảo mật) để bảo vệ dữ liệu, đảm bảo chỉ người dùng đã xác thực mới có quyền truy cập
+.
+Service & API: Xây dựng các Service để xử lý logic gọi API (bạn có thể cần tích hợp API của một Chatbot bên thứ 3), sử dụng HttpClient và RxJS (Promises/Observables) để xử lý dữ liệu bất đồng bộ
+,
+,
+.
+Lưu trữ cục bộ (Local Storage/SQLite): Ứng dụng cần tích hợp lưu trữ tại máy (caching) để ghi nhớ trạng thái hoặc lưu tạm dữ liệu khi không có kết nối internet
+,
+.
+4. Tương tác thiết bị (Native API)
+Bắt buộc tích hợp các thư viện native là Cordova hoặc Capacitor để xây dựng thành ứng dụng Native (có thể xuất ra file .apk cho Android hoặc iOS)
+,
+,
+.
+Sử dụng các plugin tương tác với thiết bị như: Camera (chụp ảnh), Geolocation (lấy tọa độ định vị để gợi ý địa điểm gần nhất), Network (kiểm tra trạng thái mạng) hoặc Browser/Map (mở bản đồ chỉ đường)
+,
+,
+.
+5. Yêu cầu về quản lý dự án (Workflow)
+Quản lý mã nguồn: Bắt buộc sử dụng GitHub với một Repository chung
+. Các thành viên phải tích cực tham gia commit code
+.
+Quản lý Secrets: Phải sử dụng biến môi trường (Environment variables) trên GitHub để lưu trữ an toàn các secret keys (như API key của Firebase hay API key của Chatbot)
+,
+.
+Phân công vai trò: Nhóm (tối đa 3 thành viên) phải chia rõ vai trò: Quản lý dự án (thiết kế kiến trúc, review code, chia việc), Lập trình viên Front-end, và Lập trình viên Back-end/Service
+,
+,
+.

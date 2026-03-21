@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 
@@ -37,9 +37,10 @@ export class SearchBarComponent {
   @Input() value = '';
   @Input() readOnly = false;
   @Output() valueChange = new EventEmitter<string>();
-  @Output() search = new EventEmitter<string>();
+  /** Emits search query when user presses Enter. Use (searchQuery) in templates. */
+  @Output() searchQuery = new EventEmitter<string>();
 
-  constructor(private router: Router) {}
+  private router = inject(Router);
 
   onClick() {
     if (this.readOnly) {
@@ -54,6 +55,6 @@ export class SearchBarComponent {
   }
 
   onEnter() {
-    this.search.emit(this.value);
+    this.searchQuery.emit(this.value);
   }
 }

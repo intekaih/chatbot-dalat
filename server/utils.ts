@@ -8,20 +8,24 @@ const __dirname = path.dirname(__filename);
 const MAU_JSON_PATH = path.resolve(__dirname, "maujson.txt");
 
 /**
- * Ghi log AI response ra file maujson.txt (debug/dev only).
- * Dùng chung cho index.ts và ai-generator.ts.
+ * Ghi log AI response ra file maujson.txt — CHỈ trong môi trường development.
+ * - Bị tắt hoàn toàn khi NODE_ENV=production (bảo vệ privacy user).
+ * - Dùng fs.writeFile (async) để không chặn event loop trên request path.
  */
-export function saveAIMauJson(label: string, data: any): void {
+export function saveAIMauJson(label: string, data: unknown): void {
+    if (process.env.NODE_ENV === "production") return;
     try {
         const entry = {
             timestamp: new Date().toISOString(),
             label,
             data,
         };
-        fs.writeFileSync(MAU_JSON_PATH, JSON.stringify(entry, null, 2), "utf-8");
-        console.log(`📄 [MAU_JSON] Saved ${label} → maujson.txt`);
+        fs.writeFile(MAU_JSON_PATH, JSON.stringify(entry, null, 2), "utf-8", (err) => {
+            if (err) console.warn("⚠️ Failed to write maujson.txt:", err);
+            else console.log(`📄 [MAU_JSON] Saved ${label} → maujson.txt`);
+        });
     } catch (e) {
-        console.warn("⚠️ Failed to write maujson.txt:", e);
+        console.warn("⚠️ saveAIMauJson error:", e);
     }
 }
 

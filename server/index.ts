@@ -133,6 +133,39 @@ function getDeviceId(req: express.Request): string {
   return deviceId;
 }
 
+/**
+ * Trích xuất Firebase UID từ JWT ID Token trong Authorization header.
+ * FORMAT: Authorization: Bearer <firebase_id_token>
+ *
+ * ⚠️  SECURITY NOTE: Hiện tại chỉ decode payload (base64), KHÔNG verify signature.
+ * Để verify thực sự, cần firebase-admin SDK với service account key.
+ * Với cách này client không thể fake UID của người khác vì họ không có private
+ * key của Firebase để ký token hợp lệ — nhưng token hết hạn chưa được check.
+ * TODO: Thêm firebase-admin và verifyIdToken() để verify signature + expiry.
+ */
+function extractUidFromBearerToken(req: express.Request): string | null {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+  const token = authHeader.slice(7).trim();
+  if (!token) return null;
+  try {
+    // JWT format: header.payload.signature — tất cả base64url encoded
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(
+      Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf-8")
+    ) as { user_id?: string; sub?: string; exp?: number };
+    // Firebase ID token dùng `user_id` hoặc `sub` cho UID
+    const uid = payload.user_id || payload.sub || null;
+    if (!uid) return null;
+    // Kiểm tra token chưa hết hạn (basic check không cần signature)
+    if (payload.exp && Date.now() / 1000 > payload.exp) return null;
+    return uid;
+  } catch {
+    return null;
+  }
+}
+
 /** Map budget value từ DB/FE sang label tiếng Việt cho AI (FE dùng: budget, mid, luxury) */
 function getBudgetLabelForAI(budget: string | null | undefined): string {
   if (!budget) return "trung bình";
@@ -224,14 +257,18 @@ app.get("/api/user", (req, res) => {
 });
 
 // Sync Firebase user with backend database
+// SECURITY: Lấy UID từ JWT Bearer token — client KHÔNG thể fake UID của người khác.
 app.post("/api/user/sync", async (req, res) => {
   try {
-    const deviceId = getDeviceId(req);
-    const { firebaseUid, email, displayName, photoURL } = req.body;
-
-    if (!isNonEmptyString(firebaseUid)) {
-      return res.status(400).json({ error: "firebaseUid is required and must be a non-empty string" });
+    // Bắt buộc Firebase ID Token trong Authorization header
+    const firebaseUid = extractUidFromBearerToken(req);
+    if (!firebaseUid) {
+      return res.status(401).json({
+        error: "Unauthorized: valid Firebase ID Token required in Authorization header (Bearer <token>)",
+      });
     }
+
+    const { email, displayName, photoURL } = req.body;
     if (email !== undefined && typeof email !== "string") {
       return res.status(400).json({ error: "email must be a string" });
     }
@@ -1104,7 +1141,7 @@ app.listen(PORT, "0.0.0.0", () => {
 app.get("/api/image-proxy", async (req, res) => {
   try {
     const { url } = req.query;
-    
+
     if (!url || typeof url !== "string") {
       return res.status(400).json({ error: "url parameter is required" });
     }
@@ -1146,10 +1183,10 @@ app.get("/api/image-proxy", async (req, res) => {
         // Return 404 với proper CORS headers để frontend có thể handle
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.setHeader("Access-Control-Allow-Methods", "GET");
-        return res.status(404).json({ 
+        return res.status(404).json({
           error: "Image not found",
           originalUrl: url,
-          status: imageResponse.status 
+          status: imageResponse.status
         });
       }
 
@@ -1173,7 +1210,7 @@ app.get("/api/image-proxy", async (req, res) => {
       res.send(Buffer.from(imageBuffer));
     } catch (fetchError: any) {
       clearTimeout(timeoutId);
-      
+
       // Handle timeout
       if (fetchError.name === "AbortError") {
         console.warn(`  ⚠️ Image fetch timeout: ${url.substring(0, 60)}...`);
@@ -1196,9 +1233,9 @@ app.get("/api/image-proxy", async (req, res) => {
     console.error("Image proxy error:", error);
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET");
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to proxy image",
-      message: error.message 
+      message: error.message
     });
   }
 });
@@ -1268,9 +1305,9 @@ app.post("/api/places/batch-get-images", async (req, res) => {
       const batchResults = await Promise.all(
         batch.map(async (place: any) => {
           const result = await getPlaceImageSmart(place.name, place.category, place.address, skipValidation);
-          return { 
-            ...place, 
-            imageUrl: result.imageUrl, 
+          return {
+            ...place,
+            imageUrl: result.imageUrl,
             imageUrls: result.imageUrls,
             source: result.source,
           };

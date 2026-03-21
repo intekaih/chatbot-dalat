@@ -140,12 +140,12 @@ export class ApiService {
    */
   getImageProxyUrl(imageUrl: string | null | undefined): string | null {
     if (!imageUrl) return null;
-    
+
     // Không proxy placeholder URLs
     if (imageUrl.includes('placehold.co') || imageUrl.includes('images.pexels.com')) {
       return imageUrl;
     }
-    
+
     // Convert external URL thành proxy URL
     return `${this.baseUrl}/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
   }
@@ -160,13 +160,7 @@ export class ApiService {
 
   // Device ID for user identification (public để AIService dùng khi gọi /api/chat)
   getDeviceId(): string {
-    // Ưu tiên sử dụng Firebase UID nếu có
-    const firebaseUid = localStorage.getItem('firebase_uid');
-    if (firebaseUid) {
-      return firebaseUid;
-    }
-
-    // Fallback về device-id cho guest users
+    // Tạo và lưu device ID nếu chưa có (dùng cho mọi loại user kể cả Firebase)
     let deviceId = localStorage.getItem("device_id");
     if (!deviceId) {
       deviceId =
@@ -215,20 +209,29 @@ export class ApiService {
       );
   }
 
-  /** Sync Firebase user with backend */
-  syncFirebaseUser(): Observable<User | null> {
-    const firebaseUid = localStorage.getItem('firebase_uid');
-    const email = localStorage.getItem('firebase_email');
-
-    if (!firebaseUid) {
+  /** Sync Firebase user with backend — dùng ID Token thay vì UID từ body */
+  syncFirebaseUser(
+    idToken: string,
+    email = '',
+    displayName = '',
+    photoURL = '',
+  ): Observable<User | null> {
+    if (!idToken) {
       return of(null);
     }
 
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'device-id': this.getDeviceId(),
+      'Authorization': `Bearer ${idToken}`,
+    });
+
     return this.http
       .post<any>(`${this.baseUrl}/api/user/sync`, {
-        firebaseUid,
         email,
-      }, { headers: this.getHeaders() })
+        displayName,
+        photoURL,
+      }, { headers })
       .pipe(
         map((res) => ({
           id: res.id,
@@ -236,7 +239,7 @@ export class ApiService {
           avatar: res.avatar,
           preferences: res.preferences || [],
           travelStyles: res.travelStyles || [],
-          budget: res.budget || "mid",
+          budget: res.budget || 'mid',
           hasPersonalized: res.hasPersonalized || false,
         })),
         catchError(() => of(null)),
@@ -368,19 +371,49 @@ export class ApiService {
     };
   }
 
-  // ========== PLACES ENDPOINTS ==========
+  private readonly CACHE_PLACES_KEY = 'cache_places';
+  private readonly CACHE_CATEGORIES_KEY = 'cache_categories';
+  private readonly CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 giờ
 
-  /** Get all places with optional filters */
+  /** Get all places with optional filters - có offline cache */
   getPlaces(category?: string, featured?: boolean): Observable<Place[]> {
     let url = `${this.baseUrl}/api/places`;
     const params: string[] = [];
     if (category) params.push(`category=${category}`);
     if (featured !== undefined) params.push(`featured=${featured}`);
-    if (params.length > 0) url += "?" + params.join("&");
+    if (params.length > 0) url += '?' + params.join('&');
 
     return this.http.get<any[]>(url, { headers: this.getHeaders() }).pipe(
-      map((places) => places.map((p) => this.mapPlace(p))),
-      catchError(() => of([])),
+      map((places) => {
+        const mapped = places.map((p) => this.mapPlace(p));
+        // Lưu vào cache nếu không có filter (full list)
+        if (!category && featured === undefined) {
+          try {
+            localStorage.setItem(this.CACHE_PLACES_KEY, JSON.stringify({
+              data: mapped,
+              ts: Date.now(),
+            }));
+          } catch { /* quota exceeded */ }
+        }
+        return mapped;
+      }),
+      catchError(() => {
+        // Offline: đọc từ cache
+        try {
+          const raw = localStorage.getItem(this.CACHE_PLACES_KEY);
+          if (raw) {
+            const { data, ts } = JSON.parse(raw);
+            if (Date.now() - ts < this.CACHE_TTL_MS) {
+              let cached: Place[] = data;
+              if (category) cached = cached.filter(p => p.category === category);
+              if (featured !== undefined) cached = cached.filter(p => p.featured === featured);
+              console.warn('📵 [ApiService] Offline — serving places from cache');
+              return of(cached);
+            }
+          }
+        } catch { }
+        return of([]);
+      }),
     );
   }
 
@@ -392,7 +425,7 @@ export class ApiService {
     );
   }
 
-  /** Get categories */
+  /** Get categories - có offline cache */
   getCategories(): Observable<Category[]> {
     return this.http
       .get<Category[]>(`${this.baseUrl}/api/categories`, { headers: this.getHeaders() })
@@ -403,9 +436,29 @@ export class ApiService {
             const [sig] = categories.splice(sigIndex, 1);
             categories.unshift(sig);
           }
+          // Lưu vào cache
+          try {
+            localStorage.setItem(this.CACHE_CATEGORIES_KEY, JSON.stringify({
+              data: categories,
+              ts: Date.now(),
+            }));
+          } catch { }
           return categories;
         }),
-        catchError(() => of([]))
+        catchError(() => {
+          // Offline: đọc từ cache
+          try {
+            const raw = localStorage.getItem(this.CACHE_CATEGORIES_KEY);
+            if (raw) {
+              const { data, ts } = JSON.parse(raw);
+              if (Date.now() - ts < this.CACHE_TTL_MS) {
+                console.warn('📵 [ApiService] Offline — serving categories from cache');
+                return of(data);
+              }
+            }
+          } catch { }
+          return of([]);
+        })
       );
   }
 

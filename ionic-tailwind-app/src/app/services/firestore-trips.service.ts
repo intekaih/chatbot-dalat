@@ -1,0 +1,86 @@
+import { Injectable, inject } from '@angular/core';
+import {
+    Firestore,
+    collection,
+    collectionData,
+    doc,
+    addDoc,
+    deleteDoc,
+    updateDoc,
+    query,
+    orderBy,
+    serverTimestamp,
+    Timestamp,
+} from '@angular/fire/firestore';
+import { Auth } from '@angular/fire/auth';
+import { Observable, of, catchError } from 'rxjs';
+import { Trip } from './api.service';
+
+@Injectable({
+    providedIn: 'root',
+})
+export class FirestoreTripsService {
+    private firestore = inject(Firestore);
+    private auth = inject(Auth);
+
+    private get uid(): string | null {
+        return this.auth.currentUser?.uid ?? null;
+    }
+
+    private tripsCol(uid: string) {
+        return collection(this.firestore, `users/${uid}/trips`);
+    }
+
+    /** Lấy tất cả trips của user, sắp xếp theo ngày tạo mới nhất */
+    getTrips(): Observable<Trip[]> {
+        const uid = this.uid;
+        if (!uid) return of([]);
+
+        const q = query(this.tripsCol(uid), orderBy('createdAt', 'desc'));
+        return (collectionData(q, { idField: 'id' }) as Observable<Trip[]>).pipe(
+            catchError(() => of([]))
+        );
+    }
+
+    /** Tạo trip mới */
+    async createTrip(trip: Partial<Trip>): Promise<Trip | null> {
+        const uid = this.uid;
+        if (!uid) return null;
+        try {
+            const ref = await addDoc(this.tripsCol(uid), {
+                ...trip,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+            return { id: ref.id, ...trip } as Trip;
+        } catch (e) {
+            console.error('FirestoreTripsService.createTrip error:', e);
+            return null;
+        }
+    }
+
+    /** Cập nhật trip */
+    async updateTrip(tripId: string, data: Partial<Trip>): Promise<void> {
+        const uid = this.uid;
+        if (!uid) return;
+        try {
+            await updateDoc(doc(this.firestore, `users/${uid}/trips/${tripId}`), {
+                ...data,
+                updatedAt: serverTimestamp(),
+            });
+        } catch (e) {
+            console.error('FirestoreTripsService.updateTrip error:', e);
+        }
+    }
+
+    /** Xóa trip */
+    async deleteTrip(tripId: string): Promise<void> {
+        const uid = this.uid;
+        if (!uid) return;
+        try {
+            await deleteDoc(doc(this.firestore, `users/${uid}/trips/${tripId}`));
+        } catch (e) {
+            console.error('FirestoreTripsService.deleteTrip error:', e);
+        }
+    }
+}

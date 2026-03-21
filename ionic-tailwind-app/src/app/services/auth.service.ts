@@ -1,14 +1,15 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { 
-  Auth, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
+import {
+  Auth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
   onAuthStateChanged,
   updateProfile,
   User as FirebaseUser,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  getIdToken
 } from '@angular/fire/auth';
 import { Firestore, doc, setDoc, getDoc, serverTimestamp } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
@@ -55,16 +56,16 @@ export class AuthService {
   async login(email: string, password: string): Promise<void> {
     const result = await signInWithEmailAndPassword(this.auth, email, password);
     await this.updateLastLogin(result.user.uid);
-    // Lưu Firebase UID và sync với backend
-    localStorage.setItem('firebase_uid', result.user.uid);
+    // Lưu Firebase email và sync backend bằng ID Token (không dùng UID từ localStorage)
     localStorage.setItem('firebase_email', result.user.email || '');
-    // Sync với backend database
-    this.apiService.syncFirebaseUser().subscribe();
+    // Lấy ID Token và sync với backend
+    const idToken = await getIdToken(result.user);
+    this.apiService.syncFirebaseUser(idToken, result.user.email || '', result.user.displayName || '', result.user.photoURL || '').subscribe();
   }
 
   async register(email: string, password: string, displayName: string): Promise<void> {
     const result = await createUserWithEmailAndPassword(this.auth, email, password);
-    
+
     const userData: User = {
       uid: result.user.uid,
       email: result.user.email || email,
@@ -76,24 +77,24 @@ export class AuthService {
     };
 
     await setDoc(doc(this.firestore, 'users', result.user.uid), userData);
-    
+
     if (result.user) {
       await updateProfile(result.user, { displayName });
     }
-    
-    // Lưu Firebase UID và sync với backend
-    localStorage.setItem('firebase_uid', result.user.uid);
+
+    // Lưu Firebase email và sync với backend bằng ID Token
     localStorage.setItem('firebase_email', result.user.email || '');
-    // Sync với backend database
-    this.apiService.syncFirebaseUser().subscribe();
+    // Lấy ID Token và sync với backend
+    const idToken = await getIdToken(result.user);
+    this.apiService.syncFirebaseUser(idToken, result.user.email || '', displayName, '').subscribe();
   }
 
   async loginWithGoogle(): Promise<void> {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(this.auth, provider);
-    
+
     const userDoc = await getDoc(doc(this.firestore, 'users', result.user.uid));
-    
+
     if (!userDoc.exists()) {
       const userData: User = {
         uid: result.user.uid,
@@ -106,12 +107,12 @@ export class AuthService {
       };
       await setDoc(doc(this.firestore, 'users', result.user.uid), userData);
     }
-    
-    // Lưu Firebase UID và sync với backend
-    localStorage.setItem('firebase_uid', result.user.uid);
+
+    // Lưu Firebase email và sync với backend bằng ID Token
     localStorage.setItem('firebase_email', result.user.email || '');
-    // Sync với backend database
-    this.apiService.syncFirebaseUser().subscribe();
+    // Lấy ID Token và sync với backend
+    const idToken = await getIdToken(result.user);
+    this.apiService.syncFirebaseUser(idToken, result.user.email || '', result.user.displayName || '', result.user.photoURL || '').subscribe();
   }
 
   async logout(): Promise<void> {
@@ -121,7 +122,6 @@ export class AuthService {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('hasSeenOnboarding');
     localStorage.removeItem('hasPersonalized');
-    localStorage.removeItem('firebase_uid');
     localStorage.removeItem('firebase_email');
     localStorage.removeItem('isFirebaseUser');
     localStorage.removeItem('isGuest');

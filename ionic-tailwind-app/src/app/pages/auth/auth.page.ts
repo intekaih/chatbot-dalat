@@ -1,4 +1,4 @@
-import { Component } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { Router } from "@angular/router";
@@ -360,10 +360,8 @@ export class AuthPage {
 
   private readonly EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-  constructor(
-    private router: Router,
-    private authService: AuthService
-  ) {}
+  private router = inject(Router);
+  private authService = inject(AuthService);
 
   switchMode(login: boolean) {
     this.isLogin = login;
@@ -508,7 +506,7 @@ export class AuthPage {
     // Đã đăng nhập bằng Firebase - lưu thông tin
     localStorage.setItem('isLoggedIn', 'true');
     localStorage.setItem('isFirebaseUser', 'true');
-    
+
     const hasPersonalized = localStorage.getItem('hasPersonalized') === 'true';
     this.router.navigateByUrl(hasPersonalized ? '/home' : '/welcome', {
       replaceUrl: true,

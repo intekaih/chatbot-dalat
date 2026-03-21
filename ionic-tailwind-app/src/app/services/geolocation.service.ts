@@ -1,4 +1,5 @@
 import { Injectable, signal } from "@angular/core";
+import { Geolocation } from '@capacitor/geolocation';
 
 export interface UserLocation {
   lat: number;
@@ -20,7 +21,7 @@ export class GeolocationService {
   error = this._error.asReadonly();
 
   /**
-   * Xin quyền và lấy vị trí hiện tại
+   * Xin quyền và lấy vị trí hiện tại bằng @capacitor/geolocation
    * @param enableHighAccuracy - Sử dụng GPS chính xác (tốn pin hơn)
    * @param timeout - Thời gian chờ tối đa (ms)
    */
@@ -28,65 +29,57 @@ export class GeolocationService {
     enableHighAccuracy: boolean = false,
     timeout: number = 10000,
   ): Promise<UserLocation | null> {
-    // Kiểm tra hỗ trợ Geolocation
-    if (!navigator.geolocation) {
-      this._error.set("Trình duyệt không hỗ trợ định vị");
-      return null;
-    }
-
     this._isLoading.set(true);
     this._error.set(null);
 
-    return new Promise((resolve) => {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const location: UserLocation = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
+    try {
+      // Xin quyền truy cập vị trí (Capacitor native)
+      const permStatus = await Geolocation.requestPermissions();
+      if (permStatus.location === 'denied') {
+        this._error.set("Bạn đã từ chối quyền truy cập vị trí");
+        this._isLoading.set(false);
+        return null;
+      }
 
-          // Thử lấy địa chỉ từ tọa độ (reverse geocoding)
-          try {
-            const addressInfo = await this.reverseGeocode(
-              location.lat,
-              location.lng,
-            );
-            if (addressInfo) {
-              location.address = addressInfo.address;
-              location.city = addressInfo.city;
-            }
-          } catch (e) {
-            console.warn("Reverse geocoding failed:", e);
-          }
+      // Lấy tọa độ
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy,
+        timeout,
+        maximumAge: 300000, // Cache vị trí trong 5 phút
+      });
 
-          this._currentLocation.set(location);
-          this._isLoading.set(false);
-          resolve(location);
-        },
-        (err) => {
-          let errorMessage = "Không thể lấy vị trí";
-          switch (err.code) {
-            case err.PERMISSION_DENIED:
-              errorMessage = "Bạn đã từ chối quyền truy cập vị trí";
-              break;
-            case err.POSITION_UNAVAILABLE:
-              errorMessage = "Không thể xác định vị trí";
-              break;
-            case err.TIMEOUT:
-              errorMessage = "Hết thời gian chờ định vị";
-              break;
-          }
-          this._error.set(errorMessage);
-          this._isLoading.set(false);
-          resolve(null);
-        },
-        {
-          enableHighAccuracy,
-          timeout,
-          maximumAge: 300000, // Cache vị trí trong 5 phút
-        },
-      );
-    });
+      const location: UserLocation = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      };
+
+      // Thử lấy địa chỉ từ tọa độ (reverse geocoding)
+      try {
+        const addressInfo = await this.reverseGeocode(location.lat, location.lng);
+        if (addressInfo) {
+          location.address = addressInfo.address;
+          location.city = addressInfo.city;
+        }
+      } catch (e) {
+        console.warn("Reverse geocoding failed:", e);
+      }
+
+      this._currentLocation.set(location);
+      this._isLoading.set(false);
+      return location;
+    } catch (err: any) {
+      let errorMessage = "Không thể lấy vị trí";
+      if (err?.message?.includes('denied')) {
+        errorMessage = "Bạn đã từ chối quyền truy cập vị trí";
+      } else if (err?.message?.includes('timeout')) {
+        errorMessage = "Hết thời gian chờ định vị";
+      } else if (err?.message?.includes('unavailable')) {
+        errorMessage = "Không thể xác định vị trí";
+      }
+      this._error.set(errorMessage);
+      this._isLoading.set(false);
+      return null;
+    }
   }
 
   /**
@@ -100,9 +93,9 @@ export class GeolocationService {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(this.toRad(lat1)) *
-        Math.cos(this.toRad(lat2)) *
-        Math.sin(dLng / 2) *
-        Math.sin(dLng / 2);
+      Math.cos(this.toRad(lat2)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
@@ -120,9 +113,14 @@ export class GeolocationService {
    * Kiểm tra xem location permission đã được granted chưa
    */
   async checkPermission(): Promise<"granted" | "denied" | "prompt"> {
-    // Simplified: luôn trả về "prompt" để kích hoạt xin quyền
-    // Browser sẽ tự xử lý permission request khi gọi getCurrentLocation
-    return "prompt";
+    try {
+      const status = await Geolocation.checkPermissions();
+      if (status.location === 'granted') return "granted";
+      if (status.location === 'denied') return "denied";
+      return "prompt";
+    } catch {
+      return "prompt";
+    }
   }
 
   /**

@@ -11,11 +11,14 @@ import { CommonModule } from "@angular/common";
 import { Router, ActivatedRoute } from "@angular/router";
 import { FormsModule } from "@angular/forms";
 import { firstValueFrom } from "rxjs";
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { ChatBubbleComponent } from "../../components/chat/chat-bubble/chat-bubble.component";
 import { PlaceCardComponent } from "../../components/place/place-card/place-card.component";
 import { AIService, ChatMessage as AIMessage } from "../../services/ai.service";
 import { ApiService, Place } from "../../services/api.service";
 import { AI_CONFIG } from "../../config/ai.config";
+import { FirestoreChatService } from "../../services/firestore-chat.service";
+import { StorageService } from "../../services/storage.service";
 
 interface Message {
   id: string;
@@ -306,7 +309,7 @@ interface AppAIModel {
               <!-- Popup Menu -->
               <div *ngIf="menuOpen" class="absolute bottom-14 left-0 w-60 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50 py-1">
                 <!-- Camera -->
-                <button (click)="cameraInput.click()" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left">
+                <button (click)="takePhoto()" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left">
                   <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                     <svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
@@ -459,6 +462,8 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
     private route: ActivatedRoute,
     private aiService: AIService,
     private apiService: ApiService,
+    private firestoreChat: FirestoreChatService,
+    private storageService: StorageService,
   ) { }
 
   ngOnInit() {
@@ -508,11 +513,36 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
 
   // ── Session persistence ──────────────────────────────────────────────────
 
+  private currentFirestoreSessionId: string | null = null;
+
+  // Mở rộng session persistence: vừa dùng sessionStorage (nhanh) vừa Firestore (bền vững)
   private saveToSession() {
     try {
       sessionStorage.setItem(this.SESSION_KEY, JSON.stringify(this.messages));
     } catch {
       /* quota exceeded – silently ignore */
+    }
+  }
+
+  /** Lưu message vào Firestore (async, không block UI) */
+  private async saveMessageToFirestore(message: { role: 'user' | 'assistant'; content: string; imageUrl?: string | null; imageUrls?: string[] }) {
+    try {
+      // Tạo session Firestore nếu chưa có
+      if (!this.currentFirestoreSessionId) {
+        const title = message.content.slice(0, 40) || 'Cuộc trò chuyện mới';
+        this.currentFirestoreSessionId = await this.firestoreChat.createSession(title);
+      }
+      if (this.currentFirestoreSessionId) {
+        await this.firestoreChat.addMessage(this.currentFirestoreSessionId, {
+          role: message.role,
+          content: message.content,
+          imageUrl: message.imageUrl ?? null,
+          imageUrls: message.imageUrls,
+          timestamp: new Date(),
+        });
+      }
+    } catch (e) {
+      console.warn('Could not save message to Firestore:', e);
     }
   }
 
@@ -601,6 +631,26 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
     this.modelPickerOpen = false;
   }
 
+  /** Chụp ảnh bằng Capacitor Camera (native) */
+  async takePhoto() {
+    try {
+      const photo = await Camera.getPhoto({
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera,
+        quality: 80,
+        allowEditing: false,
+      });
+      if (photo.dataUrl) {
+        this.previewImage = photo.dataUrl;
+      }
+    } catch (e: any) {
+      // User cancelled hoặc permission denied — không báo lỗi
+      console.warn('Camera cancelled or failed:', e?.message);
+    }
+    this.menuOpen = false;
+    this.modelPickerOpen = false;
+  }
+
   sendQuickPrompt(prompt: string) {
     this.inputMessage = prompt;
     this.sendMessage();
@@ -631,6 +681,20 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
       this.markForScroll(); // Scroll to show typing indicator
     }, 100);
 
+    // Upload ảnh lên Firebase Storage nếu có (async, không block UI)
+    if (imageToSend && imageToSend.startsWith('data:')) {
+      this.storageService.uploadChatImage(imageToSend).subscribe((storageUrl) => {
+        // Cập nhật message đã push vào mảng với URL từ Storage
+        const idx = this.messages.findIndex(m => m.id === userMessage.id);
+        if (idx >= 0) this.messages[idx].imageUrl = storageUrl;
+        // Lưu vào Firestore với Storage URL
+        this.saveMessageToFirestore({ role: 'user', content: userInput, imageUrl: storageUrl });
+      });
+    } else {
+      // Lưu vào Firestore không có ảnh
+      this.saveMessageToFirestore({ role: 'user', content: userInput });
+    }
+
     const historyMessages: AIMessage[] = this.messages
       .filter((m) => m.role !== "assistant" || m.content)
       .map((m) => ({
@@ -658,16 +722,18 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
             this.lastMessageRole = "assistant";
             this.isTripResponse = this.userRequestedTrip() && this.detectTripContent(content);
             this.markForScroll();
-            this.saveToSession();
-            
+            this.saveToSession(); // sessionStorage (nhanh, dùng trong session trình duyệt)
+            // Lưu vào Firestore (bền vững, hiện thị trong lịch sử chat)
+            this.saveMessageToFirestore({ role: 'assistant', content });
+
             // Trích xuất địa điểm và fetch images
             this.aiService.extractPlacesFromChat(content).subscribe((places) => {
               this.relatedPlaces = (places || []).slice(0, 6);
-              
+
               // Fetch images cho places tìm được trong DB
               const fetchImagesForPlaces = (placesToFetch: Place[]) => {
                 if (placesToFetch.length === 0) return;
-                
+
                 const imagePromises = placesToFetch.map(place =>
                   firstValueFrom(
                     this.apiService.getPlaceImage(
@@ -682,7 +748,7 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
                     return null;
                   })
                 );
-                
+
                 Promise.all(imagePromises).then((results) => {
                   const imageUrls: string[] = [];
 
@@ -731,7 +797,7 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
                   console.error('Error fetching place images:', err);
                 });
               };
-              
+
               // Nếu có địa điểm được tìm thấy trong DB → fetch images
               if (places && places.length > 0) {
                 fetchImagesForPlaces(places.slice(0, 4)); // Tối đa 4 ảnh
@@ -744,13 +810,13 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
                   /\*\*([A-ZĐ][a-zàáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ\s]+)\*\*/g, // Bold text thường là tên địa điểm
                   /(?:ảnh|hình|photo|image)\s+(?:của|về|tại)?\s*([A-ZĐ][a-zàáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ\s]+)/gi, // "ảnh Hồ Tuyền Lâm"
                 ];
-                
+
                 // Cũng check user message để tìm place name
                 const lastUserMessage = [...this.messages].reverse().find(m => m.role === 'user');
                 const userContent = lastUserMessage?.content || '';
-                
+
                 const foundNames = new Set<string>();
-                
+
                 // Helper function to find matches with capture groups
                 const findMatches = (text: string, pattern: RegExp): string[] => {
                   const results: string[] = [];
@@ -766,7 +832,7 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
                   }
                   return results;
                 };
-                
+
                 // Parse từ AI response
                 for (const pattern of placeNamePatterns) {
                   const matches = findMatches(content, pattern);
@@ -776,21 +842,21 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
                     }
                   }
                 }
-                
+
                 // Parse từ user message (nếu user hỏi trực tiếp về ảnh)
                 if (userContent) {
                   // Normalize: capitalize first letter of each word
                   const normalizeName = (name: string): string => {
-                    return name.split(/\s+/).map(word => 
+                    return name.split(/\s+/).map(word =>
                       word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
                     ).join(' ');
                   };
-                  
+
                   const userPatterns = [
                     /(?:ảnh|hình|photo|image|cho tôi xem|show me)\s+(?:của|về|tại)?\s*([a-zàáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ\s]+)/gi,
                     /([a-zàáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ\s]+)\s+(?:ảnh|hình)/gi, // "hồ tuyền lâm ảnh"
                   ];
-                  
+
                   for (const pattern of userPatterns) {
                     const matches = findMatches(userContent, pattern);
                     for (const name of matches) {
@@ -803,12 +869,12 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
                     }
                   }
                 }
-                
+
                 // Nếu tìm được tên địa điểm → fetch images trực tiếp bằng tên
                 if (foundNames.size > 0) {
                   console.log(`🔍 [Chat] Found place names in response: ${Array.from(foundNames).join(', ')}`);
                   const namesArray = Array.from(foundNames).slice(0, 2); // Tối đa 2 ảnh từ fallback
-                  
+
                   const fallbackPromises = namesArray.map(placeName =>
                     firstValueFrom(
                       this.apiService.getPlaceImage(
@@ -823,45 +889,45 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
                       return null;
                     })
                   );
-                  
-                    Promise.all(fallbackPromises).then((results) => {
-                      const imageUrls: string[] = [];
 
-                      for (const result of results) {
-                        if (result) {
-                          // Ưu tiên imageUrls (nhiều ảnh từ Pexels)
-                          if (result.imageUrls && result.imageUrls.length > 0) {
-                            for (const imgUrl of result.imageUrls) {
-                              imageUrls.push(imgUrl);
-                            }
-                            console.log(`  → Using ${result.imageUrls.length} Pexels URLs`);
-                          } else if (result.imageUrl) {
-                            imageUrls.push(result.imageUrl);
-                            console.log(`  → Using single Pexels URL`);
+                  Promise.all(fallbackPromises).then((results) => {
+                    const imageUrls: string[] = [];
+
+                    for (const result of results) {
+                      if (result) {
+                        // Ưu tiên imageUrls (nhiều ảnh từ Pexels)
+                        if (result.imageUrls && result.imageUrls.length > 0) {
+                          for (const imgUrl of result.imageUrls) {
+                            imageUrls.push(imgUrl);
                           }
+                          console.log(`  → Using ${result.imageUrls.length} Pexels URLs`);
+                        } else if (result.imageUrl) {
+                          imageUrls.push(result.imageUrl);
+                          console.log(`  → Using single Pexels URL`);
                         }
                       }
+                    }
 
-                      if (imageUrls.length > 0) {
-                        console.log(`✅ [Chat] Fetched ${imageUrls.length} images via fallback (direct name parsing)`);
-                        const proxyImageUrls = this.apiService.getImageProxyUrls(imageUrls);
+                    if (imageUrls.length > 0) {
+                      console.log(`✅ [Chat] Fetched ${imageUrls.length} images via fallback (direct name parsing)`);
+                      const proxyImageUrls = this.apiService.getImageProxyUrls(imageUrls);
 
-                        const msgIndex = this.messages.findIndex(m => m.id === assistantMessage.id);
-                        if (msgIndex >= 0) {
-                          if (proxyImageUrls.length === 1) {
-                            this.messages[msgIndex].imageUrl = proxyImageUrls[0];
-                            console.log(`  → Single image URL (proxied): ${proxyImageUrls[0].substring(0, 80)}...`);
-                          } else {
-                            this.messages[msgIndex].imageUrls = proxyImageUrls;
-                            console.log(`  → Multiple images (${proxyImageUrls.length}) - proxied`);
-                          }
-                          this.saveToSession();
-                          this.markForScroll();
+                      const msgIndex = this.messages.findIndex(m => m.id === assistantMessage.id);
+                      if (msgIndex >= 0) {
+                        if (proxyImageUrls.length === 1) {
+                          this.messages[msgIndex].imageUrl = proxyImageUrls[0];
+                          console.log(`  → Single image URL (proxied): ${proxyImageUrls[0].substring(0, 80)}...`);
+                        } else {
+                          this.messages[msgIndex].imageUrls = proxyImageUrls;
+                          console.log(`  → Multiple images (${proxyImageUrls.length}) - proxied`);
                         }
-                      } else {
-                        console.warn(`⚠️ [Chat] Fallback: No images fetched for ${namesArray.length} place names`);
+                        this.saveToSession();
+                        this.markForScroll();
                       }
-                    });
+                    } else {
+                      console.warn(`⚠️ [Chat] Fallback: No images fetched for ${namesArray.length} place names`);
+                    }
+                  });
                 }
               }
             });

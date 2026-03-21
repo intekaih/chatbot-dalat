@@ -1,41 +1,49 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // User profiles - only owner can read/write
+
+    // ── User profiles ────────────────────────────────────────────────
+    // Chỉ chủ tài khoản mới đọc/ghi được profile của mình
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Favorites - only owner can access
-    match /favorites/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // ── Chat sessions (sub-collection) ──────────────────────────────
+      // Path: users/{uid}/chatSessions/{sessionId}
+      match /chatSessions/{sessionId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+
+        // Messages (sub-sub-collection)
+        // Path: users/{uid}/chatSessions/{sessionId}/messages/{messageId}
+        match /messages/{messageId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+
+      // ── Trips (sub-collection) ───────────────────────────────────────
+      // Path: users/{uid}/trips/{tripId}
+      match /trips/{tripId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // ── Favorites (sub-collection) ───────────────────────────────────
+      // Path: users/{uid}/favorites/{placeId}
+      match /favorites/{placeId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
-    
-    // Trips - only owner can access
-    match /trips/{tripId} {
-      allow read, write: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow create: if request.auth != null;
-    }
-    
-    // Chat sessions - only owner can access
-    match /chat_sessions/{sessionId} {
-      allow read, write: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow create: if request.auth != null;
-    }
-    
-    // Places - anyone can read, only admin can write
+
+    // ── Places — public read, admin-only write ────────────────────────
     match /places/{placeId} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.token.admin == true;
     }
-    
-    // Reviews - anyone can read
+
+    // ── Reviews — public read, authenticated write ───────────────────
     match /reviews/{reviewId} {
       allow read: if true;
       allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null
+        && request.auth.uid == resource.data.userId;
     }
   }
 }
