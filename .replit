@@ -56,4 +56,4 @@ externalPort = 80
 [deployment]
 deploymentTarget = "vm"
 run = ["bash", "-c", "cd server && npm start"]
-build = ["bash", "-c", "cd ionic-tailwind-app && npx ng build --configuration production"]
+build = ["bash", "-c", "cd ionic-tailwind-app && npm install && npx ng build --configuration production && cd ../server && npm install"]
