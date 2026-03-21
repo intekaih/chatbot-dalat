@@ -485,10 +485,17 @@ export class AuthPage {
       this.navigateAfterAuth(user);
     } catch (error: any) {
       this.isSubmitting = false;
-      if (error.code === 'auth/popup-closed-by-user') {
+      console.error('[Google Login Error]', error?.code, error?.message);
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
         this.globalError = 'Cửa sổ đăng nhập đã bị đóng';
+      } else if (error.code === 'auth/unauthorized-domain') {
+        this.globalError = 'Domain chưa được cấp phép trong Firebase. Vui lòng thêm domain này vào Firebase Console → Authentication → Authorized domains.';
+      } else if (error.code === 'auth/popup-blocked') {
+        this.globalError = 'Popup bị trình duyệt chặn. Vui lòng cho phép popup và thử lại.';
+      } else if (error.code === 'auth/operation-not-allowed') {
+        this.globalError = 'Đăng nhập Google chưa được kích hoạt. Vui lòng bật trong Firebase Console.';
       } else {
-        this.globalError = 'Đã xảy ra lỗi. Vui lòng thử lại.';
+        this.globalError = `Đã xảy ra lỗi: ${error?.code || error?.message || 'Vui lòng thử lại.'}`;
       }
     }
   }
