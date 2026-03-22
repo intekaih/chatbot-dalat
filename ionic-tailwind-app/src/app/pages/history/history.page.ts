@@ -14,7 +14,7 @@ import { FirestoreChatService, FirestoreChatSession } from "../../services/fires
     <div class="bg-white min-h-screen" style="padding-bottom: calc(4rem + env(safe-area-inset-bottom))">
       <!-- Header -->
       <div
-        class="px-4 pt-12 pb-4 border-b border-gray-100 flex items-center justify-between"
+        class="px-4 pt-4 pb-4 border-b border-gray-100 flex items-center justify-between"
       >
         <h1 class="text-2xl font-semibold text-gray-900">Lịch sử chat</h1>
         <button

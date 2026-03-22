@@ -31,7 +31,7 @@ interface FoodItem {
   template: `
     <div class="bg-white min-h-screen" style="padding-bottom: calc(4rem + env(safe-area-inset-bottom))">
       <!-- Header -->
-      <div class="px-4 pt-12 pb-4 flex items-center justify-between">
+      <div class="px-4 pt-4 pb-4 flex items-center justify-between">
         <div>
           <p class="text-gray-500 text-sm">Xin chào! 👋</p>
           <h1 class="text-xl font-semibold text-gray-900">

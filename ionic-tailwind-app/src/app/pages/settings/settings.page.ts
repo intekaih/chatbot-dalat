@@ -10,7 +10,7 @@ import { ThemeService } from '../../services/theme.service';
   template: `
     <div [class.dark]="themeService.darkMode()" class="bg-white dark:bg-gray-900 transition-colors flex flex-col overflow-hidden" style="height: calc(100vh - 4rem - env(safe-area-inset-bottom))">
       <!-- Header -->
-      <div class="px-4 pt-12 pb-4 flex items-center gap-4">
+      <div class="px-4 pt-4 pb-4 flex items-center gap-4">
         <button (click)="goBack()" class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center">
           <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />

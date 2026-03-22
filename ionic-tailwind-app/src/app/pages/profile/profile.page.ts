@@ -15,7 +15,7 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
   template: `
     <div class="bg-white flex flex-col overflow-hidden" style="height: calc(100vh - 4rem - env(safe-area-inset-bottom))">
       <!-- Profile Card -->
-      <div class="bg-gradient-to-br from-gray-900 to-gray-800 px-4 pt-12 pb-6 relative">
+      <div class="bg-gradient-to-br from-gray-900 to-gray-800 px-4 pt-4 pb-6 relative">
         <button
           *ngIf="user?.hasPersonalized"
           (click)="goToWelcome()"

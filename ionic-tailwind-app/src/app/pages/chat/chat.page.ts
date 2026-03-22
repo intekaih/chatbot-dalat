@@ -37,7 +37,7 @@ interface AppAIModel {
   template: `
     <div class="flex flex-col h-full overflow-hidden">
       <!-- Header -->
-      <div class="px-4 pt-12 pb-3 bg-white border-b border-gray-100">
+      <div class="px-4 pb-3 bg-white border-b border-gray-100" style="padding-top: calc(env(safe-area-inset-top, 24px) + 0.75rem)">
         <div class="flex items-center gap-3">
           <div
             class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center"

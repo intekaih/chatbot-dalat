@@ -23,7 +23,7 @@ import { FirestorePlacesService, FirestorePlace, FirestoreCategory } from "../..
     <div class="bg-white">
       <!-- Sticky Header -->
       <div
-        class="sticky top-0 bg-white z-10 px-4 pt-12 pb-4 border-b border-gray-100"
+        class="sticky top-0 bg-white z-10 px-4 pt-4 pb-4 border-b border-gray-100"
       >
         <div class="flex items-center gap-2 mb-4">
           <button

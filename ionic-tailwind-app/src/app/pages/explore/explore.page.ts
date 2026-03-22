@@ -26,7 +26,7 @@ type SortOption = 'featured' | 'rating' | 'open';
   template: `
     <div class="bg-white" style="padding-bottom: calc(4rem + env(safe-area-inset-bottom))">
       <!-- Sticky Header -->
-      <div class="sticky top-0 bg-white z-10 px-4 pt-12 pb-4 border-b border-gray-100">
+      <div class="sticky top-0 bg-white z-10 px-4 pt-4 pb-4 border-b border-gray-100">
         <div class="flex items-center justify-between mb-4">
           <h1 class="text-2xl font-semibold text-gray-900">Khám phá</h1>
           <button 

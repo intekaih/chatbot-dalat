@@ -10,7 +10,7 @@ import { ApiService, Trip } from "../../services/api.service";
   template: `
     <div class="bg-white" style="padding-bottom: calc(4rem + env(safe-area-inset-bottom))">
       <!-- Header -->
-      <div class="px-4 pt-12 pb-4 flex items-center justify-between">
+      <div class="px-4 pt-4 pb-4 flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-semibold text-gray-900">Lịch trình</h1>
           <p class="text-sm text-gray-500">{{ trips.length }} chuyến đi</p>
