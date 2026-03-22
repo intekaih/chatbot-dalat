@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, Injector, runInInjectionContext } from '@angular/core';
 import {
     Firestore,
     collection,
@@ -22,6 +22,7 @@ import { Trip } from './api.service';
 export class FirestoreTripsService {
     private firestore = inject(Firestore);
     private auth = inject(Auth);
+    private injector = inject(Injector);
 
     private get uid(): string | null {
         return this.auth.currentUser?.uid ?? null;
@@ -37,8 +38,10 @@ export class FirestoreTripsService {
         if (!uid) return of([]);
 
         const q = query(this.tripsCol(uid), orderBy('createdAt', 'desc'));
-        return (collectionData(q, { idField: 'id' }) as Observable<Trip[]>).pipe(
-            catchError(() => of([]))
+        return runInInjectionContext(this.injector, () =>
+            (collectionData(q, { idField: 'id' }) as Observable<Trip[]>).pipe(
+                catchError(() => of([]))
+            )
         );
     }
 

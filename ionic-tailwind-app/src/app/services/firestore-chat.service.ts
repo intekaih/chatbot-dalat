@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, Injector, runInInjectionContext } from '@angular/core';
 import {
     Firestore,
     collection,
@@ -41,6 +41,7 @@ export interface FirestoreChatSession {
 export class FirestoreChatService {
     private firestore = inject(Firestore);
     private auth = inject(Auth);
+    private injector = inject(Injector);
 
     private get uid(): string | null {
         return this.auth.currentUser?.uid ?? null;
@@ -60,8 +61,10 @@ export class FirestoreChatService {
         if (!uid) return of([]);
 
         const q = query(this.sessionsCol(uid), orderBy('updatedAt', 'desc'));
-        return (collectionData(q, { idField: 'id' }) as Observable<FirestoreChatSession[]>).pipe(
-            catchError(() => of([]))
+        return runInInjectionContext(this.injector, () =>
+            (collectionData(q, { idField: 'id' }) as Observable<FirestoreChatSession[]>).pipe(
+                catchError(() => of([]))
+            )
         );
     }
 
@@ -88,11 +91,11 @@ export class FirestoreChatService {
         const uid = this.uid;
         if (!uid) return;
         try {
-            // Xóa tất cả messages trước
-            const msgs = await getDocs(this.messagesCol(uid, sessionId));
+            const msgs = await runInInjectionContext(this.injector, () =>
+                getDocs(this.messagesCol(uid, sessionId))
+            );
             const delPromises = msgs.docs.map((d) => deleteDoc(d.ref));
             await Promise.all(delPromises);
-            // Rồi xóa session
             await deleteDoc(doc(this.firestore, `users/${uid}/chatSessions/${sessionId}`));
         } catch (e) {
             console.error('FirestoreChatService.deleteSession error:', e);
@@ -105,8 +108,10 @@ export class FirestoreChatService {
         if (!uid) return of([]);
 
         const q = query(this.messagesCol(uid, sessionId), orderBy('timestamp', 'asc'));
-        return (collectionData(q, { idField: 'id' }) as Observable<FirestoreMessage[]>).pipe(
-            catchError(() => of([]))
+        return runInInjectionContext(this.injector, () =>
+            (collectionData(q, { idField: 'id' }) as Observable<FirestoreMessage[]>).pipe(
+                catchError(() => of([]))
+            )
         );
     }
 
@@ -119,7 +124,6 @@ export class FirestoreChatService {
                 ...message,
                 timestamp: serverTimestamp(),
             });
-            // Cập nhật updatedAt và messageCount của session
             await updateDoc(doc(this.firestore, `users/${uid}/chatSessions/${sessionId}`), {
                 updatedAt: serverTimestamp(),
             });
@@ -147,7 +151,7 @@ export class FirestoreChatService {
         if (!uid) return [];
         try {
             const q = query(this.messagesCol(uid, sessionId), orderBy('timestamp', 'asc'));
-            const snap = await getDocs(q);
+            const snap = await runInInjectionContext(this.injector, () => getDocs(q));
             return snap.docs.map(d => ({ id: d.id, ...d.data() } as FirestoreMessage));
         } catch (e) {
             return [];
