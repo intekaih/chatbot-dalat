@@ -5,10 +5,9 @@ import { Router } from "@angular/router";
 import { switchMap, of, map } from "rxjs";
 import { PlaceCardComponent } from "../../components/place/place-card/place-card.component";
 import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state.component";
-import { Place, Trip } from "../../services/api.service";
+import { ApiService, Place, Trip } from "../../services/api.service";
 import { FirestoreFavoritesService } from "../../services/firestore-favorites.service";
 import { FirestoreTripsService } from "../../services/firestore-trips.service";
-import { FirestorePlacesService } from "../../services/firestore-places.service";
 
 @Component({
   selector: "app-favorites",
@@ -151,7 +150,7 @@ import { FirestorePlacesService } from "../../services/firestore-places.service"
 })
 export class FavoritesPage implements OnInit {
   private router = inject(Router);
-  private firestorePlaces = inject(FirestorePlacesService);
+  private apiService = inject(ApiService);
   private favoritesService = inject(FirestoreFavoritesService);
   private tripsService = inject(FirestoreTripsService);
   private destroyRef = inject(DestroyRef);
@@ -170,8 +169,8 @@ export class FavoritesPage implements OnInit {
       takeUntilDestroyed(this.destroyRef),
       switchMap(ids => {
         if (ids.length === 0) return of([]);
-        return this.firestorePlaces.getPlaces().pipe(
-          map(places => places.filter(p => ids.includes(p.id)) as unknown as Place[])
+        return this.apiService.getPlaces().pipe(
+          map(places => places.filter(p => ids.includes(p.id)))
         );
       })
     ).subscribe({

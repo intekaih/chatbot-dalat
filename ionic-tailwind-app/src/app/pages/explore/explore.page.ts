@@ -8,7 +8,6 @@ import { CategoryChipComponent } from '../../components/ui/category-chip/categor
 import { PlaceCardComponent } from '../../components/place/place-card/place-card.component';
 import { EmptyStateComponent } from '../../components/ui/empty-state/empty-state.component';
 import { ApiService, Category, Place } from '../../services/api.service';
-import { FirestorePlacesService, FirestorePlace, FirestoreCategory } from '../../services/firestore-places.service';
 import { FirestoreFavoritesService } from '../../services/firestore-favorites.service';
 
 type SortOption = 'featured' | 'rating' | 'open';
@@ -132,15 +131,15 @@ type SortOption = 'featured' | 'rating' | 'open';
 export class ExplorePage implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private firestorePlaces = inject(FirestorePlacesService);
+  private apiService = inject(ApiService);
   private firestoreFavorites = inject(FirestoreFavoritesService);
   private destroyRef = inject(DestroyRef);
 
   @ViewChild('filterDropdown') filterDropdown!: ElementRef;
 
-  categories: FirestoreCategory[] = [];
-  places: FirestorePlace[] = [];
-  filteredPlaces: FirestorePlace[] = [];
+  categories: Category[] = [];
+  places: Place[] = [];
+  filteredPlaces: Place[] = [];
   favoriteIds: string[] = [];
   searchQuery = '';
   selectedCategory = 'all';
@@ -161,14 +160,14 @@ export class ExplorePage implements OnInit {
       error: () => { this.favoriteIds = []; }
     });
 
-    // Load categories từ Firestore
-    this.firestorePlaces.getCategories().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    // Load categories từ backend API
+    this.apiService.getCategories().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (cats) => { this.categories = cats; },
       error: () => { this.categories = []; }
     });
 
-    // Load places từ Firestore
-    this.firestorePlaces.getPlaces().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    // Load places từ backend API (SQLite)
+    this.apiService.getPlaces().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (places) => {
         this.places = places;
         this.applyFilters();
