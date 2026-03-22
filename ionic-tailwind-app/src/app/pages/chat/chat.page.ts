@@ -14,6 +14,7 @@ import { FirestoreChatService } from "../../services/firestore-chat.service";
 import { StorageService } from "../../services/storage.service";
 import { FirestoreTripsService } from "../../services/firestore-trips.service";
 import { Auth } from "@angular/fire/auth";
+import { Storage, ref, uploadString, getDownloadURL } from "@angular/fire/storage";
 
 interface Message {
   id: string;
@@ -419,6 +420,7 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
   private storageService = inject(StorageService);
   private firestoreTrips = inject(FirestoreTripsService);
   private auth = inject(Auth);
+  private storage = inject(Storage);
 
   private destroy$ = new Subject<void>();
 
@@ -868,13 +870,22 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
         this.router.navigate(['/home/favorites'], { state: { tab: 'trips' } });
       }, 1200);
 
-      // Background: generate cover image và update sau (không block UI)
+      // Background: generate cover image → upload Storage → update trip (không block UI)
       if (tripId) {
         const imagePrompt = `Beautiful travel photo of Da Lat Vietnam, ${title}, scenic landscape, cinematic, high quality`;
         this.apiService.generateImage(imagePrompt).subscribe({
-          next: (dataUrl: string) => {
-            if (dataUrl) {
-              this.firestoreTrips.updateTrip(tripId, { coverImage: dataUrl });
+          next: async (dataUrl: string) => {
+            if (!dataUrl) return;
+            try {
+              const uid = this.auth.currentUser?.uid;
+              if (uid && dataUrl.startsWith('data:')) {
+                const storageRef = ref(this.storage, `users/${uid}/trip-${tripId}.jpg`);
+                await uploadString(storageRef, dataUrl, 'data_url');
+                const downloadUrl = await getDownloadURL(storageRef);
+                this.firestoreTrips.updateTrip(tripId, { coverImage: downloadUrl });
+              }
+            } catch {
+              // Không có ảnh thì giữ fallback — không báo lỗi
             }
           },
         });
