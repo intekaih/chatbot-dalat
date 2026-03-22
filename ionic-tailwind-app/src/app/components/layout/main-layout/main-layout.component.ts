@@ -9,7 +9,7 @@ import { ThemeService } from '../../../services/theme.service';
   standalone: true,
   imports: [CommonModule, RouterModule, RouterOutlet, BottomTabBarComponent],
   template: `
-    <div [class.dark]="themeService.darkMode()" class="h-screen flex flex-col overflow-hidden bg-white dark:bg-gray-900 transition-colors">
+    <div [class.dark]="themeService.darkMode()" class="h-dvh flex flex-col overflow-hidden bg-white dark:bg-gray-900 transition-colors">
       <main class="flex-1 overflow-y-auto overflow-x-hidden pb-16 scrollbar-hide" style="-ms-overflow-style:none;scrollbar-width:none;">
         <router-outlet></router-outlet>
       </main>
