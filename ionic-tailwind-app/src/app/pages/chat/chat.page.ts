@@ -35,7 +35,7 @@ interface AppAIModel {
   standalone: true,
   imports: [CommonModule, FormsModule, ChatBubbleComponent, PlaceCardComponent],
   template: `
-    <div class="flex flex-col h-screen" style="padding-bottom: calc(4rem + env(safe-area-inset-bottom))">
+    <div class="flex flex-col h-dvh overflow-hidden" style="padding-bottom: calc(4rem + env(safe-area-inset-bottom))">
       <!-- Header -->
       <div class="px-4 pt-12 pb-3 bg-white border-b border-gray-100">
         <div class="flex items-center gap-3">
@@ -397,7 +397,8 @@ interface AppAIModel {
     `
       :host {
         display: block;
-        height: calc(100vh - 4rem - env(safe-area-inset-bottom, 0px));
+        height: calc(100dvh - 4rem - env(safe-area-inset-bottom, 0px));
+        overflow: hidden;
       }
     `,
   ],
