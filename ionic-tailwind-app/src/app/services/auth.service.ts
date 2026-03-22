@@ -153,7 +153,8 @@ export class AuthService {
   async logout(): Promise<void> {
     await signOut(this.auth);
     this._userProfile.set(null);
-    // Xóa tất cả localStorage (cả device_id để reset app)
+
+    // ── Auth & app state ─────────────────────────────────────────
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('hasSeenOnboarding');
     localStorage.removeItem('hasPersonalized');
@@ -161,8 +162,17 @@ export class AuthService {
     localStorage.removeItem('isFirebaseUser');
     localStorage.removeItem('isGuest');
     localStorage.removeItem('device_id');
-    // Xóa sessionStorage để tránh lịch sử chat của acc cũ hiện lại khi đăng nhập acc mới
+
+    // ── Profile / preferences của user (dùng bởi ApiService & AI) ─
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userAvatar');
+    localStorage.removeItem('userPreferences');
+    localStorage.removeItem('userTravelStyles');
+    localStorage.removeItem('userBudget');
+
+    // ── Xóa sessionStorage: lịch sử chat, session ID ────────────
     sessionStorage.clear();
+
     this.router.navigateByUrl('/auth', { replaceUrl: true });
   }
 
