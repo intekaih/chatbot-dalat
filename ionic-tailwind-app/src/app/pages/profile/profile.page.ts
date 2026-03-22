@@ -360,14 +360,14 @@ export class ProfilePage implements OnInit {
   }
 
   logout() {
-    // Kiểm tra nếu là Firebase user thì logout khỏi Firebase
-    const isFirebaseUser = localStorage.getItem('firebase_uid');
+    const isFirebaseUser = localStorage.getItem('isFirebaseUser');
     if (isFirebaseUser) {
       this.authService.logout();
     } else {
-      // Guest user - chỉ xóa localStorage
+      // Guest user - xóa tất cả storage và về auth
       localStorage.clear();
-      this.router.navigateByUrl("/splash", { replaceUrl: true });
+      sessionStorage.clear();
+      this.router.navigateByUrl("/auth", { replaceUrl: true });
     }
   }
 }

@@ -120,10 +120,20 @@ export class FirestoreChatService {
         const uid = this.uid;
         if (!uid) return null;
         try {
-            const ref = await addDoc(this.messagesCol(uid, sessionId), {
-                ...message,
+            // Xây dựng object data, loại bỏ các field undefined (Firestore không chấp nhận undefined)
+            const data: Record<string, unknown> = {
+                role: message.role,
+                content: message.content,
                 timestamp: serverTimestamp(),
-            });
+            };
+            if (message.imageUrl !== undefined && message.imageUrl !== null) {
+                data['imageUrl'] = message.imageUrl;
+            }
+            if (message.imageUrls && message.imageUrls.length > 0) {
+                data['imageUrls'] = message.imageUrls;
+            }
+
+            const ref = await addDoc(this.messagesCol(uid, sessionId), data);
             await updateDoc(doc(this.firestore, `users/${uid}/chatSessions/${sessionId}`), {
                 updatedAt: serverTimestamp(),
             });
