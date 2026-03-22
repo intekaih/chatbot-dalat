@@ -1,7 +1,8 @@
 import { Component, Input, Output, EventEmitter, OnInit, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
-import { Place, ApiService } from "../../../services/api.service";
+import { Place } from "../../../services/api.service";
+import { FirestoreFavoritesService } from "../../../services/firestore-favorites.service";
 
 @Component({
   selector: "app-place-card",
@@ -135,7 +136,7 @@ import { Place, ApiService } from "../../../services/api.service";
 })
 export class PlaceCardComponent implements OnInit {
   private router = inject(Router);
-  private apiService = inject(ApiService);
+  private favoritesService = inject(FirestoreFavoritesService);
 
   @Input() place!: Place;
   @Input() variant: "default" | "compact" = "default";
@@ -143,10 +144,9 @@ export class PlaceCardComponent implements OnInit {
   @Output() favorite = new EventEmitter<Place>();
 
   ngOnInit() {
-    if (this.place?.id) {
-      this.apiService.checkFavorite(this.place.id).subscribe({
-        next: (isFav) => (this.isFavorite = isFav),
-        error: () => { },
+    if (this.place?.id && !this.isFavorite) {
+      this.favoritesService.isFavorite(this.place.id).then(isFav => {
+        this.isFavorite = isFav;
       });
     }
   }
@@ -172,11 +172,17 @@ export class PlaceCardComponent implements OnInit {
     event.preventDefault();
     event.stopPropagation();
     const prev = this.isFavorite;
-    this.isFavorite = !prev; // optimistic
+    this.isFavorite = !prev; // optimistic update
     this.favorite.emit(this.place);
-    this.apiService.toggleFavorite(this.place.id, prev).subscribe({
-      next: (newState) => (this.isFavorite = newState),
-      error: () => (this.isFavorite = prev), // rollback
+    this.favoritesService.toggleFavorite({
+      id: this.place.id,
+      name: this.place.name,
+      category: this.place.category,
+      imageUrl: this.place.imageUrl,
+    }).then(newState => {
+      this.isFavorite = newState;
+    }).catch(() => {
+      this.isFavorite = prev; // rollback on error
     });
   }
 

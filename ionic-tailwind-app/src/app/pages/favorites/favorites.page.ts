@@ -66,6 +66,7 @@ import { FirestoreTripsService } from "../../services/firestore-trips.service";
           <app-place-card
             *ngFor="let place of favoritePlaces"
             [place]="place"
+            [isFavorite]="true"
           ></app-place-card>
         </div>
 
