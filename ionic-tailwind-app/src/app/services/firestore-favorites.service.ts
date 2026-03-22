@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, Injector, runInInjectionContext } from '@angular/core';
 import {
     Firestore,
     collection,
@@ -27,6 +27,7 @@ export interface FavoriteDoc {
 export class FirestoreFavoritesService {
     private firestore = inject(Firestore);
     private auth = inject(Auth);
+    private injector = inject(Injector);
 
     private get uid(): string | null {
         return this.auth.currentUser?.uid ?? null;
@@ -44,9 +45,11 @@ export class FirestoreFavoritesService {
     getFavoriteIds(): Observable<string[]> {
         const uid = this.uid;
         if (!uid) return of([]);
-        return (collectionData(this.favoritesCol(uid), { idField: 'placeId' }) as Observable<FavoriteDoc[]>).pipe(
-            map(docs => docs.map(d => d.placeId)),
-            catchError(() => of([]))
+        return runInInjectionContext(this.injector, () =>
+            (collectionData(this.favoritesCol(uid), { idField: 'placeId' }) as Observable<FavoriteDoc[]>).pipe(
+                map(docs => docs.map(d => d.placeId)),
+                catchError(() => of([]))
+            )
         );
     }
 
@@ -55,7 +58,9 @@ export class FirestoreFavoritesService {
         const uid = this.uid;
         if (!uid) return false;
         try {
-            const snap = await getDoc(this.favoriteDoc(uid, placeId));
+            const snap = await runInInjectionContext(this.injector, () =>
+                getDoc(this.favoriteDoc(uid, placeId))
+            );
             return snap.exists();
         } catch {
             return false;
@@ -76,6 +81,7 @@ export class FirestoreFavoritesService {
             });
         } catch (e) {
             console.error('FirestoreFavoritesService.addFavorite error:', e);
+            throw e;
         }
     }
 
@@ -87,6 +93,7 @@ export class FirestoreFavoritesService {
             await deleteDoc(this.favoriteDoc(uid, placeId));
         } catch (e) {
             console.error('FirestoreFavoritesService.removeFavorite error:', e);
+            throw e;
         }
     }
 

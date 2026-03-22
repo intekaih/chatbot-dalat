@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, Injector, runInInjectionContext } from '@angular/core';
 import {
     Firestore,
     collection,
@@ -72,6 +72,7 @@ function loadFromLocalStorage<T>(key: string): T | null {
 })
 export class FirestorePlacesService {
     private firestore = inject(Firestore);
+    private injector = inject(Injector);
 
     // Cache toàn bộ places — Firestore offline persistence + localStorage backup
     private allPlaces$ = this.getAllPlacesOnce().pipe(shareReplay(1));
@@ -79,7 +80,9 @@ export class FirestorePlacesService {
     /** Lấy tất cả places — Firestore (có IndexedDB cache) → localStorage backup */
     private getAllPlacesOnce(): Observable<FirestorePlace[]> {
         return from(
-            getDocs(collection(this.firestore, 'places') as CollectionReference<FirestorePlace>)
+            runInInjectionContext(this.injector, () =>
+                getDocs(collection(this.firestore, 'places') as CollectionReference<FirestorePlace>)
+            )
         ).pipe(
             map(snapshot => {
                 const places = snapshot.docs.map(d => ({ ...d.data(), id: d.id }) as FirestorePlace);
@@ -138,7 +141,9 @@ export class FirestorePlacesService {
     /** Lấy danh sách categories — có localStorage backup */
     getCategories(): Observable<FirestoreCategory[]> {
         return from(
-            getDocs(collection(this.firestore, 'categories') as CollectionReference<FirestoreCategory>)
+            runInInjectionContext(this.injector, () =>
+                getDocs(collection(this.firestore, 'categories') as CollectionReference<FirestoreCategory>)
+            )
         ).pipe(
             map(snapshot => {
                 const cats = snapshot.docs.map(d => ({ ...d.data(), id: d.id }) as FirestoreCategory);

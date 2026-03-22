@@ -1,7 +1,8 @@
-import { Component, OnInit, DestroyRef, inject } from "@angular/core";
+import { Component, OnInit, DestroyRef, inject, ChangeDetectorRef } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
+import { switchMap, of } from "rxjs";
 import { PlaceCardComponent } from "../../components/place/place-card/place-card.component";
 import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state.component";
 import { ApiService, Place, Trip } from "../../services/api.service";
@@ -172,6 +173,7 @@ export class FavoritesPage implements OnInit {
   private favoritesService = inject(FirestoreFavoritesService);
   private tripsService = inject(FirestoreTripsService);
   private destroyRef = inject(DestroyRef);
+  private cdr = inject(ChangeDetectorRef);
 
   activeTab: "places" | "trips" = "places";
   favoritePlaces: Place[] = [];
@@ -186,21 +188,22 @@ export class FavoritesPage implements OnInit {
       this.activeTab = 'trips';
     }
 
-    // Load favorite places từ Firestore (realtime)
-    this.favoritesService.getFavoriteIds().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((ids) => {
-      if (ids.length === 0) {
+    // Load favorite places từ Firestore (realtime) + switchMap để không leak
+    this.favoritesService.getFavoriteIds().pipe(
+      takeUntilDestroyed(this.destroyRef),
+      switchMap(ids => {
+        if (ids.length === 0) return of([]);
+        return this.apiService.getPlaces().pipe(
+          switchMap(places => of(places.filter(p => ids.includes(p.id))))
+        );
+      })
+    ).subscribe({
+      next: (places) => {
+        this.favoritePlaces = places;
         this.isLoading = false;
-        this.favoritePlaces = [];
-        return;
-      }
-      // Lấy thông tin địa điểm từ ApiService (places data vẫn ở backend)
-      this.apiService.getPlaces().subscribe({
-        next: (places) => {
-          this.favoritePlaces = places.filter(p => ids.includes(p.id));
-          this.isLoading = false;
-        },
-        error: () => { this.isLoading = false; },
-      });
+        this.cdr.markForCheck();
+      },
+      error: () => { this.isLoading = false; this.cdr.markForCheck(); },
     });
 
     // Load trips từ Firestore (realtime)
