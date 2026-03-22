@@ -9,6 +9,7 @@ import { PlaceCardComponent } from '../../components/place/place-card/place-card
 import { EmptyStateComponent } from '../../components/ui/empty-state/empty-state.component';
 import { ApiService, Category, Place } from '../../services/api.service';
 import { FirestorePlacesService, FirestorePlace, FirestoreCategory } from '../../services/firestore-places.service';
+import { FirestoreFavoritesService } from '../../services/firestore-favorites.service';
 
 type SortOption = 'featured' | 'rating' | 'open';
 
@@ -104,6 +105,7 @@ type SortOption = 'featured' | 'rating' | 'open';
           <app-place-card 
             *ngFor="let place of filteredPlaces"
             [place]="place"
+            [isFavorite]="favoriteIds.includes(place.id)"
           ></app-place-card>
         </div>
 
@@ -131,6 +133,7 @@ export class ExplorePage implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private firestorePlaces = inject(FirestorePlacesService);
+  private firestoreFavorites = inject(FirestoreFavoritesService);
   private destroyRef = inject(DestroyRef);
 
   @ViewChild('filterDropdown') filterDropdown!: ElementRef;
@@ -138,6 +141,7 @@ export class ExplorePage implements OnInit {
   categories: FirestoreCategory[] = [];
   places: FirestorePlace[] = [];
   filteredPlaces: FirestorePlace[] = [];
+  favoriteIds: string[] = [];
   searchQuery = '';
   selectedCategory = 'all';
   selectedSort: SortOption = 'featured';
@@ -151,6 +155,12 @@ export class ExplorePage implements OnInit {
   ];
 
   ngOnInit() {
+    // Theo dõi favorites realtime → đảm bảo icon tim luôn đúng dù page bị cache
+    this.firestoreFavorites.getFavoriteIds().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (ids) => { this.favoriteIds = ids; },
+      error: () => { this.favoriteIds = []; }
+    });
+
     // Load categories từ Firestore
     this.firestorePlaces.getCategories().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (cats) => { this.categories = cats; },

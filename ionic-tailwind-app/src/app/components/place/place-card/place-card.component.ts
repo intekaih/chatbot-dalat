@@ -145,13 +145,8 @@ export class PlaceCardComponent implements OnInit {
   @Output() favorite = new EventEmitter<Place>();
 
   ngOnInit() {
-    // Nếu isFavorite chưa được pass từ parent → kiểm tra Firestore
-    if (this.place?.id && !this.isFavorite) {
-      this.favoritesService.isFavorite(this.place.id).then(isFav => {
-        this.isFavorite = isFav;
-        this.cdr.markForCheck(); // Promise chạy ngoài zone → cần trigger CD
-      });
-    }
+    // isFavorite được quản lý bởi parent qua [isFavorite] binding + onFavoriteClick
+    // Không tự gọi Firestore ở đây để tránh stale state khi page bị cache
   }
 
   navigateToPlace() {

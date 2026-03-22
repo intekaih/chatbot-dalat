@@ -161,6 +161,8 @@ export class AuthService {
     localStorage.removeItem('isFirebaseUser');
     localStorage.removeItem('isGuest');
     localStorage.removeItem('device_id');
+    // Xóa sessionStorage để tránh lịch sử chat của acc cũ hiện lại khi đăng nhập acc mới
+    sessionStorage.clear();
     this.router.navigateByUrl('/auth', { replaceUrl: true });
   }
 

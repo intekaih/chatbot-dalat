@@ -8,6 +8,7 @@ import { PlaceCardComponent } from "../../components/place/place-card/place-card
 import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state.component";
 import { ApiService } from "../../services/api.service";
 import { FirestorePlacesService, FirestorePlace, FirestoreCategory } from "../../services/firestore-places.service";
+import { FirestoreFavoritesService } from "../../services/firestore-favorites.service";
 
 @Component({
   selector: "app-search",
@@ -148,6 +149,7 @@ import { FirestorePlacesService, FirestorePlace, FirestoreCategory } from "../..
           <app-place-card
             *ngFor="let place of results"
             [place]="place"
+            [isFavorite]="favoriteIds.includes(place.id)"
           ></app-place-card>
         </div>
 
@@ -183,15 +185,17 @@ import { FirestorePlacesService, FirestorePlace, FirestoreCategory } from "../..
 export class SearchPage implements OnInit, AfterViewInit {
   private router = inject(Router);
   private firestorePlaces = inject(FirestorePlacesService);
+  private firestoreFavorites = inject(FirestoreFavoritesService);
   private destroyRef = inject(DestroyRef);
 
   searchQuery = "";
   selectedCategory = "all";
   selectedSort = "default";
   showSort = false;
-  allPlaces: FirestorePlace[] = [];  // cache toàn bộ
+  allPlaces: FirestorePlace[] = [];
   results: FirestorePlace[] = [];
   categories: FirestoreCategory[] = [];
+  favoriteIds: string[] = [];
   isLoading = true;
 
   sortOptions = [
@@ -209,6 +213,12 @@ export class SearchPage implements OnInit, AfterViewInit {
   }
 
   ngOnInit() {
+    // Theo dõi favorites realtime
+    this.firestoreFavorites.getFavoriteIds().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (ids) => { this.favoriteIds = ids; },
+      error: () => { this.favoriteIds = []; }
+    });
+
     // Load categories từ Firestore
     this.firestorePlaces.getCategories().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (cats) => { this.categories = cats; },
