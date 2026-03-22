@@ -2,7 +2,8 @@ import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked, 
 import { CommonModule } from "@angular/common";
 import { Router, ActivatedRoute } from "@angular/router";
 import { FormsModule } from "@angular/forms";
-import { firstValueFrom } from "rxjs";
+import { firstValueFrom, Subject } from "rxjs";
+import { takeUntil } from "rxjs/operators";
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { ChatBubbleComponent } from "../../components/chat/chat-bubble/chat-bubble.component";
 import { PlaceCardComponent } from "../../components/place/place-card/place-card.component";
@@ -12,6 +13,7 @@ import { AI_CONFIG } from "../../config/ai.config";
 import { FirestoreChatService } from "../../services/firestore-chat.service";
 import { StorageService } from "../../services/storage.service";
 import { FirestoreTripsService } from "../../services/firestore-trips.service";
+import { Auth } from "@angular/fire/auth";
 
 interface Message {
   id: string;
@@ -416,6 +418,9 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
   private firestoreChat = inject(FirestoreChatService);
   private storageService = inject(StorageService);
   private firestoreTrips = inject(FirestoreTripsService);
+  private auth = inject(Auth);
+
+  private destroy$ = new Subject<void>();
 
   @ViewChild("messagesEnd") messagesEnd!: ElementRef;
   @ViewChild("messageInput") messageInput!: ElementRef;
@@ -426,6 +431,7 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
 
   private readonly SESSION_KEY = "chat_messages";
   private readonly SESSION_ID_KEY = "chat_session_id";
+  private readonly SESSION_UID_KEY = "chat_uid";
   private currentSessionId: string | null = null;
 
   messages: Message[] = [];
@@ -507,6 +513,8 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
 
   ngOnDestroy() {
     document.removeEventListener("mousedown", this.outsideClickHandler);
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   // ── Session persistence ──────────────────────────────────────────────────
@@ -515,7 +523,10 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
 
   // Mở rộng session persistence: vừa dùng sessionStorage (nhanh) vừa Firestore (bền vững)
   private saveToSession() {
+    const uid = this.auth.currentUser?.uid;
+    if (!uid) return;
     try {
+      sessionStorage.setItem(this.SESSION_UID_KEY, uid);
       sessionStorage.setItem(this.SESSION_KEY, JSON.stringify(this.messages));
     } catch {
       /* quota exceeded – silently ignore */
@@ -546,6 +557,12 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
 
   private restoreFromSession() {
     try {
+      const currentUid = this.auth.currentUser?.uid ?? null;
+      const savedUid = sessionStorage.getItem(this.SESSION_UID_KEY);
+      if (savedUid && currentUid && savedUid !== currentUid) {
+        this.clearSession();
+        return;
+      }
       const raw = sessionStorage.getItem(this.SESSION_KEY);
       if (raw) {
         const parsed: Message[] = JSON.parse(raw);
@@ -556,7 +573,6 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
           }));
         }
       }
-      // Khôi phục sessionId
       this.currentSessionId = sessionStorage.getItem(this.SESSION_ID_KEY);
     } catch {
       /* corrupted data – start fresh */
@@ -567,10 +583,12 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
     try {
       sessionStorage.removeItem(this.SESSION_KEY);
       sessionStorage.removeItem(this.SESSION_ID_KEY);
+      sessionStorage.removeItem(this.SESSION_UID_KEY);
     } catch { }
     this.messages = [];
     this.relatedPlaces = [];
     this.currentSessionId = null;
+    this.currentFirestoreSessionId = null;
   }
 
   /** Nút New Chat ở header */
@@ -702,6 +720,7 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
     const doSend = (sessionId: string | null) => {
       this.aiService
         .chat(historyMessages, this.selectedModel.id, imageToSend, sessionId ?? undefined)
+        .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response) => {
             this.isTyping = false;
