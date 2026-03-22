@@ -1,4 +1,5 @@
-import { Component, OnInit, HostListener, ElementRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, HostListener, ElementRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -130,6 +131,7 @@ export class ExplorePage implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private firestorePlaces = inject(FirestorePlacesService);
+  private destroyRef = inject(DestroyRef);
 
   @ViewChild('filterDropdown') filterDropdown!: ElementRef;
 
@@ -150,13 +152,13 @@ export class ExplorePage implements OnInit {
 
   ngOnInit() {
     // Load categories từ Firestore
-    this.firestorePlaces.getCategories().subscribe({
+    this.firestorePlaces.getCategories().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (cats) => { this.categories = cats; },
       error: () => { this.categories = []; }
     });
 
     // Load places từ Firestore
-    this.firestorePlaces.getPlaces().subscribe({
+    this.firestorePlaces.getPlaces().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (places) => {
         this.places = places;
         this.applyFilters();
@@ -168,7 +170,7 @@ export class ExplorePage implements OnInit {
       }
     });
 
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       if (params['category']) {
         this.selectedCategory = params['category'];
         this.applyFilters();

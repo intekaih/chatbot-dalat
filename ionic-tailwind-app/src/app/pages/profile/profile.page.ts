@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from "@angular/core";
+import { Component, OnInit, DestroyRef, inject } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
 import { ApiService, User } from "../../services/api.service";
@@ -300,14 +301,15 @@ export class ProfilePage implements OnInit {
   private tripsService = inject(FirestoreTripsService);
   private chatService = inject(FirestoreChatService);
   private favoritesService = inject(FirestoreFavoritesService);
+  private destroyRef = inject(DestroyRef);
 
   ngOnInit() {
     // User info: lấy từ Firebase Auth (realtime)
     this.apiService.getUser().subscribe((u) => (this.user = u));
-    // Counts từ Firestore
-    this.tripsService.getTrips().subscribe((t) => (this.tripCount = t.length));
-    this.chatService.getSessions().subscribe((s) => (this.chatCount = s.length));
-    this.favoritesService.getFavoriteIds().subscribe((ids) => (this.favoritesCount = ids.length));
+    // Counts từ Firestore — takeUntilDestroyed để tránh memory leak
+    this.tripsService.getTrips().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((t) => (this.tripCount = t.length));
+    this.chatService.getSessions().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((s) => (this.chatCount = s.length));
+    this.favoritesService.getFavoriteIds().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((ids) => (this.favoritesCount = ids.length));
   }
 
   getBudgetLabel(budget: string): string {

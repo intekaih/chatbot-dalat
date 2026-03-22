@@ -1,4 +1,5 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, inject } from "@angular/core";
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, DestroyRef, inject } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
 import { FormsModule } from "@angular/forms";
@@ -182,6 +183,7 @@ import { FirestorePlacesService, FirestorePlace, FirestoreCategory } from "../..
 export class SearchPage implements OnInit, AfterViewInit {
   private router = inject(Router);
   private firestorePlaces = inject(FirestorePlacesService);
+  private destroyRef = inject(DestroyRef);
 
   searchQuery = "";
   selectedCategory = "all";
@@ -208,12 +210,12 @@ export class SearchPage implements OnInit, AfterViewInit {
 
   ngOnInit() {
     // Load categories từ Firestore
-    this.firestorePlaces.getCategories().subscribe({
+    this.firestorePlaces.getCategories().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (cats) => { this.categories = cats; },
     });
 
     // Load places từ Firestore
-    this.firestorePlaces.getPlaces().subscribe({
+    this.firestorePlaces.getPlaces().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (places) => {
         this.allPlaces = places;
         this.results = places;

@@ -1,6 +1,8 @@
-import { Component, OnInit, inject } from "@angular/core";
+import { Component, OnInit, DestroyRef, inject } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
+import { AlertController } from "@ionic/angular/standalone";
 import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state.component";
 import { FirestoreChatService, FirestoreChatSession } from "../../services/firestore-chat.service";
 
@@ -114,6 +116,8 @@ import { FirestoreChatService, FirestoreChatSession } from "../../services/fires
 })
 export class HistoryPage implements OnInit {
   private router = inject(Router);
+  private alertCtrl = inject(AlertController);
+  private destroyRef = inject(DestroyRef);
 
   sessions: FirestoreChatSession[] = [];
   isLoading = true;
@@ -121,7 +125,7 @@ export class HistoryPage implements OnInit {
   private firestoreChat = inject(FirestoreChatService);
 
   ngOnInit() {
-    this.firestoreChat.getSessions().subscribe({
+    this.firestoreChat.getSessions().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (sessions) => {
         this.sessions = sessions;
         this.isLoading = false;
@@ -134,7 +138,9 @@ export class HistoryPage implements OnInit {
   }
 
   openChat(session: FirestoreChatSession) {
-    this.router.navigate(["/home/chat"], { state: { prompt: session.title } });
+    this.router.navigate(["/home/chat"], {
+      state: { sessionId: session.id, prompt: session.title },
+    });
   }
 
   deleteSession(event: Event, session: FirestoreChatSession) {
@@ -147,13 +153,26 @@ export class HistoryPage implements OnInit {
     }
   }
 
-  clearAll() {
-    const toDelete = [...this.sessions];
-    this.sessions = [];
-    // Xóa tất cả sessions trên Firestore
-    toDelete.forEach((s) => {
-      if (s.id) this.firestoreChat.deleteSession(s.id);
+  async clearAll() {
+    const alert = await this.alertCtrl.create({
+      header: "Xóa tất cả lịch sử",
+      message: "Bạn có chắc muốn xóa toàn bộ lịch sử chat? Hành động này không thể hoàn tác.",
+      buttons: [
+        { text: "Huỷ", role: "cancel" },
+        {
+          text: "Xóa tất cả",
+          role: "destructive",
+          handler: () => {
+            const toDelete = [...this.sessions];
+            this.sessions = [];
+            toDelete.forEach((s) => {
+              if (s.id) this.firestoreChat.deleteSession(s.id);
+            });
+          },
+        },
+      ],
     });
+    await alert.present();
   }
 
   formatDate(date: Date | any): string {

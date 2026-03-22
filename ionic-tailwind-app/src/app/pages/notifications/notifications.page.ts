@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from "@angular/core";
-import { CommonModule } from "@angular/common";
+import { CommonModule, Location } from "@angular/common";
 import { Router } from "@angular/router";
 import { ApiService, Notification } from "../../services/api.service";
 import { WeatherService } from "../../services/weather.service";
@@ -114,6 +114,7 @@ import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state
 })
 export class NotificationsPage implements OnInit {
   private router = inject(Router);
+  private location = inject(Location);
   private apiService = inject(ApiService);
   private weatherService = inject(WeatherService);
 
@@ -162,7 +163,7 @@ export class NotificationsPage implements OnInit {
   }
 
   goBack() {
-    this.router.navigate(["/home"]);
+    this.location.back();
   }
 
   markAsRead(notif: Notification) {

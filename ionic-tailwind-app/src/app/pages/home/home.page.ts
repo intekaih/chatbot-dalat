@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from "@angular/core";
+import { Component, OnInit, DestroyRef, inject } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { CommonModule } from "@angular/common";
 import { Router, RouterLink } from "@angular/router";
 import { SearchBarComponent } from "../../components/ui/search-bar/search-bar.component";
@@ -643,6 +644,7 @@ export class HomePage implements OnInit {
 
   private tripsService = inject(FirestoreTripsService);
   private firestorePlaces = inject(FirestorePlacesService);
+  private destroyRef = inject(DestroyRef);
 
   ngOnInit() {
     this.loadData();
@@ -720,35 +722,35 @@ export class HomePage implements OnInit {
 
       // Nếu không có places (API lỗi/timeout/empty), load từ Firestore
       if (data.places.length === 0) {
-        this.firestorePlaces.getCategories().subscribe((cats) => {
+        this.firestorePlaces.getCategories().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((cats) => {
           if (this.categories.length === 0) this.categories = cats.filter((c: any) => c.id !== "signature");
         });
-        this.firestorePlaces.getPlaces('signature').subscribe((places) => {
+        this.firestorePlaces.getPlaces('signature').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((places) => {
           this.signaturePlaces = places.slice(0, 10);
         });
-        this.firestorePlaces.getPlaces('checkin').subscribe((places) => {
+        this.firestorePlaces.getPlaces('checkin').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((places) => {
           this.checkinPlaces = places.slice(0, 20);
         });
-        this.firestorePlaces.getPlaces('nature').subscribe((places) => {
+        this.firestorePlaces.getPlaces('nature').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((places) => {
           this.naturePlaces = places.slice(0, 10);
         });
-        this.firestorePlaces.getPlaces('rental').subscribe((places) => {
+        this.firestorePlaces.getPlaces('rental').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((places) => {
           this.rentalPlaces = places;
         });
-        this.firestorePlaces.getPlaces('homestay').subscribe((places) => {
+        this.firestorePlaces.getPlaces('homestay').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((places) => {
           this.homestayPlaces = places.slice(0, 20);
         });
-        this.firestorePlaces.getPlaces('food').subscribe((places) => {
+        this.firestorePlaces.getPlaces('food').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((places) => {
           this.dalatFoods = places.slice(0, 20).map((p) => ({
             id: p.id, name: p.name,
             desc: p.shortDescription || "",
             price: p.priceRange || "Liên hệ",
             rating: p.rating || 4.5,
-            tag: p.tags?.[0] || "🍜 Ẩm thỳc",
+            tag: p.tags?.[0] || "🍜 Ẩm thực",
             image: p.imageUrl, slug: p.slug,
           }));
         });
-        this.firestorePlaces.getPlaces('cafe').subscribe((places) => {
+        this.firestorePlaces.getPlaces('cafe').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((places) => {
           this.cafePlaces = places.slice(0, 20);
         });
       }
@@ -759,10 +761,10 @@ export class HomePage implements OnInit {
         next: (data) => applyPersonalizedData(data),
         error: () => {
           // Fallback: load từ Firestore khi getPersonalizedData fail
-          this.firestorePlaces.getCategories().subscribe((cats) => {
+          this.firestorePlaces.getCategories().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((cats) => {
             this.categories = cats;
           });
-          this.firestorePlaces.getPlacesGrouped().subscribe((grouped) => {
+          this.firestorePlaces.getPlacesGrouped().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((grouped) => {
             this.checkinPlaces = (grouped['checkin'] || []).slice(0, 20);
             this.naturePlaces = (grouped['nature'] || []).slice(0, 10);
             this.rentalPlaces = grouped['rental'] || [];
@@ -786,7 +788,7 @@ export class HomePage implements OnInit {
     loadPersonalized();
 
     // Load trips từ Firestore
-    this.tripsService.getTrips().subscribe({
+    this.tripsService.getTrips().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (trips) => {
         this.upcomingTrip = trips.find((t) => t.status === 'upcoming') || null;
       },

@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { ThemeService } from '../../services/theme.service';
 
@@ -133,12 +133,13 @@ import { ThemeService } from '../../services/theme.service';
 })
 export class SettingsPage {
   private router = inject(Router);
+  private location = inject(Location);
 
   themeService = inject(ThemeService);
   notifications = true;
 
   goBack() {
-    this.router.navigate(['/home/profile']);
+    this.location.back();
   }
 
   toggleDarkMode() {

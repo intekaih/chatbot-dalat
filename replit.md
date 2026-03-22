@@ -84,6 +84,14 @@ Deployment config (VM target):
 - Lazy loading for all pages
 - SQLite: persists users, places, chat history, trips, favorites
 
+## Code Quality (Final Review — 2026-03-22)
+
+- **Memory leaks fixed**: `DestroyRef` + `takeUntilDestroyed()` added to all Firestore real-time subscriptions in `home`, `explore`, `search`, `profile`, `favorites`, `history` pages
+- **Back navigation**: `notifications.page.ts` and `settings.page.ts` use `Location.back()` instead of hardcoded routes
+- **History clearAll**: `AlertController` confirmation dialog before deleting all chat sessions
+- **History openChat**: passes `{ sessionId, prompt }` in navigation state so chat can resume existing session
+- **TypeScript**: 0 compile errors; production build passes
+
 ## Key Notes
 
 - Firebase config is real (embedded in both `environment.ts` and `environment.prod.ts`)

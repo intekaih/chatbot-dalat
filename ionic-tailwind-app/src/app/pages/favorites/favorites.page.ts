@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from "@angular/core";
+import { Component, OnInit, DestroyRef, inject } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
 import { PlaceCardComponent } from "../../components/place/place-card/place-card.component";
@@ -169,6 +170,7 @@ export class FavoritesPage implements OnInit {
   private apiService = inject(ApiService);
   private favoritesService = inject(FirestoreFavoritesService);
   private tripsService = inject(FirestoreTripsService);
+  private destroyRef = inject(DestroyRef);
 
   activeTab: "places" | "trips" = "places";
   favoritePlaces: Place[] = [];
@@ -184,7 +186,7 @@ export class FavoritesPage implements OnInit {
     }
 
     // Load favorite places từ Firestore (realtime)
-    this.favoritesService.getFavoriteIds().subscribe((ids) => {
+    this.favoritesService.getFavoriteIds().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((ids) => {
       if (ids.length === 0) {
         this.isLoading = false;
         this.favoritePlaces = [];
@@ -201,7 +203,7 @@ export class FavoritesPage implements OnInit {
     });
 
     // Load trips từ Firestore (realtime)
-    this.tripsService.getTrips().subscribe({
+    this.tripsService.getTrips().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (trips) => {
         this.trips = trips;
       },
