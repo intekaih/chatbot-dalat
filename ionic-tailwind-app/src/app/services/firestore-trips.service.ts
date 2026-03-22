@@ -16,6 +16,16 @@ import { Auth } from '@angular/fire/auth';
 import { Observable, of, catchError } from 'rxjs';
 import { Trip } from './api.service';
 
+function stripUndefined<T extends Record<string, any>>(obj: T): Partial<T> {
+    const result: Record<string, any> = {};
+    Object.keys(obj).forEach(key => {
+        if (obj[key] !== undefined && obj[key] !== null) {
+            result[key] = obj[key];
+        }
+    });
+    return result as Partial<T>;
+}
+
 @Injectable({
     providedIn: 'root',
 })
@@ -50,14 +60,15 @@ export class FirestoreTripsService {
         const uid = this.uid;
         if (!uid) return '';
         try {
+            const clean = stripUndefined(trip as Record<string, any>);
             const ref = await addDoc(this.tripsCol(uid), {
-                ...trip,
+                ...clean,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
             return ref.id;
-        } catch (e) {
-            console.error('FirestoreTripsService.createTrip error:', e);
+        } catch (e: any) {
+            console.error('FirestoreTripsService.createTrip error:', e?.code, e?.message, e);
             return '';
         }
     }
@@ -67,12 +78,13 @@ export class FirestoreTripsService {
         const uid = this.uid;
         if (!uid) return;
         try {
+            const clean = stripUndefined(data as Record<string, any>);
             await updateDoc(doc(this.firestore, `users/${uid}/trips/${tripId}`), {
-                ...data,
+                ...clean,
                 updatedAt: serverTimestamp(),
             });
-        } catch (e) {
-            console.error('FirestoreTripsService.updateTrip error:', e);
+        } catch (e: any) {
+            console.error('FirestoreTripsService.updateTrip error:', e?.code, e?.message, e);
         }
     }
 

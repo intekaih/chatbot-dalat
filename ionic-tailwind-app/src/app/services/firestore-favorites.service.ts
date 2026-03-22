@@ -72,15 +72,16 @@ export class FirestoreFavoritesService {
         const uid = this.uid;
         if (!uid) return;
         try {
-            await setDoc(this.favoriteDoc(uid, place.id), {
+            const data: Record<string, any> = {
                 placeId: place.id,
-                placeName: place.name,
-                placeCategory: place.category,
-                placeImageUrl: place.imageUrl,
+                placeName: place.name || '',
                 addedAt: serverTimestamp(),
-            });
-        } catch (e) {
-            console.error('FirestoreFavoritesService.addFavorite error:', e);
+            };
+            if (place.category) data['placeCategory'] = place.category;
+            if (place.imageUrl) data['placeImageUrl'] = place.imageUrl;
+            await setDoc(this.favoriteDoc(uid, place.id), data);
+        } catch (e: any) {
+            console.error('FirestoreFavoritesService.addFavorite error:', e?.code, e?.message, e);
             throw e;
         }
     }
