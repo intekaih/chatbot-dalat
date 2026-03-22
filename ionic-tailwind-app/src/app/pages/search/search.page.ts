@@ -50,7 +50,7 @@ import { FirestorePlacesService, FirestorePlace, FirestoreCategory } from "../..
               #searchInput
               type="text"
               [(ngModel)]="searchQuery"
-              (input)="onSearch()"
+              (ngModelChange)="onSearch()"
               placeholder="Tìm địa điểm..."
               class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-black"
             />
@@ -242,7 +242,7 @@ export class SearchPage implements OnInit, AfterViewInit {
 
   clearSearch() {
     this.searchQuery = "";
-    this.results = [...this.allPlaces];
+    this.applyFilters();
   }
 
   selectCategory(category: string) {
@@ -260,6 +260,10 @@ export class SearchPage implements OnInit, AfterViewInit {
     this.showSort = false;
   }
 
+  private normalize(s: string): string {
+    return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
   applyFilters() {
     let filtered = [...this.allPlaces];
 
@@ -267,17 +271,21 @@ export class SearchPage implements OnInit, AfterViewInit {
       filtered = filtered.filter((p) => p.category === this.selectedCategory);
     }
 
-    if (this.searchQuery) {
-      const query = this.searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (p) => p.name.toLowerCase().includes(query),
+    const q = this.normalize(this.searchQuery.trim());
+    if (q) {
+      filtered = filtered.filter((p) =>
+        this.normalize(p.name).includes(q) ||
+        this.normalize(p.shortDescription).includes(q) ||
+        this.normalize(p.address).includes(q) ||
+        this.normalize(p.category).includes(q) ||
+        (p.tags || []).some(t => this.normalize(t).includes(q))
       );
     }
 
     if (this.selectedSort === "rating") {
       filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else if (this.selectedSort === "az") {
-      filtered.sort((a, b) => a.name.localeCompare(b.name));
+      filtered.sort((a, b) => a.name.localeCompare(b.name, 'vi'));
     }
 
     this.results = filtered;
