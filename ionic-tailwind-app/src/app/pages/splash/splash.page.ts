@@ -50,7 +50,8 @@ export class SplashPage implements OnInit {
 
     if (isLoggedIn === 'true') {
       if (!hasPersonalized) {
-        this.router.navigateByUrl('/onboarding', { replaceUrl: true });
+        // Đã đăng nhập nhưng chưa cá nhân hóa → vào /welcome
+        this.router.navigateByUrl('/welcome', { replaceUrl: true });
       } else {
         this.router.navigateByUrl('/home', { replaceUrl: true });
       }

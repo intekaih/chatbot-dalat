@@ -289,7 +289,7 @@ app.post("/api/user/sync", async (req, res) => {
       });
     }
 
-    const { email, displayName, photoURL } = req.body;
+    const { email, displayName, photoURL, oldDeviceId } = req.body;
     if (email !== undefined && typeof email !== "string") {
       return res.status(400).json({ error: "email must be a string" });
     }
@@ -300,15 +300,26 @@ app.post("/api/user/sync", async (req, res) => {
     console.log(`🔍 [Sync] Found existing user: ${existingUser ? `${existingUser.name} (hasPersonalized: ${existingUser.has_personalized})` : 'NOT FOUND'}`);
 
     if (existingUser) {
-      // Update existing user
-      db.prepare(`
-        UPDATE users SET 
-          name = COALESCE(?, name),
-          avatar = COALESCE(?, avatar),
-          email = COALESCE(?, email),
-          updated_at = CURRENT_TIMESTAMP
-        WHERE device_id = ?
-      `).run(displayName || null, photoURL || null, email || null, firebaseUid);
+      // Update existing user — chỉ ghi đè name/avatar khi CHƯA cá nhân hóa
+      if (existingUser.has_personalized === 1) {
+        // Đã cá nhân hóa: chỉ update email, KHÔNG ghi đè name/avatar
+        db.prepare(`
+          UPDATE users SET 
+            email = COALESCE(?, email),
+            updated_at = CURRENT_TIMESTAMP
+          WHERE device_id = ?
+        `).run(email || null, firebaseUid);
+      } else {
+        // Chưa cá nhân hóa: dùng Google name/avatar làm fallback
+        db.prepare(`
+          UPDATE users SET 
+            name = COALESCE(?, name),
+            avatar = COALESCE(?, avatar),
+            email = COALESCE(?, email),
+            updated_at = CURRENT_TIMESTAMP
+          WHERE device_id = ?
+        `).run(displayName || null, photoURL || null, email || null, firebaseUid);
+      }
 
       const user = db.prepare("SELECT * FROM users WHERE device_id = ?").get(firebaseUid) as UserRow;
       return res.json({
@@ -329,14 +340,45 @@ app.post("/api/user/sync", async (req, res) => {
       VALUES (?, ?, ?, ?, ?, '[]', '[]', 'mid', 0)
     `).run(userId, firebaseUid, displayName || "User", photoURL || "🧑‍💻", email || "");
 
-    // Tìm user cũ cùng email (dùng device_id random trước đó) đã có cá nhân hóa → migrate data
-    if (email) {
+    // Migrate data từ guest user (oldDeviceId) hoặc user cũ cùng email
+    let migrated = false;
+
+    // Ưu tiên 1: Migrate từ guest device-id (nếu client gửi)
+    if (oldDeviceId && typeof oldDeviceId === 'string' && oldDeviceId !== firebaseUid) {
+      const guestUser = db.prepare(
+        "SELECT * FROM users WHERE device_id = ? AND has_personalized = 1"
+      ).get(oldDeviceId) as UserRow | undefined;
+
+      if (guestUser) {
+        db.prepare(`
+          UPDATE users SET
+            preferences = ?,
+            travel_styles = ?,
+            budget = ?,
+            has_personalized = 1,
+            name = COALESCE(NULLIF(?, ''), name),
+            avatar = COALESCE(NULLIF(?, '🧑\u200d💻'), avatar)
+          WHERE device_id = ?
+        `).run(
+          guestUser.preferences,
+          guestUser.travel_styles,
+          guestUser.budget,
+          guestUser.name || null,
+          guestUser.avatar || null,
+          firebaseUid
+        );
+        console.log(`✅ [Sync] Migrated guest data from oldDeviceId (${oldDeviceId}) to Firebase UID (${firebaseUid})`);
+        migrated = true;
+      }
+    }
+
+    // Ưu tiên 2: Tìm user cũ cùng email (dùng device_id random trước đó) đã có cá nhân hóa
+    if (!migrated && email) {
       const oldUser = db.prepare(
         "SELECT * FROM users WHERE email = ? AND device_id != ? AND has_personalized = 1 ORDER BY updated_at DESC LIMIT 1"
       ).get(email, firebaseUid) as UserRow | undefined;
 
       if (oldUser) {
-        // Copy preferences, travelStyles, budget, name, avatar từ user cũ sang user mới
         db.prepare(`
           UPDATE users SET
             preferences = ?,

@@ -7,6 +7,7 @@ import {
   TripDay,
   TripItineraryItem,
 } from "../../services/api.service";
+import { FirestoreTripsService } from "../../services/firestore-trips.service";
 
 @Component({
   selector: "app-trip-detail",
@@ -346,7 +347,7 @@ import {
 export class TripDetailPage implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private apiService = inject(ApiService);
+  private tripsService = inject(FirestoreTripsService);
 
   trip: Trip | undefined;
   activeTab: "itinerary" | "budget" = "itinerary";
@@ -355,16 +356,23 @@ export class TripDetailPage implements OnInit {
   tripNights = 0;
 
   ngOnInit() {
+    this.loadTrip();
+  }
+
+  ionViewWillEnter() {
+    this.loadTrip();
+  }
+
+  private loadTrip() {
     const id = this.route.snapshot.paramMap.get("id");
     if (id) {
-      this.apiService.getTrips().subscribe({
+      this.tripsService.getTrips().subscribe({
         next: (trips) => {
           this.trip = trips.find((t) => t.id === id);
           this.expandedDays = new Array(this.trip?.days?.length || 0).fill(true);
           if (this.trip?.notes) {
             this.notesHtml = this.renderMarkdown(this.trip.notes);
           }
-          // Compute trip nights from days array
           this.tripNights = Math.max(0, (this.trip?.days?.length || 1) - 1);
         },
       });

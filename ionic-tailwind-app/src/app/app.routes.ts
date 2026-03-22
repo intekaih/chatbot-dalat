@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   // Redirect root to splash
@@ -10,9 +11,10 @@ export const routes: Routes = [
   { path: 'auth', loadComponent: () => import('./pages/auth/auth.page').then(m => m.AuthPage) },
   { path: 'welcome', loadComponent: () => import('./pages/welcome/welcome.page').then(m => m.WelcomePage) },
 
-  // Routes WITH BottomTabBar - parent path: 'home'
+  // Routes WITH BottomTabBar - parent path: 'home' — protected by AuthGuard
   {
     path: 'home',
+    canActivate: [authGuard],
     loadComponent: () => import('./components/layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent),
     children: [
       // /home → HomePage
@@ -24,7 +26,6 @@ export const routes: Routes = [
       { path: 'profile', loadComponent: () => import('./pages/profile/profile.page').then(m => m.ProfilePage) },
       { path: 'settings', loadComponent: () => import('./pages/settings/settings.page').then(m => m.SettingsPage) },
       { path: 'place/:slug', loadComponent: () => import('./pages/place-detail/place-detail.page').then(m => m.PlaceDetailPage) },
-      { path: 'trips', loadComponent: () => import('./pages/trips/trips.page').then(m => m.TripsPage) },
       { path: 'trips/:id', loadComponent: () => import('./pages/trip-detail/trip-detail.page').then(m => m.TripDetailPage) },
       { path: 'search', loadComponent: () => import('./pages/search/search.page').then(m => m.SearchPage) },
       { path: 'notifications', loadComponent: () => import('./pages/notifications/notifications.page').then(m => m.NotificationsPage) },

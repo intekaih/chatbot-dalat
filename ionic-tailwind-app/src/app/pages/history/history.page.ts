@@ -1,6 +1,6 @@
 import { Component, OnInit, DestroyRef, inject } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { CommonModule } from "@angular/common";
+import { CommonModule, Location } from "@angular/common";
 import { Router } from "@angular/router";
 import { AlertController } from "@ionic/angular/standalone";
 import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state.component";
@@ -16,7 +16,18 @@ import { FirestoreChatService, FirestoreChatSession } from "../../services/fires
       <div
         class="px-4 pt-4 pb-4 border-b border-gray-100 flex items-center justify-between"
       >
-        <h1 class="text-2xl font-semibold text-gray-900">Lịch sử chat</h1>
+        <div class="flex items-center gap-3">
+          <button
+            (click)="goBack()"
+            class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+            aria-label="Quay lại"
+          >
+            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 class="text-2xl font-semibold text-gray-900">Lịch sử chat</h1>
+        </div>
         <button
           *ngIf="sessions.length > 0"
           (click)="clearAll()"
@@ -43,13 +54,13 @@ import { FirestoreChatService, FirestoreChatSession } from "../../services/fires
           >
             <button
               type="button"
-              class="w-full flex items-center gap-3 text-left"
+              class="w-full flex items-center gap-3 text-left pr-8"
               [attr.aria-label]="'Mở cuộc trò chuyện: ' + session.title"
               (click)="openChat(session)"
             >
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-3 min-w-0 w-full">
                 <div
-                  class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center"
+                  class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0"
                 >
                   <svg
                     class="w-5 h-5 text-gray-600"
@@ -65,18 +76,18 @@ import { FirestoreChatService, FirestoreChatSession } from "../../services/fires
                     />
                   </svg>
                 </div>
-                <div class="flex-1 min-w-0">
+                <div class="flex-1 min-w-0 overflow-hidden">
                   <h3 class="font-medium text-gray-900 text-sm truncate">
                     {{ session.title }}
                   </h3>
-                   <p class="text-xs text-gray-400">
-                    {{ session.messageCount || 0 }} tin nhắn
-                   </p>
-                </div>
-                <div class="text-right flex-shrink-0">
-                  <p class="text-xs text-gray-400">
-                    {{ formatDate(session.updatedAt) }}
-                  </p>
+                  <div class="flex items-center justify-between">
+                    <p class="text-xs text-gray-400">
+                      {{ session.messageCount || 0 }} tin nhắn
+                    </p>
+                    <p class="text-xs text-gray-400 flex-shrink-0">
+                      {{ formatDate(session.updatedAt) }}
+                    </p>
+                  </div>
                 </div>
               </div>
             </button>
@@ -116,6 +127,7 @@ import { FirestoreChatService, FirestoreChatSession } from "../../services/fires
 })
 export class HistoryPage implements OnInit {
   private router = inject(Router);
+  private location = inject(Location);
   private alertCtrl = inject(AlertController);
   private destroyRef = inject(DestroyRef);
 
@@ -141,6 +153,10 @@ export class HistoryPage implements OnInit {
     this.router.navigate(["/home/chat"], {
       state: { sessionId: session.id, prompt: session.title },
     });
+  }
+
+  goBack() {
+    this.location.back();
   }
 
   deleteSession(event: Event, session: FirestoreChatSession) {

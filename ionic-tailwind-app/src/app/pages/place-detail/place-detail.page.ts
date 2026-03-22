@@ -11,7 +11,11 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
   standalone: true,
   imports: [CommonModule, PlaceCardComponent],
   template: `
-    <div class="bg-white pb-24">
+    <div class="bg-white pb-24 relative">
+      <!-- Guest login toast -->
+      <div *ngIf="showLoginToast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 bg-gray-900 text-white text-sm rounded-full shadow-lg whitespace-nowrap" style="animation: fadeIn 0.2s ease-out">
+        🔒 Đăng nhập để lưu yêu thích
+      </div>
       <!-- Hero Image -->
       <div class="relative aspect-video overflow-hidden">
         <img loading="lazy"
@@ -349,6 +353,7 @@ export class PlaceDetailPage implements OnInit {
   relatedPlaces: Place[] = [];
   isFavorite = false;
   isLoading = true;
+  showLoginToast = false;
 
   ngOnInit() {
     const slug = this.route.snapshot.paramMap.get("slug");
@@ -438,6 +443,14 @@ export class PlaceDetailPage implements OnInit {
 
   toggleFavorite() {
     if (!this.place) return;
+
+    // Guest user → hiện thông báo
+    if (!this.favoritesService.isAuthenticated()) {
+      this.showLoginToast = true;
+      setTimeout(() => { this.showLoginToast = false; }, 2500);
+      return;
+    }
+
     this.favoritesService.toggleFavorite({
       id: this.place.id,
       name: this.place.name,

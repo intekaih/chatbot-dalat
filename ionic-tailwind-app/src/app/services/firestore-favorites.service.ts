@@ -33,6 +33,11 @@ export class FirestoreFavoritesService {
         return this.auth.currentUser?.uid ?? null;
     }
 
+    /** Kiểm tra user đã đăng nhập Firebase chưa (guest = false) */
+    isAuthenticated(): boolean {
+        return !!this.auth.currentUser;
+    }
+
     private favoritesCol(uid: string) {
         return collection(this.firestore, `users/${uid}/favorites`);
     }

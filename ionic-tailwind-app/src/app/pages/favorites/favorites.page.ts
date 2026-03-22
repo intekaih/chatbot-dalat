@@ -2,7 +2,7 @@ import { Component, OnInit, DestroyRef, inject, ChangeDetectorRef } from "@angul
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
-import { switchMap, of } from "rxjs";
+import { switchMap, of, map } from "rxjs";
 import { PlaceCardComponent } from "../../components/place/place-card/place-card.component";
 import { EmptyStateComponent } from "../../components/ui/empty-state/empty-state.component";
 import { Place, Trip } from "../../services/api.service";
@@ -137,25 +137,6 @@ import { FirestorePlacesService } from "../../services/firestore-places.service"
             </svg>
           </button>
 
-          <button
-            (click)="goToAllTrips()"
-            class="flex items-center justify-between w-full mt-2 p-4 border border-gray-100 rounded-xl hover:bg-gray-50"
-          >
-            <span class="text-sm text-gray-600">Xem tất cả lịch trình</span>
-            <svg
-              class="w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
         </div>
 
         <app-empty-state
@@ -182,12 +163,7 @@ export class FavoritesPage implements OnInit {
   isLoading = true;
 
   ngOnInit() {
-    // Kiểm tra navigation state để auto-select tab
-    const nav = this.router.getCurrentNavigation();
-    const state = nav?.extras?.state as { tab?: string } | undefined;
-    if (state?.tab === 'trips') {
-      this.activeTab = 'trips';
-    }
+    this.checkTabState();
 
     // Load favorite places từ Firestore (realtime) + switchMap để không leak
     this.favoritesService.getFavoriteIds().pipe(
@@ -195,7 +171,7 @@ export class FavoritesPage implements OnInit {
       switchMap(ids => {
         if (ids.length === 0) return of([]);
         return this.firestorePlaces.getPlaces().pipe(
-          switchMap(places => of(places.filter(p => ids.includes(p.id)) as unknown as Place[]))
+          map(places => places.filter(p => ids.includes(p.id)) as unknown as Place[])
         );
       })
     ).subscribe({
@@ -222,12 +198,21 @@ export class FavoritesPage implements OnInit {
     });
   }
 
-  goToTrip(tripId: string) {
-    this.router.navigate(["/home/trips", tripId]);
+  /** Kiểm tra navigation state để auto-chọn tab */
+  private checkTabState() {
+    const nav = this.router.getCurrentNavigation();
+    const state = (nav?.extras?.state || (window.history.state)) as { tab?: string } | undefined;
+    if (state?.tab === 'trips') {
+      this.activeTab = 'trips';
+    }
   }
 
-  goToAllTrips() {
-    this.router.navigate(["/home/trips"]);
+  ionViewWillEnter() {
+    this.checkTabState();
+  }
+
+  goToTrip(tripId: string) {
+    this.router.navigate(["/home/trips", tripId]);
   }
 
   onImgError(event: Event) {

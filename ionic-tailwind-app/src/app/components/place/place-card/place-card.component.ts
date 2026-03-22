@@ -18,8 +18,12 @@ import { FirestoreFavoritesService } from "../../../services/firestore-favorites
       (keydown.enter)="navigateToPlace()"
       (keydown.space)="navigateToPlace()"
       [attr.aria-label]="place.name"
-      class="block rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-1"
+      class="block rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-1 relative"
     >
+      <!-- Guest login toast -->
+      <div *ngIf="showLoginToast" class="absolute top-2 left-1/2 -translate-x-1/2 z-20 px-4 py-2 bg-gray-900 text-white text-xs rounded-full shadow-lg whitespace-nowrap animate-fade-in">
+        🔒 Đăng nhập để lưu yêu thích
+      </div>
       <div class="relative aspect-[19/6] overflow-hidden">
         <img loading="lazy"
           [src]="place.imageUrl"
@@ -132,6 +136,13 @@ import { FirestoreFavoritesService } from "../../../services/firestore-favorites
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translate(-50%, -8px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.2s ease-out;
+    }
   `],
 })
 export class PlaceCardComponent implements OnInit {
@@ -143,6 +154,7 @@ export class PlaceCardComponent implements OnInit {
   @Input() variant: "default" | "compact" = "default";
   @Input() isFavorite = false;
   @Output() favorite = new EventEmitter<Place>();
+  showLoginToast = false;
 
   ngOnInit() {
     // isFavorite được quản lý bởi parent qua [isFavorite] binding + onFavoriteClick
@@ -169,6 +181,15 @@ export class PlaceCardComponent implements OnInit {
   onFavoriteClick(event: Event) {
     event.preventDefault();
     event.stopPropagation();
+
+    // Guest user → hiện thông báo thay vì fail âm thầm
+    if (!this.favoritesService.isAuthenticated()) {
+      this.showLoginToast = true;
+      setTimeout(() => { this.showLoginToast = false; this.cdr.markForCheck(); }, 2500);
+      this.cdr.markForCheck();
+      return;
+    }
+
     const prev = this.isFavorite;
     this.isFavorite = !prev; // optimistic: đổi màu ngay
     this.favorite.emit(this.place);

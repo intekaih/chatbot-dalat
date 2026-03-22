@@ -1,9 +1,13 @@
 node_modules/
+attached_assets/
+replit.md
+.replit
 .env
 dist/
 build/
 .angular/
 .ionic/
+.canvas/
 /server/node_modules/
 /ionic-tailwind-app/node_modules/
 

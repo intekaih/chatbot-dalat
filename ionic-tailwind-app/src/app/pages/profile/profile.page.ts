@@ -26,9 +26,14 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
 
         <div class="flex items-center gap-4">
           <div
-            class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-3xl shrink-0"
+            class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-3xl shrink-0 overflow-hidden"
           >
-            {{ user?.avatar || "🧑‍💻" }}
+            <img *ngIf="user?.avatar && user!.avatar.startsWith('http')"
+              [src]="user!.avatar"
+              alt="Avatar"
+              class="w-full h-full object-cover rounded-full"
+            />
+            <span *ngIf="!user?.avatar || !user!.avatar.startsWith('http')">{{ user?.avatar || '🧑‍💻' }}</span>
           </div>
           <div>
             <h2 class="text-xl font-semibold text-white">
@@ -304,8 +309,18 @@ export class ProfilePage implements OnInit {
   private destroyRef = inject(DestroyRef);
 
   ngOnInit() {
-    // User info: lấy từ Firebase Auth (realtime)
-    this.apiService.getUser().subscribe((u) => (this.user = u));
+    // User info: DB data ưu tiên khi đã cá nhân hóa, Firebase Auth chỉ là fallback
+    this.apiService.getUser().subscribe((u) => {
+      const fbUser = this.authService.currentUser();
+      if (fbUser && !u.hasPersonalized) {
+        // Chỉ dùng Google data khi user CHƯA cá nhân hóa
+        if (fbUser.photoURL) u.avatar = fbUser.photoURL;
+        if (fbUser.displayName && (!u.name || u.name === 'Khách')) {
+          u.name = fbUser.displayName;
+        }
+      }
+      this.user = u;
+    });
     // Counts từ Firestore — takeUntilDestroyed để tránh memory leak
     this.tripsService.getTrips().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((t) => (this.tripCount = t.length));
     this.chatService.getSessions().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((s) => (this.chatCount = s.length));
@@ -344,7 +359,7 @@ export class ProfilePage implements OnInit {
   }
 
   goToTrips() {
-    this.router.navigate(["/home/trips"]);
+    this.router.navigate(["/home/favorites"], { state: { tab: 'trips' } });
   }
   goToHistory() {
     this.router.navigate(["/home/history"]);

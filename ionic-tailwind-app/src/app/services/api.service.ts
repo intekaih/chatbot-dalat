@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from "@angular/core";
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { Observable, of, map, catchError, timeout, startWith } from "rxjs";
+import { Observable, of, map, catchError, timeout, startWith, tap } from "rxjs";
 import { AI_CONFIG } from "../config/ai.config";
 
 // Types
@@ -203,6 +203,7 @@ export class ApiService {
           budget: res.budget || "mid",
           hasPersonalized: res.hasPersonalized || false,
         })),
+        tap((user) => this.cacheUserToLocalStorage(user)),
         startWith(cached),
         catchError(() => of(cached)),
       );
@@ -224,12 +225,23 @@ export class ApiService {
     };
   }
 
+  /** Cache user data vào localStorage (dùng làm offline fallback) */
+  cacheUserToLocalStorage(user: User): void {
+    if (user.name) localStorage.setItem("userName", user.name);
+    if (user.avatar) localStorage.setItem("userAvatar", user.avatar);
+    localStorage.setItem("userPreferences", JSON.stringify(user.preferences || []));
+    localStorage.setItem("userTravelStyles", JSON.stringify(user.travelStyles || []));
+    if (user.budget) localStorage.setItem("userBudget", user.budget);
+    localStorage.setItem("hasPersonalized", user.hasPersonalized ? "true" : "false");
+  }
+
   /** Sync Firebase user with backend — dùng ID Token thay vì UID từ body */
   syncFirebaseUser(
     idToken: string,
     email = '',
     displayName = '',
     photoURL = '',
+    oldDeviceId = '',
   ): Observable<User | null> {
     if (!idToken) {
       return of(null);
@@ -246,6 +258,7 @@ export class ApiService {
         email,
         displayName,
         photoURL,
+        oldDeviceId,
       }, { headers })
       .pipe(
         map((res) => ({
@@ -625,75 +638,7 @@ export class ApiService {
       .pipe(catchError(() => of({ success: false })));
   }
 
-  // ========== FAVORITES ENDPOINTS ==========
-
-  /** Get user favorite places */
-  getFavorites(): Observable<Place[]> {
-    return this.http
-      .get<
-        any[]
-      >(`${this.baseUrl}/api/favorites`, { headers: this.getHeaders() })
-      .pipe(
-        map((places) => places.map((p) => this.mapPlace(p))),
-        catchError(() => of([])),
-      );
-  }
-
-  /** Add place to favorites */
-  addFavorite(
-    placeId: string,
-  ): Observable<{ success: boolean; added: boolean }> {
-    return this.http
-      .post<{
-        success: boolean;
-        added: boolean;
-      }>(
-        `${this.baseUrl}/api/favorites`,
-        { placeId },
-        { headers: this.getHeaders() },
-      )
-      .pipe(catchError(() => of({ success: false, added: false })));
-  }
-
-  /** Remove place from favorites */
-  removeFavorite(placeId: string): Observable<{ success: boolean }> {
-    return this.http
-      .delete<{
-        success: boolean;
-      }>(`${this.baseUrl}/api/favorites/${placeId}`, {
-        headers: this.getHeaders(),
-      })
-      .pipe(catchError(() => of({ success: false })));
-  }
-
-  /** Check if a place is in favorites */
-  checkFavorite(placeId: string): Observable<boolean> {
-    return this.http
-      .get<{
-        isFavorite: boolean;
-      }>(`${this.baseUrl}/api/favorites/check/${placeId}`, {
-        headers: this.getHeaders(),
-      })
-      .pipe(
-        map((res) => res.isFavorite),
-        catchError(() => of(false)),
-      );
-  }
-
-  /** Toggle favorite status of a place */
-  toggleFavorite(placeId: string, currentState: boolean): Observable<boolean> {
-    if (currentState) {
-      // Nếu API fail (success=false), giữ nguyên trạng thái cũ
-      return this.removeFavorite(placeId).pipe(
-        map((res) => (res.success ? false : currentState)),
-      );
-    } else {
-      // Nếu API fail (success=false), giữ nguyên trạng thái cũ
-      return this.addFavorite(placeId).pipe(
-        map((res) => (res.success || res.added ? true : currentState)),
-      );
-    }
-  }
+  // ========== FAVORITES (legacy REST — removed, app uses Firestore directly) ==========
 
   // ========== HEALTH CHECK ==========
 

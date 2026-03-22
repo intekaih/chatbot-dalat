@@ -849,40 +849,40 @@ export class ChatPage implements OnInit, AfterViewChecked, OnDestroy {
     const startDate = now.toLocaleDateString('vi-VN');
     const endDate = new Date(now.getTime() + 2 * 86400000).toLocaleDateString('vi-VN');
     const fallbackImage = 'https://placehold.co/800x450/1a1a2e/ffffff?text=Đà+Lạt';
-    const imagePrompt = `Beautiful travel photo of Da Lat Vietnam, ${title}, scenic landscape, cinematic, high quality`;
 
-    const doCreate = (coverImage: string) => {
-      this.firestoreTrips.createTrip({
-        title,
-        destination: 'Đà Lạt, Lâm Đồng',
-        coverImage,
-        startDate,
-        endDate,
-        status: 'upcoming',
-        notes: lastAI!.content,
-      }).then((tripId) => {
-        this.isSaving = false;
-        this.isTripResponse = false;
-        this.saveTripToast = 'Đã lưu vào Lịch trình!';
-        setTimeout(() => {
-          this.saveTripToast = '';
-          if (tripId) {
-            this.router.navigate(['/home/trips', tripId]);
-          } else {
-            this.router.navigate(['/home/trips']);
-          }
-        }, 1500);
-      }).catch(() => {
-        this.isSaving = false;
-        this.saveTripToast = 'Không thể lưu. Thử lại sau!';
-        setTimeout(() => this.saveTripToast = '', 3000);
-      });
-    };
+    // Lưu ngay với fallback image (không chờ AI generate ảnh)
+    this.firestoreTrips.createTrip({
+      title,
+      destination: 'Đà Lạt, Lâm Đồng',
+      coverImage: fallbackImage,
+      startDate,
+      endDate,
+      status: 'upcoming',
+      notes: lastAI.content,
+    }).then((tripId) => {
+      this.isSaving = false;
+      this.isTripResponse = false;
+      this.saveTripToast = 'Đã lưu vào Lịch trình!';
+      setTimeout(() => {
+        this.saveTripToast = '';
+        this.router.navigate(['/home/favorites'], { state: { tab: 'trips' } });
+      }, 1200);
 
-    // Generate cover image first, then create trip
-    this.apiService.generateImage(imagePrompt).subscribe({
-      next: (dataUrl: string) => doCreate(dataUrl || fallbackImage),
-      error: () => doCreate(fallbackImage),
+      // Background: generate cover image và update sau (không block UI)
+      if (tripId) {
+        const imagePrompt = `Beautiful travel photo of Da Lat Vietnam, ${title}, scenic landscape, cinematic, high quality`;
+        this.apiService.generateImage(imagePrompt).subscribe({
+          next: (dataUrl: string) => {
+            if (dataUrl) {
+              this.firestoreTrips.updateTrip(tripId, { coverImage: dataUrl });
+            }
+          },
+        });
+      }
+    }).catch(() => {
+      this.isSaving = false;
+      this.saveTripToast = 'Không thể lưu. Thử lại sau!';
+      setTimeout(() => this.saveTripToast = '', 3000);
     });
   }
 }

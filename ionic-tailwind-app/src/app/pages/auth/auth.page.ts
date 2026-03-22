@@ -3,6 +3,7 @@ import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { Router } from "@angular/router";
 import { AuthService } from "../../services/auth.service";
+import { ApiService } from "../../services/api.service";
 
 @Component({
   selector: "app-auth",
@@ -362,6 +363,7 @@ export class AuthPage {
 
   private router = inject(Router);
   private authService = inject(AuthService);
+  private apiService = inject(ApiService);
 
   switchMode(login: boolean) {
     this.isLogin = login;
@@ -504,9 +506,14 @@ export class AuthPage {
     // Guest login - sử dụng device-based auth (không dùng Firebase)
     localStorage.setItem('isGuest', 'true');
     localStorage.setItem('isLoggedIn', 'true');
-    const hasPersonalized = localStorage.getItem('hasPersonalized') === 'true';
-    this.router.navigateByUrl(hasPersonalized ? '/home' : '/welcome', {
-      replaceUrl: true,
+    // Kiểm tra DB trước để xác định hasPersonalized
+    this.apiService.getUser().subscribe({
+      next: (user) => {
+        this.apiService.cacheUserToLocalStorage(user);
+        this.router.navigateByUrl(user.hasPersonalized ? '/home' : '/welcome', {
+          replaceUrl: true,
+        });
+      },
     });
   }
 
@@ -516,20 +523,17 @@ export class AuthPage {
     localStorage.setItem('isFirebaseUser', 'true');
 
     if (user) {
-      // Nếu API trả về hasPersonalized=true → cập nhật localStorage
-      // Nếu API trả về false nhưng localStorage đã là true → giữ nguyên true
-      // (tránh ghi đè khi user đã cá nhân hóa nhưng chưa sync lên DB)
+      // Cache user data từ API vào localStorage
       const localPersonalized = localStorage.getItem('hasPersonalized') === 'true';
-      if (user.hasPersonalized || localPersonalized) {
-        localStorage.setItem('hasPersonalized', 'true');
-      } else {
-        localStorage.setItem('hasPersonalized', 'false');
-      }
-      if (user.name && user.name !== 'Khách') localStorage.setItem('userName', user.name);
-      if (user.avatar) localStorage.setItem('userAvatar', user.avatar);
-      if (user.budget) localStorage.setItem('userBudget', user.budget);
-      if (user.preferences?.length) localStorage.setItem('userPreferences', JSON.stringify(user.preferences));
-      if (user.travelStyles?.length) localStorage.setItem('userTravelStyles', JSON.stringify(user.travelStyles));
+      this.apiService.cacheUserToLocalStorage({
+        id: user.id || '',
+        name: user.name || 'Khách',
+        avatar: user.avatar || '🧑‍💻',
+        preferences: user.preferences || [],
+        travelStyles: user.travelStyles || [],
+        budget: user.budget || 'mid',
+        hasPersonalized: user.hasPersonalized || localPersonalized,
+      });
     }
 
     const hasPersonalized = localStorage.getItem('hasPersonalized') === 'true';

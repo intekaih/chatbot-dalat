@@ -7,6 +7,7 @@ import { WeatherWidgetComponent } from "../../components/weather/weather-widget/
 import { FirestoreTripsService } from "../../services/firestore-trips.service";
 import { FirestorePlacesService } from "../../services/firestore-places.service";
 import { ApiService, Trip, Place, Category } from "../../services/api.service";
+import { AuthService } from "../../services/auth.service";
 
 interface FoodItem {
   id: string;
@@ -65,9 +66,15 @@ interface FoodItem {
           </button>
           <button
             (click)="goToProfile()"
-            class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-xl"
+            class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-xl overflow-hidden"
           >
-            {{ userAvatar || "👤" }}
+            <img *ngIf="userAvatar && userAvatar.startsWith('http')"
+              [src]="userAvatar"
+              alt="Avatar"
+              class="w-full h-full object-cover rounded-full"
+              (error)="userAvatar = ''"
+            />
+            <span *ngIf="!userAvatar || !userAvatar.startsWith('http')">{{ userAvatar || '👤' }}</span>
           </button>
         </div>
       </div>
@@ -621,6 +628,7 @@ interface FoodItem {
 export class HomePage implements OnInit {
   private router = inject(Router);
   private apiService = inject(ApiService);
+  private authService = inject(AuthService);
 
   quickPrompts: string[] = [];
   categories: Category[] = [];
@@ -660,12 +668,28 @@ export class HomePage implements OnInit {
   }
 
   loadData() {
-    // Load user info for personalized greeting
+    // Luôn load user từ DB (API) — DB name/avatar ưu tiên hơn Firebase Auth
+    const fbUser = this.authService.currentUser();
+
+    // Fallback ngay lập tức từ Firebase/localStorage để tránh flash trống
+    if (fbUser) {
+      this.userName = fbUser.displayName || localStorage.getItem('userName') || '';
+      this.userAvatar = fbUser.photoURL || localStorage.getItem('userAvatar') || '🧑‍💻';
+    } else {
+      this.userName = localStorage.getItem('userName') || '';
+      this.userAvatar = localStorage.getItem('userAvatar') || '🧑‍💻';
+    }
+
+    // API trả về DB data → ghi đè nếu user đã cá nhân hóa
     this.apiService.getUser().subscribe({
       next: (user) => {
-        if (user.name && user.name !== "Khách") {
+        if (user.hasPersonalized) {
+          // User đã cá nhân hóa: dùng tên/avatar từ DB
+          if (user.name && user.name !== 'Khách') this.userName = user.name;
+          if (user.avatar) this.userAvatar = user.avatar;
+        } else if (user.name && user.name !== 'Khách') {
           this.userName = user.name;
-          this.userAvatar = user.avatar || "🧑‍💻";
+          this.userAvatar = user.avatar || '🧑‍💻';
         }
       },
     });

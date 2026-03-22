@@ -1,7 +1,9 @@
-import { Component, OnInit, inject } from "@angular/core";
+import { Component, OnInit, OnDestroy, inject, DestroyRef } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
-import { ApiService, Trip } from "../../services/api.service";
+import { Trip } from "../../services/api.service";
+import { FirestoreTripsService } from "../../services/firestore-trips.service";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 @Component({
   selector: "app-trips",
@@ -66,7 +68,7 @@ import { ApiService, Trip } from "../../services/api.service";
                   {{ trip.status === "upcoming" ? "Sắp tới" : "Đang đi" }}
                 </span>
                 <span class="text-white/80 text-xs"
-                  >{{ trip.days.length }} ngày</span
+                  >{{ (trip.days || []).length }} ngày</span
                 >
               </div>
             </div>
@@ -75,8 +77,8 @@ import { ApiService, Trip } from "../../services/api.service";
             <div class="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
               <div
                 class="h-full transition-all"
-                [class]="getBudgetColor(trip.spent / trip.totalBudget)"
-                [style.width.%]="(trip.spent / trip.totalBudget) * 100"
+                [class]="getBudgetColor((trip.spent || 0) / (trip.totalBudget || 1))"
+                [style.width.%]="((trip.spent || 0) / (trip.totalBudget || 1)) * 100"
               ></div>
             </div>
           </button>
@@ -117,7 +119,7 @@ import { ApiService, Trip } from "../../services/api.service";
                   >Đã đi</span
                 >
                 <span class="text-white/80 text-xs"
-                  >{{ trip.days.length }} ngày</span
+                  >{{ (trip.days || []).length }} ngày</span
                 >
               </div>
             </div>
@@ -163,7 +165,8 @@ import { ApiService, Trip } from "../../services/api.service";
 })
 export class TripsPage implements OnInit {
   private router = inject(Router);
-  private apiService = inject(ApiService);
+  private firestoreTrips = inject(FirestoreTripsService);
+  private destroyRef = inject(DestroyRef);
 
   trips: Trip[] = [];
   upcomingTrips: Trip[] = [];
@@ -171,7 +174,9 @@ export class TripsPage implements OnInit {
   isLoading = true;
 
   ngOnInit() {
-    this.apiService.getTrips().subscribe({
+    this.firestoreTrips.getTrips().pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
       next: (trips) => {
         this.trips = trips;
         this.upcomingTrips = this.trips.filter(
@@ -205,3 +210,4 @@ export class TripsPage implements OnInit {
     return "bg-gray-800";
   }
 }
+

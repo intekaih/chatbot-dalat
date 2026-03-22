@@ -1,4 +1,4 @@
-import { Component, inject } from "@angular/core";
+import { Component, inject, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { Router, ActivatedRoute } from "@angular/router";
@@ -15,6 +15,9 @@ interface ChoiceItem {
   selector: "app-welcome",
   standalone: true,
   imports: [CommonModule, FormsModule],
+  host: {
+    style: 'display: flex; flex-direction: column; position: absolute; inset: 0; z-index: 101; background: white; contain: layout size style;'
+  },
   template: `
     <div class="min-h-screen bg-white flex flex-col">
       <div class="flex items-center justify-between px-4 pt-6 pb-3">
@@ -231,7 +234,7 @@ interface ChoiceItem {
     </div>
   `,
 })
-export class WelcomePage {
+export class WelcomePage implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private apiService = inject(ApiService);
@@ -239,6 +242,7 @@ export class WelcomePage {
   steps = [0, 1, 2, 3];
   step = 0;
   isSubmitting = false;
+  isUpdateMode = false;
 
   avatars = ["🧑‍💻", "👩‍🦰", "👨‍🦱", "👩‍🦳", "🧔", "👩‍🎨", "🧑‍🌾", "👨‍✈️"];
   avatar = this.avatars[0];
@@ -284,27 +288,44 @@ export class WelcomePage {
   ];
   selectedBudget = "";
 
+  ngOnInit() {
+    this.initForm();
+  }
+
   ionViewWillEnter() {
-    const hasPersonalized = localStorage.getItem("hasPersonalized") === "true";
-    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-    const isUpdateMode = this.route.snapshot.queryParamMap.get("mode") === "update";
+    this.initForm();
+  }
 
-    if (hasPersonalized && isLoggedIn && !isUpdateMode) {
-      this.router.navigateByUrl("/home", { replaceUrl: true });
-      return;
-    }
+  private initForm() {
+    this.isUpdateMode = this.route.snapshot.queryParamMap.get("mode") === "update";
 
-    // Nếu đang cập nhật, điền lại giá trị cũ vào form
-    if (isUpdateMode) {
-      this.name = localStorage.getItem("userName") || "";
-      const savedAvatar = localStorage.getItem("userAvatar");
-      if (savedAvatar) this.avatar = savedAvatar;
-      const savedPrefs = localStorage.getItem("userPreferences");
-      if (savedPrefs) this.selectedPrefs = JSON.parse(savedPrefs);
-      const savedStyles = localStorage.getItem("userTravelStyles");
-      if (savedStyles) this.selectedStyles = JSON.parse(savedStyles);
-      this.selectedBudget = localStorage.getItem("userBudget") || "";
-    }
+    // Reset step về 0 khi vào lại
+    this.step = 0;
+    this.isSubmitting = false;
+
+    // Load data từ DB (API) trước, localStorage chỉ là cache fallback
+    this.apiService.getUser().subscribe({
+      next: (user) => {
+        // Cache vào localStorage
+        this.apiService.cacheUserToLocalStorage(user);
+
+        // Nếu đã personalized và không phải update mode → redirect về home
+        const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+        if (user.hasPersonalized && isLoggedIn && !this.isUpdateMode) {
+          this.router.navigateByUrl("/home", { replaceUrl: true });
+          return;
+        }
+
+        // Nếu đang cập nhật, điền lại giá trị cũ từ DB vào form
+        if (this.isUpdateMode) {
+          this.name = user.name || "";
+          if (user.avatar) this.avatar = user.avatar;
+          this.selectedPrefs = user.preferences || [];
+          this.selectedStyles = user.travelStyles || [];
+          this.selectedBudget = user.budget || "";
+        }
+      },
+    });
   }
 
   selectAvatar(av: string) {
@@ -355,14 +376,23 @@ export class WelcomePage {
   }
 
   skip() {
-    localStorage.setItem("hasPersonalized", "false");
+    if (this.isUpdateMode) {
+      // Trong update mode, bỏ qua = quay về profile (không reset data)
+      this.router.navigateByUrl("/home/profile", { replaceUrl: true });
+      return;
+    }
+    // Cache vào localStorage
+    this.apiService.cacheUserToLocalStorage({
+      id: "",
+      name: "Khách",
+      avatar: this.avatars[0],
+      preferences: [],
+      travelStyles: [],
+      budget: "mid",
+      hasPersonalized: false,
+    });
     localStorage.setItem("hasSeenOnboarding", "true");
     localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem("userName", "Khách");
-    localStorage.setItem("userAvatar", this.avatars[0]);
-    localStorage.removeItem("userPreferences");
-    localStorage.removeItem("userTravelStyles");
-    localStorage.removeItem("userBudget");
     this.router.navigateByUrl("/home", { replaceUrl: true });
   }
 
@@ -371,21 +401,9 @@ export class WelcomePage {
     this.isSubmitting = true;
 
     const name = this.name.trim() || "Khách";
+    const target = this.isUpdateMode ? "/home/profile" : "/home";
 
-    // Lưu vào localStorage ngay lập tức
-    localStorage.setItem("hasPersonalized", "true");
-    localStorage.setItem("hasSeenOnboarding", "true");
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem("userName", name);
-    localStorage.setItem("userAvatar", this.avatar);
-    localStorage.setItem("userPreferences", JSON.stringify(this.selectedPrefs));
-    localStorage.setItem(
-      "userTravelStyles",
-      JSON.stringify(this.selectedStyles),
-    );
-    localStorage.setItem("userBudget", this.selectedBudget);
-
-    // Gọi API lưu preferences (fire-and-forget, không chờ AI generation)
+    // Gọi API lưu preferences vào DB, chờ response rồi mới navigate
     this.apiService
       .savePreferences({
         name,
@@ -394,9 +412,29 @@ export class WelcomePage {
         travelStyles: this.selectedStyles,
         budget: this.selectedBudget,
       })
-      .subscribe(); // Không chờ response
-
-    // Điều hướng ngay lập tức
-    this.router.navigateByUrl("/home", { replaceUrl: true });
+      .subscribe({
+        next: (res) => {
+          // Cache DB response vào localStorage
+          this.apiService.cacheUserToLocalStorage(res.user);
+          localStorage.setItem("hasSeenOnboarding", "true");
+          localStorage.setItem("isLoggedIn", "true");
+          this.router.navigateByUrl(target, { replaceUrl: true });
+        },
+        error: () => {
+          // Fallback: cache form data nếu API fail
+          this.apiService.cacheUserToLocalStorage({
+            id: "",
+            name,
+            avatar: this.avatar,
+            preferences: this.selectedPrefs,
+            travelStyles: this.selectedStyles,
+            budget: this.selectedBudget,
+            hasPersonalized: true,
+          });
+          localStorage.setItem("hasSeenOnboarding", "true");
+          localStorage.setItem("isLoggedIn", "true");
+          this.router.navigateByUrl(target, { replaceUrl: true });
+        },
+      });
   }
 }

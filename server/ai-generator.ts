@@ -260,6 +260,76 @@ function getPreferenceLabel(pref: string): string {
   }
 }
 
+/**
+ * Sinh places cho 1 category với thông tin cá nhân hóa — request nhỏ, tránh timeout.
+ */
+async function generateSinglePersonalizedCategory(
+  category: string,
+  count: number,
+  userContext: string,
+): Promise<any[]> {
+  const meta = CATEGORY_META[category];
+  const isFeatured = meta?.featured ?? false;
+  const priceField = meta?.priceField ?? "priceRange";
+  const hint = meta?.hint ?? category;
+
+  const prompt = `Bạn là chuyên gia du lịch Đà Lạt. Hãy gợi ý ĐÚNG ${count} ${hint}.
+
+THÔNG TIN CÁ NHÂN HÓA:
+${userContext}
+
+Hãy ưu tiên gợi ý địa điểm PHÙ HỢP với sở thích, phong cách và ngân sách của người dùng.
+
+Trả về JSON array gồm ${count} phần tử, mỗi phần tử có đầy đủ:
+- id: string (slug "ten-dia-diem")
+- name: string (tên thật, tìm được trên Google Maps)
+- slug: string (giống id)
+- category: "${category}"
+- shortDescription: string (1-2 câu hấp dẫn)
+- fullDescription: string (3-5 câu đầy đủ)
+- tags: string[] (VD: ["#${category}", "#dalat"])
+- suitableFor: string[] (VD: ["Cặp đôi", "Nhóm bạn"])
+- rating: number (4.0 - 5.0)
+- reviewCount: number (100 - 5000)
+- ${priceField}: string${priceField === "pricePerDay" ? ' (VD: "200.000đ/ngày")' : ' (VD: "50.000đ - 150.000đ")'}
+- address: string (địa chỉ đầy đủ ở Đà Lạt, Lâm Đồng)
+- openingHours: string (VD: "7:00 - 22:00")
+- lat: number (tọa độ Đà Lạt, khoảng 11.9 - 12.0)
+- lng: number (tọa độ Đà Lạt, khoảng 108.4 - 108.5)
+${category === "rental" ? "- vehicleTypes: string[] (VD: [\"Xe máy\", \"Xe đạp\"])\n- depositRequired: \"CCCD gốc hoặc 500.000đ tiền cọc\"" : ""}
+- phoneNumber: string (nếu có, để trống nếu không biết)
+
+QUAN TRỌNG: Chỉ địa điểm THỰC TẾ ở Đà Lạt. KHÔNG có trường imageUrl. Trả về JSON array thuần, không giải thích thêm.`;
+
+  const response = await openai.chat.completions.create({
+    model: defaultModel,
+    messages: [
+      {
+        role: "system",
+        content: `Bạn là chuyên gia du lịch Đà Lạt. Chỉ trả về JSON array gồm đúng ${count} địa điểm loại "${category}". Không có trường imageUrl. Ưu tiên địa điểm phù hợp với sở thích người dùng.`,
+      },
+      { role: "user", content: prompt },
+    ],
+    max_completion_tokens: 4096,
+    temperature: 0.7,
+  });
+
+  const content = response.choices[0]?.message?.content;
+  const places = safeParseAIJson<any[]>(content, []);
+
+  return places.map((p: any) => ({
+    ...p,
+    slug: slugify(p.name || category),
+    category,
+    featured: isFeatured,
+    imageUrl: getCategoryDefaultImage(category),
+    ...(category === "rental" ? { depositRequired: "CCCD gốc hoặc 500.000đ tiền cọc" } : {}),
+  }));
+}
+
+/**
+ * Sinh personalized places — chia 7 request nhỏ (mỗi category 1 request) để tránh timeout proxy.
+ */
 export async function generatePersonalizedPlaces(userData: {
   preferences: string[];
   travelStyles: string[];
@@ -281,89 +351,35 @@ export async function generatePersonalizedPlaces(userData: {
     .map((p) => getPreferenceLabel(p))
     .join(", ");
 
-  const prompt = PERSONALIZED_PLACES_PROMPT.replace(
-    "{{preferences}}",
-    preferencesLabel,
-  )
-    .replace("{{travelStyles}}", travelStylesLabel)
-    .replace("{{budget}}", budgetLabel);
+  const userContext = `- Sở thích: ${preferencesLabel || "chưa chọn"}
+- Phong cách: ${travelStylesLabel || "chưa chọn"}
+- Ngân sách: ${budgetLabel}`;
 
-  try {
-    const response = await openai.chat.completions.create({
-      model: defaultModel,
-      messages: [
-        {
-          role: "system",
-          content:
-            "Bạn là chuyên gia du lịch Đà Lạt. Chỉ trả về JSON object với ĐÚNG 7 keys: checkin, nature, homestay, cafe, food, rental, signature. category mỗi place phải là 1 trong: cafe, food, checkin, nature, homestay, rental, signature. KHÔNG dùng category khác. KHÔNG bao gồm trường imageUrl. Số lượng: checkin=20, nature=10, homestay=20, cafe=20, food=20, rental=10, signature=10.",
-        },
-        { role: "user", content: prompt },
-      ],
-      max_completion_tokens: 8192,
-      temperature: 0.7,
-    });
+  console.log(`🤖 [PERSONALIZED] Bắt đầu tạo ${TOTAL_LIMIT} personalized places — chia ${Object.keys(CATEGORY_LIMITS).length} batch nhỏ...`);
 
-    const content = response.choices[0]?.message?.content;
-    const structuredData = safeParseAIJson<{
-      checkin?: any[];
-      nature?: any[];
-      homestay?: any[];
-      cafe?: any[];
-      food?: any[];
-      rental?: any[];
-      signature?: any[];
-    }>(content, { checkin: [], nature: [], homestay: [], cafe: [], food: [], rental: [], signature: [] });
+  const result: Record<string, any[]> = {
+    checkin: [], nature: [], homestay: [], cafe: [], food: [], rental: [], signature: [],
+  };
 
-    saveAIMauJson("generatePersonalizedPlaces", { rawAI: content, parsed: structuredData });
-
-    // Validate & normalize mỗi category
-    const normalize = (arr: any[] = [], category: string, isFeatured: boolean): any[] =>
-      arr.map((p: any) => ({
-        ...p,
-        slug: slugify(p.name || category),
-        category: validateCategory(p.category) || category,
-        featured: isFeatured,
-        depositRequired: category === "rental" ? "CCCD gốc hoặc 500.000đ tiền cọc" : p.depositRequired,
-      }));
-
-    const checkinList = normalize(structuredData.checkin, "checkin", true);
-    const natureList = normalize(structuredData.nature, "nature", true);
-    const homestayList = normalize(structuredData.homestay, "homestay", false);
-    const cafeList = normalize(structuredData.cafe, "cafe", false);
-    const foodList = normalize(structuredData.food, "food", false);
-    const rentalList = normalize(structuredData.rental, "rental", false);
-    const signatureList = normalize(structuredData.signature, "signature", true);
-
-    const allPlaces = [...checkinList, ...natureList, ...homestayList, ...cafeList, ...foodList, ...rentalList, ...signatureList];
-    console.log(`📸 Places generated: ${allPlaces.length} places`);
-
-    // Gán placeholder image (Pexels URL sẽ được lấy riêng khi cần)
-    const placesWithImages = allPlaces.map((place) => {
-      return { ...place, imageUrl: getCategoryDefaultImage(place.category) };
-    });
-
-    // Tách lại theo 7 category
-    const result = {
-      checkin: placesWithImages.filter(p => p.category === "checkin"),
-      nature: placesWithImages.filter(p => p.category === "nature"),
-      homestay: placesWithImages.filter(p => p.category === "homestay"),
-      cafe: placesWithImages.filter(p => p.category === "cafe"),
-      food: placesWithImages.filter(p => p.category === "food"),
-      rental: placesWithImages.filter(p => p.category === "rental"),
-      signature: placesWithImages.filter(p => p.category === "signature"),
-    };
-
-    console.log(
-      `✅ generatePersonalizedPlaces: ${result.checkin.length} checkin, ${result.nature.length} nature, ` +
-      `${result.homestay.length} homestay, ${result.cafe.length} cafe, ` +
-      `${result.food.length} food, ${result.rental.length} rental, ${result.signature.length} signature`
-    );
-    return result;
-  } catch (error) {
-    console.error("Error generating personalized places:", error);
-    saveAIMauJson("generatePersonalizedPlaces_ERROR", { error: String(error) });
-    return { checkin: [], nature: [], homestay: [], cafe: [], food: [], rental: [], signature: [] };
+  for (const [category, count] of Object.entries(CATEGORY_LIMITS)) {
+    try {
+      console.log(`  ⏳ [PERSONALIZED] Đang tạo ${count} places cho category: ${category}...`);
+      const places = await generateSinglePersonalizedCategory(category, count, userContext);
+      result[category] = places;
+      console.log(`  ✅ [PERSONALIZED] ${category}: ${places.length}/${count} places`);
+    } catch (error: any) {
+      console.error(`  ❌ [PERSONALIZED] Lỗi category "${category}": ${error?.message || error}`);
+      saveAIMauJson(`generatePersonalizedPlaces_ERROR_${category}`, { error: String(error) });
+    }
   }
+
+  const total = Object.values(result).reduce((s, a) => s + a.length, 0);
+  console.log(
+    `✅ [PERSONALIZED] Hoàn tất: ${total}/${TOTAL_LIMIT} places — ` +
+    Object.entries(result).map(([k, v]) => `${k}:${v.length}`).join(", ")
+  );
+
+  return result as any;
 }
 
 /**
