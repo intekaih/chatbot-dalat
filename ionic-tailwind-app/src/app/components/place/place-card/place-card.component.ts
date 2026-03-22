@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, inject } from "@angular/core";
+import { Component, Input, Output, EventEmitter, OnInit, inject, ChangeDetectorRef, ChangeDetectionStrategy } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
 import { Place } from "../../../services/api.service";
@@ -137,6 +137,7 @@ import { FirestoreFavoritesService } from "../../../services/firestore-favorites
 export class PlaceCardComponent implements OnInit {
   private router = inject(Router);
   private favoritesService = inject(FirestoreFavoritesService);
+  private cdr = inject(ChangeDetectorRef);
 
   @Input() place!: Place;
   @Input() variant: "default" | "compact" = "default";
@@ -144,9 +145,11 @@ export class PlaceCardComponent implements OnInit {
   @Output() favorite = new EventEmitter<Place>();
 
   ngOnInit() {
+    // Nếu isFavorite chưa được pass từ parent → kiểm tra Firestore
     if (this.place?.id && !this.isFavorite) {
       this.favoritesService.isFavorite(this.place.id).then(isFav => {
         this.isFavorite = isFav;
+        this.cdr.markForCheck(); // Promise chạy ngoài zone → cần trigger CD
       });
     }
   }
@@ -172,7 +175,7 @@ export class PlaceCardComponent implements OnInit {
     event.preventDefault();
     event.stopPropagation();
     const prev = this.isFavorite;
-    this.isFavorite = !prev; // optimistic update
+    this.isFavorite = !prev; // optimistic: đổi màu ngay
     this.favorite.emit(this.place);
     this.favoritesService.toggleFavorite({
       id: this.place.id,
@@ -180,9 +183,13 @@ export class PlaceCardComponent implements OnInit {
       category: this.place.category,
       imageUrl: this.place.imageUrl,
     }).then(newState => {
+      // Firestore xác nhận → cập nhật theo kết quả thực
       this.isFavorite = newState;
+      this.cdr.markForCheck(); // Promise ngoài zone → trigger CD
     }).catch(() => {
-      this.isFavorite = prev; // rollback on error
+      // Lỗi → rollback về trạng thái cũ
+      this.isFavorite = prev;
+      this.cdr.markForCheck();
     });
   }
 
