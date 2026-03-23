@@ -18,15 +18,18 @@ android {
     }
     signingConfigs {
         release {
-            // AppFlow injected properties (standard Gradle signing injection)
-            def keystorePath = System.getProperty("android.injected.signing.store.file")
+            // AppFlow injects signing via Gradle project properties (-P flags)
+            def keystorePath = project.findProperty("android.injected.signing.store.file")
+                    ?: System.getProperty("android.injected.signing.store.file")
                     ?: System.getenv("KEYSTORE_PATH")
-                    ?: System.getenv("KEYSTORE_FILE")
-            def keystorePassword = System.getProperty("android.injected.signing.store.password")
+            def keystorePassword = project.findProperty("android.injected.signing.store.password")
+                    ?: System.getProperty("android.injected.signing.store.password")
                     ?: System.getenv("KEYSTORE_PASSWORD")
-            def keyAlias = System.getProperty("android.injected.signing.key.alias")
+            def keyAlias = project.findProperty("android.injected.signing.key.alias")
+                    ?: System.getProperty("android.injected.signing.key.alias")
                     ?: System.getenv("KEY_ALIAS")
-            def keyPassword = System.getProperty("android.injected.signing.key.password")
+            def keyPassword = project.findProperty("android.injected.signing.key.password")
+                    ?: System.getProperty("android.injected.signing.key.password")
                     ?: System.getenv("KEY_PASSWORD")
             if (keystorePath) {
                 storeFile file(keystorePath)
