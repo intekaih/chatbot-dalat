@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiBaseUrl: (window as any).__API_BASE_URL__ || 'https://chatbot-dalat.replit.app',
+  apiBaseUrl: '',
   firebase: {
     apiKey: 'AIzaSyDen9SILPp9WXux0ABu7NUyMcFgnpCOmyw',
     authDomain: 'dalat-chatbot.firebaseapp.com',

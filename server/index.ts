@@ -515,7 +515,19 @@ app.post("/api/user/preferences", async (req, res) => {
 // LOGIC MỚI: Chỉ đọc từ DB, KHÔNG BAO GIỜ gọi AI ở đây
 app.get("/api/personalized", async (req, res) => {
   try {
-    const deviceId = getDeviceId(req);
+    const deviceId = req.headers["device-id"] as string | undefined;
+
+    // Không có device-id → trả default data ngay, không tạo user
+    if (!deviceId) {
+      const defaultData = getDefaultData();
+      return res.json({
+        ...defaultData,
+        isPersonalized: false,
+        dataSource: 'default',
+        personalizationStatus: 'idle',
+      });
+    }
+
     const user = getOrCreateUser(deviceId);
     const personalizationStatus = user.personalization_status || 'idle';
 
