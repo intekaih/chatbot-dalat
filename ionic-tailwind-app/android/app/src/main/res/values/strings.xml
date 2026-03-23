@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">ionic-tailwind-app</string>
-    <string name="title_activity_main">ionic-tailwind-app</string>
-    <string name="package_name">io.ionic.starter</string>
-    <string name="custom_url_scheme">io.ionic.starter</string>
+    <string name="app_name">Đà Lạt Travel AI</string>
+    <string name="title_activity_main">Đà Lạt Travel AI</string>
+    <string name="package_name">vn.dalat.chatbot</string>
+    <string name="custom_url_scheme">vn.dalat.chatbot</string>
 </resources>

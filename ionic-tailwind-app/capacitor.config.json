@@ -1,0 +1,10 @@
+{
+  "appId": "vn.dalat.chatbot",
+  "appName": "Đà Lạt Travel AI",
+  "webDir": "www",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  }
+}
