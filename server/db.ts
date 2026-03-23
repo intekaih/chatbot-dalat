@@ -416,6 +416,10 @@ export function getPlaces(category?: string, featured?: boolean, userId?: string
   if (userId) {
     query += " AND user_id = ?";
     params.push(userId);
+  } else {
+    // Khi không có userId, chỉ trả về default places (user_id IS NULL)
+    // tránh lặp dữ liệu từ nhiều user khác nhau
+    query += " AND user_id IS NULL";
   }
 
   const places = db.prepare(query).all(...params) as any[];

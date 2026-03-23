@@ -683,10 +683,13 @@ function getDefaultData() {
 app.get("/api/places", (req, res) => {
   try {
     const { category, featured } = req.query;
-    const places = getPlaces(
-      category as string,
-      featured !== undefined ? featured === "true" : undefined,
-    );
+    const deviceId = req.headers["device-id"] as string | undefined;
+    const user = deviceId ? getOrCreateUser(deviceId) : null;
+    // Nếu user có personalized places thì dùng, không thì fallback về default
+    let places = user?.id ? getPlaces(category as string, featured !== undefined ? featured === "true" : undefined, user.id) : [];
+    if (places.length === 0) {
+      places = getPlaces(category as string, featured !== undefined ? featured === "true" : undefined);
+    }
     res.json(places);
   } catch (error) {
     console.error("Error getting places:", error);
