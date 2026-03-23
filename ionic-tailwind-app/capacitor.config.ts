@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'io.ionic.starter',
+  appId: 'vn.dalat.chatbot',
   appName: 'ionic-tailwind-app',
   webDir: 'www'
 };
