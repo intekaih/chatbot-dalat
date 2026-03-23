@@ -553,6 +553,25 @@ app.get("/api/personalized", async (req, res) => {
   }
 });
 
+// Helper: Dedup danh sách places theo tên, ưu tiên category signature
+function dedupPlacesByName(allPlaces: any[]): any[] {
+  const seen = new Set<string>();
+  const result: any[] = [];
+  // Ưu tiên signature trước để chúng không bị loại
+  const ordered = [
+    ...allPlaces.filter(p => p.category === "signature"),
+    ...allPlaces.filter(p => p.category !== "signature"),
+  ];
+  for (const p of ordered) {
+    const key = p.name?.trim().toLowerCase();
+    if (key && !seen.has(key)) {
+      seen.add(key);
+      result.push(p);
+    }
+  }
+  return result;
+}
+
 // Helper: Build API response từ personalized places (DB format → FE format)
 function buildPersonalizedResponse(userPlaces: {
   checkin: any[];
@@ -564,23 +583,29 @@ function buildPersonalizedResponse(userPlaces: {
   signature: any[];
 }) {
   const defaultData = getDefaultData();
+
+  // Dedup toàn bộ places theo tên trước, ưu tiên signature
+  const allRaw = [
+    ...userPlaces.signature,
+    ...userPlaces.checkin,
+    ...userPlaces.nature,
+    ...userPlaces.homestay,
+    ...userPlaces.cafe,
+    ...userPlaces.food,
+    ...userPlaces.rental,
+  ];
+  const deduped = dedupPlacesByName(allRaw);
+  const signatureNames = new Set(userPlaces.signature.map((p: any) => p.name?.trim().toLowerCase()));
+
   return {
-    places: [
-      ...userPlaces.checkin,
-      ...userPlaces.nature,
-      ...userPlaces.homestay,
-      ...userPlaces.cafe,
-      ...userPlaces.food,
-      ...userPlaces.rental,
-      ...userPlaces.signature,
-    ],
-    checkinPlaces: userPlaces.checkin,
-    naturePlaces: userPlaces.nature,
-    homestays: userPlaces.homestay,
-    cafes: userPlaces.cafe,
-    foods: userPlaces.food,
-    rentals: userPlaces.rental,
-    signaturePlaces: userPlaces.signature,
+    places: deduped,
+    checkinPlaces: deduped.filter(p => p.category === "checkin" && !signatureNames.has(p.name?.trim().toLowerCase())),
+    naturePlaces: deduped.filter(p => p.category === "nature" && !signatureNames.has(p.name?.trim().toLowerCase())),
+    homestays: deduped.filter(p => p.category === "homestay"),
+    cafes: deduped.filter(p => p.category === "cafe"),
+    foods: deduped.filter(p => p.category === "food"),
+    rentals: deduped.filter(p => p.category === "rental"),
+    signaturePlaces: deduped.filter(p => p.category === "signature"),
     quickPrompts: defaultData.quickPrompts,
     welcomeMessage: defaultData.welcomeMessage,
     notifications: defaultData.notifications,
@@ -650,7 +675,7 @@ async function generatePersonalizedData(
 
 // Get default data (for users who skipped /welcome)
 function getDefaultData() {
-  const places = getPlaces();
+  const places = dedupPlacesByName(getPlaces());
   const categories = getCategories();
   const prompts = getQuickPrompts().map((p) => p.prompt);
 
