@@ -1,4 +1,4 @@
-import { getCategoryDefaultImage } from "./pexels-service.js";
+import { getCategoryImages } from "./image-pool.js";
 import { saveAIMauJson, openai, defaultModel } from "./utils.js";
 
 export const CATEGORY_LIMITS = {
@@ -85,7 +85,7 @@ function safeParseAIJson<T>(
 
 // Prompt for generating personalized places
 // Lưu ý: AI chỉ trả về thông tin place, không có imageUrl
-// Hệ thống sẽ tự động lấy ảnh từ Pexels API sau đó
+// Hệ thống sẽ tự động gán ảnh từ static pool sau đó
 // AI trả về JSON với 7 key theo category
 // Số lượng: checkin=20, nature=10, homestay=20, cafe=20, food=20, rental=10, signature=10
 
@@ -317,12 +317,14 @@ QUAN TRỌNG: Chỉ địa điểm THỰC TẾ ở Đà Lạt. KHÔNG có trư�
   const content = response.choices[0]?.message?.content;
   const places = safeParseAIJson<any[]>(content, []);
 
-  return places.map((p: any) => ({
+  const categoryImages = getCategoryImages(category);
+
+  return places.map((p: any, idx: number) => ({
     ...p,
     slug: slugify(p.name || category),
     category,
     featured: isFeatured,
-    imageUrl: getCategoryDefaultImage(category),
+    imageUrl: categoryImages[idx % categoryImages.length],
     ...(category === "rental" ? { depositRequired: "CCCD gốc hoặc 500.000đ tiền cọc" } : {}),
   }));
 }
@@ -474,12 +476,14 @@ QUAN TRỌNG: Chỉ địa điểm THỰC TẾ ở Đà Lạt. KHÔNG có trư�
   const content = response.choices[0]?.message?.content;
   const places = safeParseAIJson<any[]>(content, []);
 
-  return places.map((p: any) => ({
+  const categoryImages = getCategoryImages(category);
+
+  return places.map((p: any, idx: number) => ({
     ...p,
     slug: slugify(p.name || category),
     category,
     featured: isFeatured,
-    imageUrl: getCategoryDefaultImage(category),
+    imageUrl: categoryImages[idx % categoryImages.length],
     ...(category === "rental" ? { depositRequired: "CCCD gốc hoặc 500.000đ tiền cọc" } : {}),
   }));
 }
@@ -646,5 +650,89 @@ export async function generatePersonalizedNotifications(userData: {
     console.error("Error generating personalized notifications:", error);
     saveAIMauJson("generatePersonalizedNotifications_ERROR", { error: String(error), fallback: true });
     return [];
+  }
+}
+
+/**
+ * Merged AI call: tạo quickPrompts + welcomeMessage + notifications trong 1 request duy nhất.
+ * Thay thế 3 calls riêng lẻ (generatePersonalizedPrompts, generatePersonalizedWelcome, generatePersonalizedNotifications).
+ */
+export async function generatePersonalizedContent(userData: {
+  name?: string;
+  preferences: string[];
+  travelStyles: string[];
+  budget: string;
+}): Promise<{
+  quickPrompts: string[];
+  welcomeMessage: string;
+  notifications: any[];
+}> {
+  const budgetLabel = getBudgetLabel(userData.budget);
+  const travelStylesLabel = userData.travelStyles
+    .map((s) => getTravelStyleLabel(s))
+    .join(", ");
+  const preferencesLabel = userData.preferences
+    .map((p) => getPreferenceLabel(p))
+    .join(", ");
+  const userName = userData.name || "Bạn";
+
+  const prompt = `Dựa vào thông tin người dùng, hãy tạo NỘI DUNG CÁ NHÂN HÓA cho app du lịch Đà Lạt.
+
+THÔNG TIN NGƯỜI DÙNG:
+- Tên: ${userName}
+- Sở thích: ${preferencesLabel || "chưa chọn"}
+- Phong cách du lịch: ${travelStylesLabel || "chưa chọn"}
+- Ngân sách: ${budgetLabel}
+
+TRẢ VỀ JSON OBJECT VỚI 3 KEY:
+
+1. "quickPrompts": Array gồm 6 câu hỏi ngắn (tối đa 10 từ/câu) phù hợp sở thích user để hỏi chatbot.
+   VD: ["Lịch trình 2 ngày 1 đêm", "Quán cafe view đẹp"]
+
+2. "welcomeMessage": Tin nhắn chào mừng thân thiện (100-150 từ), gọi tên user, nhắc sở thích, gợi ý 1-2 địa điểm, dùng emoji hợp lý.
+
+3. "notifications": Array gồm 5 notification, mỗi cái có:
+   - type: "weather" | "tip" | "promo" | "trip"
+   - title: string (tiêu đề ngắn)
+   - content: string (nội dung 1-2 câu)
+   - iconColor: string (VD: "bg-blue-100 text-blue-700")
+   - icon: string (1 emoji)
+
+Trả về JSON object thuần, không giải thích thêm.`;
+
+  try {
+    console.log(`🤖 [AI] Generating personalized content (1 merged call)...`);
+    const response = await openai.chat.completions.create({
+      model: defaultModel,
+      messages: [
+        {
+          role: "system",
+          content: "Bạn là trợ lý du lịch Đà Lạt. Chỉ trả về JSON object với 3 key: quickPrompts, welcomeMessage, notifications. Không có text khác.",
+        },
+        { role: "user", content: prompt },
+      ],
+      max_completion_tokens: 1024,
+      temperature: 0.7,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    const result = safeParseAIJson<{
+      quickPrompts: string[];
+      welcomeMessage: string;
+      notifications: any[];
+    }>(content, { quickPrompts: [], welcomeMessage: "", notifications: [] });
+
+    saveAIMauJson("generatePersonalizedContent_MERGED", { rawAI: content, parsed: result });
+    console.log(`✅ [AI] Merged content: ${result.quickPrompts?.length || 0} prompts, welcome ${result.welcomeMessage ? '✓' : '✗'}, ${result.notifications?.length || 0} notifs`);
+
+    return {
+      quickPrompts: result.quickPrompts || [],
+      welcomeMessage: result.welcomeMessage || "",
+      notifications: result.notifications || [],
+    };
+  } catch (error) {
+    console.error("Error generating personalized content (merged):", error);
+    saveAIMauJson("generatePersonalizedContent_MERGED_ERROR", { error: String(error) });
+    return { quickPrompts: [], welcomeMessage: "", notifications: [] };
   }
 }

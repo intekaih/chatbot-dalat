@@ -377,16 +377,7 @@ export class PlaceDetailPage implements OnInit {
           this.favoritesService.isFavorite(this.place.id).then(isFav => {
             this.isFavorite = isFav;
           });
-          // Refresh ảnh: DB chỉ có Pexels → thay bằng Gemini URL cho hero
-          this.apiService.getPlaceImage(
-            this.place.id,
-            this.place.name,
-            this.place.category,
-            this.place.address,
-            true, // skipValidation = true → raw Pexels URL
-          ).subscribe((res) => {
-            if (res.imageUrl) this.place!.imageUrl = res.imageUrl;
-          });
+          // Ảnh đã dùng relative path — không cần gọi API refresh
         }
       },
       error: () => {

@@ -164,15 +164,15 @@ export class RentalCardComponent {
   }
 
   readonly placeholderImg = "https://placehold.co/800x500/e2e8f0/64748b?text=Thuê+xe";
-  readonly pexelsImg = "https://placehold.co/800x500/e2e8f0/64748b?text=Thuê+xe";
+  readonly fallbackImg = "https://placehold.co/800x500/e2e8f0/64748b?text=Thuê+xe";
 
   onImgError(event: Event) {
     const img = event.target as HTMLImageElement;
-    const triedPexels = img.dataset['tried'];
+    const triedFallback = img.dataset['tried'];
 
-    if (!triedPexels) {
-      img.dataset['tried'] = 'pexels';
-      img.src = this.pexelsImg;
+    if (!triedFallback) {
+      img.dataset['tried'] = 'fallback';
+      img.src = this.fallbackImg;
       return;
     }
 

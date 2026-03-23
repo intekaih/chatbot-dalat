@@ -2,7 +2,7 @@
  * Script: Cập nhật imageUrl trong Firestore với ảnh AI
  * 
  * Batch update tất cả documents trong collection "places"
- * để dùng ảnh AI thay vì ảnh Pexels/placeholder cũ.
+ * để dùng ảnh AI thay vì ảnh placeholder cũ.
  * 
  * Run: npx ts-node --esm update-firestore-images.ts
  */
@@ -26,7 +26,7 @@ const serviceAccount = JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, "utf8"))
 initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
 
-// ===== AI Image URLs (giống với pexels-service.ts) =====
+// ===== AI Image URLs (giống với image-pool.ts) =====
 const HOSTING_BASE = "https://dalat-chatbot.web.app/assets/places";
 
 const AI_IMAGE_URLS: Record<string, string[]> = {

@@ -22,7 +22,6 @@ export interface Place {
   shortDescription: string;
   fullDescription: string;
   imageUrl: string;
-  pexelsUrl?: never;  // Pexels URL không còn dùng — chỉ dùng imageUrl
   tags: string[];
   suitableFor: string[];
   featured?: boolean;
@@ -124,6 +123,8 @@ export interface PersonalizedData {
   welcomeMessage: string;
   notifications: any[];
   isPersonalized: boolean;
+  personalizationStatus?: 'idle' | 'personalizing' | 'done' | 'error';
+  dataSource?: 'default' | 'personalized';
 }
 
 @Injectable({
@@ -141,10 +142,9 @@ export class ApiService {
   getImageProxyUrl(imageUrl: string | null | undefined): string | null {
     if (!imageUrl) return null;
 
-    // Không proxy: placeholder, Pexels, ảnh AI từ dev server / production domain / Firebase Hosting
+    // Không proxy: placeholder, relative path, ảnh từ dev server / production domain / Firebase Hosting
     if (
       imageUrl.includes('placehold.co') ||
-      imageUrl.includes('images.pexels.com') ||
       imageUrl.includes('replit.dev') ||
       imageUrl.includes('replit.app') ||
       imageUrl.includes('dalat-chatbot.web.app') ||
@@ -339,7 +339,7 @@ export class ApiService {
         headers: this.getHeaders(),
       })
       .pipe(
-        timeout(20000), // 20s: nếu BE chậm (AI/Pexels) vẫn trả fallback
+        timeout(20000), // 20s: nếu BE chậm vẫn trả fallback
         map((res) => this.mapPersonalizedData(res)),
         catchError(() => of(this.getDefaultPersonalizedData())),
       );
@@ -353,6 +353,8 @@ export class ApiService {
       welcomeMessage: res.welcomeMessage || "",
       notifications: res.notifications || [],
       isPersonalized: res.isPersonalized || false,
+      personalizationStatus: res.personalizationStatus || 'idle',
+      dataSource: res.dataSource || (res.isPersonalized ? 'personalized' : 'default'),
     };
   }
 
@@ -650,16 +652,16 @@ export class ApiService {
     );
   }
 
-  // ========== SMART IMAGE (Pexels) ==========
+  // ========== SMART IMAGE ==========
 
   /**
-   * Lấy ảnh mới cho một địa điểm qua SmartImage API.
-   * Nguồn: Pexels → Placeholder (fallback)
+   * Lấy ảnh cho một địa điểm qua SmartImage API.
+   * Nguồn: Static pool → Placeholder (fallback)
    * @param placeId - ID của place (để trả về trong response)
-   * @param placeName - Tên địa điểm (để hỏi Pexels)
+   * @param placeName - Tên địa điểm
    * @param category - Category
    * @param address - Địa chỉ
-   * @param skipValidation - true = trả raw Pexels URL (dùng ở frontend)
+   * @param skipValidation - không còn dùng, giữ để tương thích
    */
   getPlaceImage(
     placeId: string,
@@ -686,8 +688,8 @@ export class ApiService {
   }
 
   /**
-   * Batch refresh ảnh cho nhiều địa điểm qua SmartImage API.
-   * Nguồn: Pexels → Placeholder (fallback)
+   * Batch refresh ảnh cho nhiều địa điểm.
+   * Nguồn: Static pool → Placeholder (fallback)
    */
   batchGetImages(
     places: { id: string; name: string; category?: string; address?: string }[],
@@ -714,16 +716,23 @@ export class ApiService {
   /**
    * Refresh imageUrl cho tất cả place trong mảng.
    * Gọi batchGetImages, sau đó merge kết quả vào mảng place gốc.
-   * Nguồn: Pexels → Placeholder (fallback)
+   * Nguồn: Static pool → Placeholder (fallback)
    *
    * @param places - Mảng place cần refresh
-   * @param skipValidation - true = dùng raw Pexels URL cho frontend
+   * @param skipValidation - không còn dùng, giữ để tương thích
    */
   refreshPlaceImages(
     places: Place[],
     skipValidation = true,
   ): Observable<Place[]> {
     if (!places || places.length === 0) return of(places);
+
+    // Skip API call if all images are already relative paths (local assets)
+    const allRelative = places.every(p => p.imageUrl && p.imageUrl.startsWith('/'));
+    if (allRelative) {
+      console.log(`✅ [Frontend] All ${places.length} place images are relative — skipping batch-get-images API call`);
+      return of(places);
+    }
 
     console.log(`🔄 [Frontend] Refreshing images for ${places.length} places (skipValidation=${skipValidation})`);
 
@@ -732,7 +741,7 @@ export class ApiService {
       skipValidation,
     ).pipe(
       map((imageMap) => {
-        let pexelsCount = 0;
+        let staticCount = 0;
         let placeholderCount = 0;
         for (const place of places) {
           const refreshed = imageMap.get(place.id);
@@ -749,15 +758,15 @@ export class ApiService {
                   console.log(`  ⚠️ [${place.name}] Using placeholder: ${refreshed.imageUrl.substring(0, 60)}...`);
                 }
               } else {
-                pexelsCount++;
+                staticCount++;
                 if (oldUrl !== refreshed.imageUrl) {
-                  console.log(`  ✅ [${place.name}] Updated to Pexels URL: ${refreshed.imageUrl.substring(0, 60)}...`);
+                  console.log(`  ✅ [${place.name}] Updated image: ${refreshed.imageUrl.substring(0, 60)}...`);
                 }
               }
             }
           }
         }
-        console.log(`  📊 [Result] Pexels: ${pexelsCount}, Placeholder: ${placeholderCount}, Total: ${places.length}`);
+        console.log(`  📊 [Result] Static: ${staticCount}, Placeholder: ${placeholderCount}, Total: ${places.length}`);
         return places;
       }),
       catchError((err) => {

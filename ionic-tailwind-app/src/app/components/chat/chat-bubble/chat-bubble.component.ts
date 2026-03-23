@@ -22,7 +22,7 @@ import { CommonModule } from '@angular/common';
     <!-- Assistant Bubble -->
     <div *ngIf="role === 'assistant'" class="flex gap-3 mb-4">
       <div class="bg-gray-50 rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%] flex flex-col gap-2">
-        <!-- Images từ Pexels (khi AI trả về địa điểm) -->
+        <!-- Images (khi AI trả về địa điểm) -->
         <!-- Multiple images (gallery) -->
         <div *ngIf="imageUrls && imageUrls.length > 0" class="grid grid-cols-2 gap-2">
           <img
@@ -80,7 +80,7 @@ export class ChatBubbleComponent {
   @Input() role: 'user' | 'assistant' = 'user';
   @Input() content = '';
   @Input() imageUrl: string | null = null;
-  @Input() imageUrls: string[] = []; // Multiple images from Pexels
+  @Input() imageUrls: string[] = []; // Multiple images for place
   @Input() streaming = false;
 
   parseContent(content: string): string {
@@ -117,7 +117,7 @@ export class ChatBubbleComponent {
     // Final: Placeholder (tất cả URLs đều fail)
     if (!hasTriedOther) {
       img.dataset['triedOther'] = 'true';
-      console.log(`  → Using placeholder (all Pexels URLs failed)`);
+      console.log(`  → Using placeholder (all image URLs failed)`);
       img.onerror = null;
       img.src = 'https://placehold.co/600x400/e2e8f0/64748b?text=Đà+Lạt';
     }

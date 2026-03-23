@@ -13,6 +13,7 @@ export interface UserRow {
   travel_styles: string | null;
   budget: string | null;
   has_personalized: number;
+  personalization_status: string | null; // 'idle' | 'personalizing' | 'done' | 'error'
   created_at: string;
   updated_at: string;
 }
@@ -212,6 +213,61 @@ db.exec(`
     UNIQUE(user_id, place_id)
   );
 `);
+
+// Auto-migration: add personalization_status column (safe for existing DBs)
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN personalization_status TEXT DEFAULT 'idle'`);
+  console.log('✅ [DB Migration] Added personalization_status column to users table');
+} catch {
+  // Column already exists — no-op
+}
+
+// Auto-migration: assign unique AI-generated images from place_images table
+{
+  const BASE = "/assets/places";
+  const IMAGE_POOL: Record<string, string[]> = {
+    cafe: [`${BASE}/cafe_1.png`, `${BASE}/cafe_2.png`, `${BASE}/cafe_3.png`, `${BASE}/cafe_4.png`, `${BASE}/cafe_5.png`],
+    food: [`${BASE}/food_1.png`, `${BASE}/food_2.png`, `${BASE}/food_3.png`, `${BASE}/food_4.png`, `${BASE}/food_5.png`],
+    checkin: [`${BASE}/checkin_1.png`, `${BASE}/checkin_2.png`, `${BASE}/checkin_3.png`, `${BASE}/checkin_4.png`, `${BASE}/checkin_5.png`],
+    nature: [`${BASE}/nature_1.png`, `${BASE}/nature_2.png`, `${BASE}/nature_3.png`, `${BASE}/nature_4.png`, `${BASE}/nature_5.png`],
+    homestay: [`${BASE}/homestay_1.png`, `${BASE}/homestay_2.png`, `${BASE}/homestay_3.png`, `${BASE}/homestay_4.png`, `${BASE}/homestay_5.png`],
+    rental: [`${BASE}/rental_1.png`, `${BASE}/rental_2.png`, `${BASE}/rental_3.png`, `${BASE}/rental_4.png`],
+    signature: [`${BASE}/signature_1.png`, `${BASE}/signature_2.png`, `${BASE}/signature_3.png`, `${BASE}/signature_4.png`, `${BASE}/signature_5.png`],
+  };
+
+  const updateStmt = db.prepare("UPDATE places SET image_url = ? WHERE id = ?");
+  const findImageStmt = db.prepare("SELECT image_path FROM place_images WHERE name_key = ?");
+  let matchedCount = 0;
+  let fallbackCount = 0;
+
+  // Get all places
+  const allPlaces = db.prepare("SELECT id, name, category FROM places ORDER BY category, id").all() as { id: string; name: string; category: string }[];
+
+  // Group by category for fallback cycling
+  const catIndex: Record<string, number> = {};
+
+  for (const place of allPlaces) {
+    // Try to find AI-generated unique image by place name
+    const cached = findImageStmt.get(place.name.toLowerCase()) as { image_path: string } | undefined;
+
+    if (cached) {
+      // Use the AI-generated unique image
+      updateStmt.run(`${BASE}/${cached.image_path}`, place.id);
+      matchedCount++;
+    } else {
+      // Fallback: cycle through category pool
+      const images = IMAGE_POOL[place.category] || IMAGE_POOL.signature;
+      const idx = catIndex[place.category] || 0;
+      updateStmt.run(images[idx % images.length], place.id);
+      catIndex[place.category] = idx + 1;
+      fallbackCount++;
+    }
+  }
+
+  if (matchedCount > 0 || fallbackCount > 0) {
+    console.log(`✅ [DB Migration] Image assignment: ${matchedCount} unique AI images, ${fallbackCount} pool fallback`);
+  }
+}
 
 // Seed default data function
 export function seedDefaultData() {

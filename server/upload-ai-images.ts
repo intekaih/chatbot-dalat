@@ -2,7 +2,7 @@
  * Script: Upload AI-Generated Images to Firebase Storage
  * 
  * Uploads 14 AI-generated images (2 per category × 7 categories) to Firebase Storage.
- * Outputs the download URLs to be used in pexels-service.ts
+ * Outputs the download URLs to be used in image-pool.ts
  * 
  * Run: npx ts-node --esm upload-ai-images.ts
  */
@@ -98,7 +98,7 @@ async function main() {
         }
     }
 
-    console.log("\n\n📋 ===== COPY THIS INTO pexels-service.ts =====\n");
+    console.log("\n\n📋 ===== COPY THIS INTO image-pool.ts =====\n");
     console.log("const AI_IMAGE_URLS: Record<string, string[]> = {");
     for (const [category, urls] of Object.entries(results)) {
         console.log(`  ${category}: [`);

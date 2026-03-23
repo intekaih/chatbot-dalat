@@ -40,9 +40,12 @@ import {
   generatePersonalizedWelcome,
   generatePersonalizedNotifications,
   generateDefaultPlaces,
+  generatePersonalizedContent,
 } from "./ai-generator.js";
+import { getRerankedPlaces } from "./recommender.js";
 import { saveAIMauJson, openai, defaultModel, getAIConfigInfo, isUsingProxy, type OpenAI } from "./utils.js";
-import { batchGeneratePlaceImages } from "./place-image-service.js";
+import { getPlaceImage, clearImageCache } from "./place-image-service.js";
+import { getCategoryImages } from "./image-pool.js";
 
 const app = express();
 
@@ -462,6 +465,9 @@ app.post("/api/user/preferences", async (req, res) => {
       currentData = getDefaultData();
     }
 
+    // Set status = 'personalizing' TRƯỚC khi fire-and-forget
+    db.prepare("UPDATE users SET personalization_status = 'personalizing' WHERE device_id = ?").run(deviceId);
+
     // Trả response NGAY LẬP TỨC (không chờ AI)
     res.json({
       success: true,
@@ -491,9 +497,12 @@ app.post("/api/user/preferences", async (req, res) => {
             createNotification(userRecord.id, notif);
           }
         }
+        // Set 'done' CHỈ SAU KHI tất cả DB writes hoàn tất (savePersonalizedPlaces đã chạy xong bên trong)
+        db.prepare("UPDATE users SET personalization_status = 'done' WHERE id = ?").run(userRecord.id);
         console.log(`✅ [BG] Hoàn thành personalized data cho user ${userRecord.id}`);
       })
       .catch((err) => {
+        db.prepare("UPDATE users SET personalization_status = 'error' WHERE id = ?").run(userRecord.id);
         console.error(`❌ [BG] Lỗi tạo personalized data cho user ${userRecord.id}:`, err);
       });
   } catch (error) {
@@ -508,6 +517,7 @@ app.get("/api/personalized", async (req, res) => {
   try {
     const deviceId = getDeviceId(req);
     const user = getOrCreateUser(deviceId);
+    const personalizationStatus = user.personalization_status || 'idle';
 
     // Nếu user đã personalized → kiểm tra DB có places riêng không
     if (user.has_personalized === 1) {
@@ -520,13 +530,23 @@ app.get("/api/personalized", async (req, res) => {
       if (hasUserPlaces) {
         // Trả personalized places từ DB
         const response = buildPersonalizedResponse(userPlaces);
-        return res.json({ ...response, isPersonalized: true });
+        return res.json({
+          ...response,
+          isPersonalized: true,
+          dataSource: 'personalized',
+          personalizationStatus,
+        });
       }
     }
 
     // Fallback: trả default data từ DB (places có user_id IS NULL)
     const defaultData = getDefaultData();
-    return res.json({ ...defaultData, isPersonalized: false });
+    return res.json({
+      ...defaultData,
+      isPersonalized: false,
+      dataSource: 'default',
+      personalizationStatus,
+    });
   } catch (error) {
     console.error("Error getting personalized data:", error);
     res.status(500).json({ error: "Failed to get personalized data" });
@@ -569,6 +589,7 @@ function buildPersonalizedResponse(userPlaces: {
 }
 
 // Helper to generate personalized data
+// OPTIMIZED: re-rank default places (instant) + 1 merged AI call (prompts/welcome/notifications)
 async function generatePersonalizedData(
   userData: {
     preferences: string[];
@@ -580,70 +601,46 @@ async function generatePersonalizedData(
   const defaultData = getDefaultData();
 
   try {
-    const [aiPlacesResult, aiPrompts, aiWelcome, aiNotifications] = await Promise.all(
-      [
-        generatePersonalizedPlaces(userData),
-        generatePersonalizedPrompts(userData),
-        generatePersonalizedWelcome({ name: "Bạn", ...userData }),
-        generatePersonalizedNotifications(userData),
-      ],
-    );
+    // Step 1: Re-rank default places (INSTANT — no AI call)
+    console.log(`🎯 [Personalize] Step 1: Re-ranking default places for user ${userId}...`);
+    const rerankedPlaces = getRerankedPlaces({
+      preferences: userData.preferences,
+      travelStyles: userData.travelStyles,
+      budget: userData.budget,
+    });
 
-    // AI trả về object với 7 keys: checkin, nature, homestay, cafe, food, rental, signature
-    const aiPlaces = aiPlacesResult;
+    // Save re-ranked places as user's personalized places
+    savePersonalizedPlaces(userId, rerankedPlaces);
 
-    // Lưu personalized places vào DB
-    if (aiPlaces) {
-      savePersonalizedPlaces(userId, aiPlaces);
+    // Step 2: Generate personalized content (1 AI call — merged prompts + welcome + notifications)
+    console.log(`🤖 [Personalize] Step 2: Generating personalized content (1 AI call)...`);
+    const aiContent = await generatePersonalizedContent({
+      name: "Bạn",
+      ...userData,
+    });
 
-      // Background: sinh ảnh AI cho từng địa điểm (không chặn response)
-      const allPersonalizedPlaces = [
-        ...(aiPlaces.checkin || []).map((p: any) => ({ name: p.name, category: "checkin" })),
-        ...(aiPlaces.nature || []).map((p: any) => ({ name: p.name, category: "nature" })),
-        ...(aiPlaces.homestay || []).map((p: any) => ({ name: p.name, category: "homestay" })),
-        ...(aiPlaces.cafe || []).map((p: any) => ({ name: p.name, category: "cafe" })),
-        ...(aiPlaces.food || []).map((p: any) => ({ name: p.name, category: "food" })),
-        ...(aiPlaces.rental || []).map((p: any) => ({ name: p.name, category: "rental" })),
-        ...(aiPlaces.signature || []).map((p: any) => ({ name: p.name, category: "signature" })),
-      ];
-      batchGeneratePlaceImages(allPersonalizedPlaces).catch((e) =>
-        console.error("❌ [Imagen] Personalized places image generation error:", e)
-      );
-    }
-
-    const hasAiPlaces = aiPlaces &&
-      (aiPlaces.checkin?.length || aiPlaces.nature?.length ||
-        aiPlaces.homestay?.length || aiPlaces.cafe?.length ||
-        aiPlaces.food?.length || aiPlaces.rental?.length ||
-        aiPlaces.signature?.length);
-
-    const places = hasAiPlaces
-      ? [
-        ...(aiPlaces.checkin || []),
-        ...(aiPlaces.nature || []),
-        ...(aiPlaces.homestay || []),
-        ...(aiPlaces.cafe || []),
-        ...(aiPlaces.food || []),
-        ...(aiPlaces.rental || []),
-        ...(aiPlaces.signature || []),
-      ]
-      : defaultData.places;
+    const places = [
+      ...(rerankedPlaces.checkin || []),
+      ...(rerankedPlaces.nature || []),
+      ...(rerankedPlaces.homestay || []),
+      ...(rerankedPlaces.cafe || []),
+      ...(rerankedPlaces.food || []),
+      ...(rerankedPlaces.rental || []),
+      ...(rerankedPlaces.signature || []),
+    ];
 
     return {
       places,
-      checkinPlaces: aiPlaces?.checkin || [],
-      naturePlaces: aiPlaces?.nature || [],
-      homestays: aiPlaces?.homestay || [],
-      cafes: aiPlaces?.cafe || [],
-      foods: aiPlaces?.food || [],
-      rentals: aiPlaces?.rental || [],
-      signaturePlaces: aiPlaces?.signature || [],
-      quickPrompts: aiPrompts.length > 0 ? aiPrompts : defaultData.quickPrompts,
-      welcomeMessage: aiWelcome || defaultData.welcomeMessage,
-      notifications:
-        aiNotifications.length > 0
-          ? aiNotifications
-          : defaultData.notifications,
+      checkinPlaces: rerankedPlaces.checkin || [],
+      naturePlaces: rerankedPlaces.nature || [],
+      homestays: rerankedPlaces.homestay || [],
+      cafes: rerankedPlaces.cafe || [],
+      foods: rerankedPlaces.food || [],
+      rentals: rerankedPlaces.rental || [],
+      signaturePlaces: rerankedPlaces.signature || [],
+      quickPrompts: aiContent.quickPrompts.length > 0 ? aiContent.quickPrompts : defaultData.quickPrompts,
+      welcomeMessage: aiContent.welcomeMessage || defaultData.welcomeMessage,
+      notifications: aiContent.notifications.length > 0 ? aiContent.notifications : defaultData.notifications,
     };
   } catch (error) {
     console.error("Error generating personalized data:", error);
@@ -1362,111 +1359,35 @@ app.get("/api/image-proxy", async (req, res) => {
 });
 
 // ========================
-// AI IMAGE ENDPOINTS
+// IMAGE ENDPOINTS
 // ========================
 
-// Clear image cache (dùng khi cần force refresh tất cả ảnh)
-app.post("/api/places/clear-image-cache", async (req, res) => {
-  try {
-    const { clearImageCache } = await import("./place-image-service.js");
-    clearImageCache();
-    res.json({ success: true, message: "Image cache cleared" });
-  } catch (error) {
-    console.error("Error clearing image cache:", error);
-    res.status(500).json({ error: "Failed to clear image cache" });
-  }
+// Clear image index tracker
+app.post("/api/places/clear-image-cache", (req, res) => {
+  clearImageCache();
+  res.json({ success: true, message: "Image cache cleared" });
 });
 
-// Get image for a place — Pexels API làm nguồn chính, Placeholder là fallback
-app.post("/api/places/get-image", async (req, res) => {
-  try {
-    const { placeName, category, address, skipValidation } = req.body;
-
-    if (!placeName) {
-      return res.status(400).json({ error: "placeName is required" });
-    }
-
-    console.log(`🔍 [SmartImage] Getting image for: ${placeName} (${category}) [skipValidation=${skipValidation}]`);
-
-    const { getPlaceImageSmart } = await import("./place-image-service.js");
-    const result = await getPlaceImageSmart(placeName, category, address, skipValidation);
-
-    console.log(`  ✅ Source: ${result.source} | URL: ${result.imageUrl.substring(0, 80)}`);
-
-    res.json({
-      imageUrl: result.imageUrl,
-      imageUrls: result.imageUrls,
-      source: result.source,
-    });
-  } catch (error) {
-    console.error("Error getting place image:", error);
-    res.status(500).json({ error: "Failed to get place image" });
-  }
+// Get image for a place — dùng static pool
+app.post("/api/places/get-image", (req, res) => {
+  const { placeName, category } = req.body;
+  if (!placeName) return res.status(400).json({ error: "placeName is required" });
+  const imageUrl = getPlaceImage(placeName, category || "signature");
+  res.json({ imageUrl, source: "static" });
 });
 
-// Batch get images — dùng AI images theo từng place
-app.post("/api/places/batch-get-images", async (req, res) => {
-  try {
-    const { places, skipValidation } = req.body;
-
-    if (!places || !Array.isArray(places)) {
-      return res.status(400).json({ error: "places array is required" });
-    }
-
-    console.log(`🔍 [SmartImage] Batch fetching images for ${places.length} places [skipValidation=${skipValidation}]`);
-
-    const { getPlaceImageSmart } = await import("./place-image-service.js");
-
-    // Xử lý batch với giới hạn 3 concurrent để tránh rate limit
-    const BATCH_SIZE = 3;
-    const results: any[] = [];
-
-    for (let i = 0; i < places.length; i += BATCH_SIZE) {
-      const batch = places.slice(i, i + BATCH_SIZE);
-      const batchResults = await Promise.all(
-        batch.map(async (place: any) => {
-          const result = await getPlaceImageSmart(place.name, place.category, place.address, skipValidation);
-          return {
-            ...place,
-            imageUrl: result.imageUrl,
-            imageUrls: result.imageUrls,
-            source: result.source,
-          };
-        })
-      );
-      results.push(...batchResults);
-      if (i + BATCH_SIZE < places.length) {
-        await new Promise((r) => setTimeout(r, 300));
-      }
-    }
-
-    res.json({ places: results });
-  } catch (error) {
-    console.error("Error batch getting place images:", error);
-    res.status(500).json({ error: "Failed to batch get place images" });
+// Get image list for a category
+app.get("/api/places/images", (req, res) => {
+  const { category } = req.query;
+  if (!category || typeof category !== "string") {
+    return res.status(400).json({ error: "category parameter is required" });
   }
-});
-
-// AI images endpoint — trả về URL ảnh AI cho một category
-app.get("/api/places/images", async (req, res) => {
-  try {
-    const { category } = req.query;
-    if (!category || typeof category !== "string") {
-      return res.status(400).json({ error: "category parameter is required" });
-    }
-
-    const validCategories = ["cafe", "food", "checkin", "nature", "homestay", "rental", "signature"];
-    if (!validCategories.includes(category)) {
-      return res.status(400).json({ error: `Invalid category. Must be one of: ${validCategories.join(", ")}` });
-    }
-
-    const { getCategoryImages } = await import("./pexels-service.js");
-    const urls = getCategoryImages(category);
-    res.json({ category, urls });
-  } catch (error) {
-    console.error("AI images error:", error);
-    res.status(500).json({ error: "Failed to get AI images" });
+  const validCategories = ["cafe", "food", "checkin", "nature", "homestay", "rental", "signature"];
+  if (!validCategories.includes(category)) {
+    return res.status(400).json({ error: `Invalid category. Must be one of: ${validCategories.join(", ")}` });
   }
+  const urls = getCategoryImages(category);
+  res.json({ category, urls });
 });
 
 // ========================
@@ -1475,10 +1396,13 @@ app.get("/api/places/images", async (req, res) => {
 
 /**
  * Kiểm tra DB có default places chưa.
- * Nếu chưa → gọi AI background tạo 55 default places.
- * Nếu có rồi → skip, không gọi AI.
+ * Nếu chưa → gọi AI background tạo default places.
+ * Nếu có rồi → skip, chỉ fix old image URLs.
  */
 async function initDefaultPlaces() {
+  // Fix old absolute image URLs → relative paths
+  fixOldImageUrls();
+
   if (hasDefaultPlaces()) {
     console.log("✅ Default places đã tồn tại trong DB — skip AI generation");
     return;
@@ -1493,15 +1417,6 @@ async function initDefaultPlaces() {
     if (totalPlaces > 0) {
       saveDefaultAIPlaces(defaultPlaces);
       console.log(`✅ Đã lưu ${totalPlaces} default places vào DB`);
-
-      // Background: sinh ảnh AI tuần tự cho từng địa điểm
-      const allDefaultPlaces = categories.flatMap((cat) =>
-        (defaultPlaces[cat] || []).map((p: any) => ({ name: p.name, category: cat }))
-      );
-      console.log(`🎨 [Imagen] Bắt đầu sinh ảnh background cho ${allDefaultPlaces.length} địa điểm...`);
-      batchGeneratePlaceImages(allDefaultPlaces).catch((e) =>
-        console.error("❌ [Imagen] Default places image generation error:", e)
-      );
     } else {
       console.warn("⚠️ AI trả về 0 default places — kiểm tra API key và kết nối");
     }
@@ -1510,20 +1425,46 @@ async function initDefaultPlaces() {
   }
 }
 
+/**
+ * Fix old absolute image URLs in DB → relative paths.
+ * Chuyển tất cả URL kiểu https://xxx/assets/places/yyy.png hoặc
+ * https://xxx/api/place-image/yyy.png → /assets/places/{category}_{n}.png
+ */
+function fixOldImageUrls() {
+  try {
+    const places = db.prepare("SELECT id, name, category, image_url FROM places").all() as any[];
+    let fixed = 0;
+
+    for (const place of places) {
+      const url = place.image_url || "";
+      // Đã là relative path → OK
+      if (url.startsWith("/assets/places/")) continue;
+      // Cần fix: absolute URL hoặc URL chết
+      if (url.includes("/assets/places/") || url.includes("/api/place-image/") || !url) {
+        // Thử trích xuất tên file từ URL cũ
+        let newUrl = "";
+        const assetMatch = url.match(/\/assets\/places\/([^?#]+)/);
+        if (assetMatch) {
+          newUrl = `/assets/places/${assetMatch[1]}`;
+        } else {
+          // Dùng static pool theo category
+          newUrl = getPlaceImage(place.name, place.category || "signature");
+        }
+        db.prepare("UPDATE places SET image_url = ? WHERE id = ?").run(newUrl, place.id);
+        fixed++;
+      }
+    }
+
+    if (fixed > 0) {
+      console.log(`🔧 [FixImageUrls] Fixed ${fixed} old image URLs → relative paths`);
+    }
+  } catch (e) {
+    console.warn("⚠️ fixOldImageUrls error:", e);
+  }
+}
+
 // Gọi fire-and-forget ngay khi server khởi động
 initDefaultPlaces();
-
-// --- Serve AI-generated place images ---
-const generatedImagesDir = path.resolve("generated-images");
-app.get("/api/place-image/:filename", (req, res) => {
-  const filename = path.basename(req.params.filename); // chống path traversal
-  const filePath = path.join(generatedImagesDir, filename);
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).json({ error: "Image not found" });
-  }
-  res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-  res.sendFile(filePath);
-});
 
 // --- Static Serving: Angular build (production) ---
 // Khi deploy trên Replit, Express phục vụ cả frontend lẫn API trên cùng 1 port.

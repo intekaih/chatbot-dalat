@@ -23,7 +23,7 @@ interface Message {
   timestamp: Date;
   placeIds?: string[];
   imageUrl?: string | null;
-  imageUrls?: string[]; // Multiple images from Pexels
+  imageUrls?: string[]; // Multiple images for sugested places
 }
 
 interface AppAIModel {

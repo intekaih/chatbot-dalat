@@ -28,7 +28,7 @@ server/               # Express backend
   db.ts               # SQLite database setup and queries
   utils.ts            # OpenAI client config
   ai-generator.ts     # AI personalization logic
-  pexels-service.ts   # AI image URL registry (HOSTING_BASE logic)
+  image-pool.ts          # Static image pool — relative URLs /assets/places/
   place-image-service.ts  # Hash-based image selection per place
   dalat_chatbot.db    # SQLite database (auto-created)
 ```

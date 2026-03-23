@@ -1,31 +1,20 @@
 /**
- * AI Image Service
+ * Place Image Service — Static Pool
  *
- * Toàn bộ ảnh do AI tạo ra, lưu tại: ionic-tailwind-app/src/assets/places/
- * Phục vụ qua Angular dev server (REPLIT_DEV_DOMAIN) hoặc Firebase Hosting khi deploy.
+ * Toàn bộ ảnh lưu tại: ionic-tailwind-app/src/assets/places/
+ * Dùng RELATIVE PATH `/assets/places/xxx.png` — hoạt động ở mọi nơi:
+ *   - Local dev (Angular dev server)
+ *   - Replit (Express static serve)
+ *   - Firebase Hosting (deploy)
  */
 
-function getHostingBase(): string {
-  // Ưu tiên 1: APP_URL — set trong Replit Secrets khi deploy production
-  const appUrl = process.env.APP_URL;
-  if (appUrl) {
-    return `${appUrl.replace(/\/$/, "")}/assets/places`;
-  }
-  // Ưu tiên 2: REPLIT_DEV_DOMAIN — tự động có trong Replit dev workspace
-  const replitDomain = process.env.REPLIT_DEV_DOMAIN;
-  if (replitDomain) {
-    return `https://${replitDomain}/assets/places`;
-  }
-  // Fallback: Firebase Hosting (nếu ảnh đã được upload lên đó)
-  return "https://dalat-chatbot.web.app/assets/places";
-}
+const BASE = "/assets/places";
 
 /**
- * Danh sách URL ảnh AI theo từng category.
- * Mỗi category có 5 ảnh để tạo đa dạng, giảm trùng lặp.
+ * Danh sách ảnh theo từng category.
+ * Mỗi category có 4-5 ảnh để tạo đa dạng, giảm trùng lặp.
  */
 export function getAIImageUrls(): Record<string, string[]> {
-  const BASE = getHostingBase();
   return {
     cafe: [
       `${BASE}/cafe_1.png`,
@@ -88,7 +77,7 @@ export function getCategoryDefaultImage(category: string): string {
   return getAIImageUrls()["signature"][0];
 }
 
-/** Lấy danh sách ảnh AI cho một category */
+/** Lấy danh sách ảnh cho một category */
 export function getCategoryImages(category: string): string[] {
   return getAIImageUrls()[category] || getAIImageUrls()["signature"];
 }

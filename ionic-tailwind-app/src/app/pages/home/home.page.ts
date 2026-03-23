@@ -653,9 +653,17 @@ export class HomePage implements OnInit {
   private tripsService = inject(FirestoreTripsService);
   private firestorePlaces = inject(FirestorePlacesService);
   private destroyRef = inject(DestroyRef);
+  private pollTimeoutId: number | null = null;
 
   ngOnInit() {
     this.loadData();
+    // Cleanup polling timeout when component is destroyed
+    this.destroyRef.onDestroy(() => {
+      if (this.pollTimeoutId !== null) {
+        clearTimeout(this.pollTimeoutId);
+        this.pollTimeoutId = null;
+      }
+    });
   }
 
   ionViewWillEnter() {
@@ -715,18 +723,7 @@ export class HomePage implements OnInit {
       } else {
         this.apiService.getPlaces("signature").subscribe((places) => {
           this.signaturePlaces = places.slice(0, 10);
-          this.apiService.refreshPlaceImages(this.signaturePlaces).subscribe();
         });
-      }
-
-      // Refresh ảnh: DB chỉ có Pexels → thay bằng Gemini URL (load được ở browser)
-      this.apiService.refreshPlaceImages(this.checkinPlaces).subscribe();
-      this.apiService.refreshPlaceImages(this.naturePlaces).subscribe();
-      this.apiService.refreshPlaceImages(this.homestayPlaces).subscribe();
-      this.apiService.refreshPlaceImages(this.rentalPlaces).subscribe();
-      this.apiService.refreshPlaceImages(this.cafePlaces).subscribe();
-      if (rawSignature.length > 0) {
-        this.apiService.refreshPlaceImages(this.signaturePlaces).subscribe();
       }
 
       this.dalatFoods = data.places
@@ -780,9 +777,22 @@ export class HomePage implements OnInit {
       }
     };
 
-    const loadPersonalized = () => {
+    const loadPersonalized = (retryCount = 0) => {
       this.apiService.getPersonalizedData().subscribe({
-        next: (data) => applyPersonalizedData(data),
+        next: (data) => {
+          applyPersonalizedData(data);
+
+          // Retry polling: if AI is still generating, poll again
+          const status = data.personalizationStatus;
+          if (status === 'personalizing' && retryCount < 5) {
+            console.log(`⏳ [Home] Personalization in progress, retry ${retryCount + 1}/5 in 3s...`);
+            this.pollTimeoutId = window.setTimeout(() => loadPersonalized(retryCount + 1), 3000);
+          } else if (status === 'error') {
+            console.warn('⚠️ [Home] Personalization failed on backend — using fallback data');
+          } else if (status === 'done' && data.dataSource === 'personalized') {
+            console.log('✅ [Home] Personalized data loaded successfully');
+          }
+        },
         error: () => {
           // Fallback: load từ Firestore khi getPersonalizedData fail
           this.firestorePlaces.getCategories().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((cats) => {
@@ -800,7 +810,7 @@ export class HomePage implements OnInit {
               desc: p.shortDescription || "",
               price: p.priceRange || "Liên hệ",
               rating: p.rating || 4.5,
-              tag: p.tags?.[0] || "🍜 Ẩm thỳc",
+              tag: p.tags?.[0] || "🍜 Ẩm thực",
               image: p.imageUrl, slug: p.slug,
             }));
             this.isLoading = false;
@@ -871,9 +881,9 @@ export class HomePage implements OnInit {
 
   onImageError(event: Event, fallbackText: string) {
     const img = event.target as HTMLImageElement;
-    const triedPexels = img.dataset['tried'];
-    if (!triedPexels) {
-      img.dataset['tried'] = 'pexels';
+    const triedFallback = img.dataset['tried'];
+    if (!triedFallback) {
+      img.dataset['tried'] = 'fallback';
       img.src = `https://placehold.co/800x500/e2e8f0/64748b?text=${encodeURIComponent(fallbackText)}`;
       return;
     }
