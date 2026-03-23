@@ -553,19 +553,16 @@ app.get("/api/personalized", async (req, res) => {
   }
 });
 
-// Helper: Dedup danh sách places theo tên, ưu tiên category signature
+// Helper: Dedup danh sách places theo tên trong TỪNG category riêng biệt
 function dedupPlacesByName(allPlaces: any[]): any[] {
-  const seen = new Set<string>();
+  const seenPerCategory: Record<string, Set<string>> = {};
   const result: any[] = [];
-  // Ưu tiên signature trước để chúng không bị loại
-  const ordered = [
-    ...allPlaces.filter(p => p.category === "signature"),
-    ...allPlaces.filter(p => p.category !== "signature"),
-  ];
-  for (const p of ordered) {
+  for (const p of allPlaces) {
+    const cat = p.category || "unknown";
+    if (!seenPerCategory[cat]) seenPerCategory[cat] = new Set();
     const key = p.name?.trim().toLowerCase();
-    if (key && !seen.has(key)) {
-      seen.add(key);
+    if (key && !seenPerCategory[cat].has(key)) {
+      seenPerCategory[cat].add(key);
       result.push(p);
     }
   }
@@ -584,7 +581,7 @@ function buildPersonalizedResponse(userPlaces: {
 }) {
   const defaultData = getDefaultData();
 
-  // Dedup toàn bộ places theo tên trước, ưu tiên signature
+  // Dedup trong từng category riêng (loại trùng tên nội bộ)
   const allRaw = [
     ...userPlaces.signature,
     ...userPlaces.checkin,
@@ -595,7 +592,11 @@ function buildPersonalizedResponse(userPlaces: {
     ...userPlaces.rental,
   ];
   const deduped = dedupPlacesByName(allRaw);
-  const signatureNames = new Set(userPlaces.signature.map((p: any) => p.name?.trim().toLowerCase()));
+
+  // Signature là section "Must Visit" — loại tên đó khỏi checkin/nature để không render 2 lần
+  const signatureNames = new Set(
+    deduped.filter(p => p.category === "signature").map((p: any) => p.name?.trim().toLowerCase())
+  );
 
   return {
     places: deduped,

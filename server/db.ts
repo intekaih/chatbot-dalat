@@ -490,7 +490,11 @@ export function savePersonalizedPlaces(userId: string, places: {
   for (const r of allPlaces) existingSlugs.add(r.slug);
 
   const insertMany = (items: any[], category: string, featured: boolean) => {
+    const seenNames = new Set<string>(); // dedup trong category
     for (const p of items) {
+      const nameKey = (p.name || "").trim().toLowerCase();
+      if (nameKey && seenNames.has(nameKey)) continue; // bỏ qua trùng tên
+      if (nameKey) seenNames.add(nameKey);
       let baseSlug = p.slug || (p.name || "place").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
       let slug = baseSlug;
       let suffix = 1;
