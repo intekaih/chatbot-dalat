@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "336020606793",
+    "project_id": "dalat-chatbot",
+    "storage_bucket": "dalat-chatbot.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:336020606793:android:024fd1988cc57dabd81498",
+        "android_client_info": {
+          "package_name": "vn.dalat.chatbot"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "336020606793-5a48biardci94ie7chhmfo86i2sqjttq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "vn.dalat.chatbot",
+            "certificate_hash": "90b20b8666c40a2f7a9da658562207becd27b358"
+          }
+        },
+        {
+          "client_id": "336020606793-6piuu3mahuihat57jjjvkt6alp5tvg8c.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdnfZp8CJggfRPO8hDsqH6k7fkgZgAfSk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "336020606793-6piuu3mahuihat57jjjvkt6alp5tvg8c.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
