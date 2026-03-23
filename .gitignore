@@ -24,6 +24,10 @@ build/
 ai-response.json
 ai-result.json
 maujson.txt
+test-result.json
+
+# Generated images backup (duplicated in assets/places/)
+server/generated-images/
 
 # Firebase Admin SDK service account key — KHÔNG BAO GIỜ COMMIT
 **/serviceAccountKey.json

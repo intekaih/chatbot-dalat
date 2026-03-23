@@ -12,10 +12,8 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const GENERATED_DIR = path.resolve(__dirname, "generated-images");
 const ASSETS_DIR = path.resolve(__dirname, "../ionic-tailwind-app/src/assets/places");
 
-if (!fs.existsSync(GENERATED_DIR)) fs.mkdirSync(GENERATED_DIR, { recursive: true });
 if (!fs.existsSync(ASSETS_DIR)) fs.mkdirSync(ASSETS_DIR, { recursive: true });
 
 // Find places without AI images
@@ -79,19 +77,16 @@ async function generateImage(placeName: string, category: string): Promise<strin
 
         const data = response.data[0];
         const filename = `${slugify(placeName)}_${Date.now()}.png`;
-        const genPath = path.join(GENERATED_DIR, filename);
         const assetPath = path.join(ASSETS_DIR, filename);
 
         if (data.b64_json) {
             const buffer = Buffer.from(data.b64_json, "base64");
-            fs.writeFileSync(genPath, buffer);
             fs.writeFileSync(assetPath, buffer);
         } else if (data.url) {
             // Download from URL
             const res = await fetch(data.url);
             const arrayBuffer = await res.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
-            fs.writeFileSync(genPath, buffer);
             fs.writeFileSync(assetPath, buffer);
         } else {
             console.error(`  ❌ No image data for "${placeName}"`);
