@@ -64,6 +64,20 @@ function slugify(name: string): string {
 }
 
 async function generateImage(placeName: string, category: string): Promise<string | null> {
+    // Kiểm tra file đã tồn tại trên disk (tránh sinh ảnh trùng dù cache bị xóa)
+    const slug = slugify(placeName);
+    const existingFile = fs.readdirSync(ASSETS_DIR).find(f => f.startsWith(slug + "_") && f.endsWith(".png"));
+    if (existingFile) {
+        console.log(`  ♻️  File đã có: ${existingFile} — bỏ qua sinh ảnh mới`);
+        // Cập nhật lại DB nếu cache bị thiếu
+        savePlaceImageCache(placeName, existingFile);
+        db.prepare("UPDATE places SET image_url = ? WHERE LOWER(name) = LOWER(?)").run(
+            `/assets/places/${existingFile}`,
+            placeName,
+        );
+        return existingFile;
+    }
+
     const hint = categoryHints[category] || categoryHints.signature;
     const prompt = `A beautiful photo of "${placeName}" in Da Lat, Vietnam. Style: ${hint}. High quality, vivid colors, 4K quality photo.`;
 
@@ -76,7 +90,7 @@ async function generateImage(placeName: string, category: string): Promise<strin
         });
 
         const data = response.data[0];
-        const filename = `${slugify(placeName)}_${Date.now()}.png`;
+        const filename = `${slug}_${Date.now()}.png`;
         const assetPath = path.join(ASSETS_DIR, filename);
 
         if (data.b64_json) {

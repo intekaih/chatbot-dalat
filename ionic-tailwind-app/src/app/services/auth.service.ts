@@ -9,8 +9,7 @@ import {
   User as FirebaseUser,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithCredential,
   getIdToken
 } from '@angular/fire/auth';
 import { Firestore, doc, setDoc, getDoc, serverTimestamp } from '@angular/fire/firestore';
@@ -19,6 +18,7 @@ import { firstValueFrom } from 'rxjs';
 import { User } from '../models/database.models';
 import { ApiService, User as ApiUser } from './api.service';
 import { Capacitor } from '@capacitor/core';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 @Injectable({
   providedIn: 'root'
@@ -69,29 +69,6 @@ export class AuthService {
       this._loading.set(false);
     });
 
-    if (Capacitor.isNativePlatform()) {
-      getRedirectResult(this.auth).then(async (result) => {
-        if (result?.user) {
-          const user = result.user;
-          const userDoc = await getDoc(doc(this.firestore, 'users', user.uid));
-          if (!userDoc.exists()) {
-            await setDoc(doc(this.firestore, 'users', user.uid), {
-              uid: user.uid,
-              email: user.email || '',
-              displayName: user.displayName || 'User',
-              photoURL: user.photoURL || '',
-              preferences: [],
-              createdAt: new Date(),
-              updatedAt: new Date()
-            });
-          }
-          localStorage.setItem('firebase_email', user.email || '');
-          localStorage.setItem('device_id', user.uid);
-          const idToken = await getIdToken(user);
-          await firstValueFrom(this.apiService.syncFirebaseUser(idToken, user.email || '', user.displayName || '', user.photoURL || ''));
-        }
-      }).catch(() => { });
-    }
   }
 
   private async loadUserProfile(uid: string) {
@@ -149,37 +126,44 @@ export class AuthService {
   }
 
   async loginWithGoogle(): Promise<ApiUser | null> {
-    const provider = new GoogleAuthProvider();
-    // Lưu old device-id trước khi override
     const oldDeviceId = localStorage.getItem('device_id') || '';
 
+    let firebaseUser: FirebaseUser;
+
     if (Capacitor.isNativePlatform()) {
-      await signInWithRedirect(this.auth, provider);
-      return null;
+      // Dùng native Google Sign-In (không qua browser redirect)
+      const result = await FirebaseAuthentication.signInWithGoogle();
+      if (!result.credential?.idToken) throw new Error('Không lấy được Google ID token');
+
+      const credential = GoogleAuthProvider.credential(result.credential.idToken);
+      const fbResult = await this.runInCtx(() => signInWithCredential(this.auth, credential));
+      firebaseUser = fbResult.user;
+    } else {
+      // Web: dùng popup bình thường
+      const provider = new GoogleAuthProvider();
+      const result = await this.runInCtx(() => signInWithPopup(this.auth, provider));
+      firebaseUser = result.user;
     }
 
-    // Wrap TỪNG Firebase call trong injection context (context mất sau mỗi await)
-    const result = await this.runInCtx(() => signInWithPopup(this.auth, provider));
-
-    const userDoc = await this.runInCtx(() => getDoc(doc(this.firestore, 'users', result.user.uid)));
+    const userDoc = await this.runInCtx(() => getDoc(doc(this.firestore, 'users', firebaseUser.uid)));
 
     if (!userDoc.exists()) {
       const userData: User = {
-        uid: result.user.uid,
-        email: result.user.email || '',
-        displayName: result.user.displayName || 'User',
-        photoURL: result.user.photoURL || '',
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        displayName: firebaseUser.displayName || 'User',
+        photoURL: firebaseUser.photoURL || '',
         preferences: [],
         createdAt: new Date(),
         updatedAt: new Date()
       };
-      await this.runInCtx(() => setDoc(doc(this.firestore, 'users', result.user.uid), userData));
+      await this.runInCtx(() => setDoc(doc(this.firestore, 'users', firebaseUser.uid), userData));
     }
 
-    localStorage.setItem('firebase_email', result.user.email || '');
-    localStorage.setItem('device_id', result.user.uid);
-    const idToken = await this.runInCtx(() => getIdToken(result.user));
-    return firstValueFrom(this.apiService.syncFirebaseUser(idToken, result.user.email || '', result.user.displayName || '', result.user.photoURL || '', oldDeviceId));
+    localStorage.setItem('firebase_email', firebaseUser.email || '');
+    localStorage.setItem('device_id', firebaseUser.uid);
+    const idToken = await this.runInCtx(() => getIdToken(firebaseUser));
+    return firstValueFrom(this.apiService.syncFirebaseUser(idToken, firebaseUser.email || '', firebaseUser.displayName || '', firebaseUser.photoURL || '', oldDeviceId));
   }
 
   async logout(): Promise<void> {
