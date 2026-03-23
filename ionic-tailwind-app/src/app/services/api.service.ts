@@ -401,7 +401,7 @@ export class ApiService {
     };
   }
 
-  private readonly CACHE_PLACES_KEY = 'cache_places';
+  private readonly CACHE_PLACES_KEY = 'cache_places_v2';
   private readonly CACHE_CATEGORIES_KEY = 'cache_categories';
   private readonly CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 giờ
 

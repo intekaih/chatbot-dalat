@@ -710,13 +710,8 @@ export class HomePage implements OnInit {
     }) => {
       this.quickPrompts = data.quickPrompts;
       this.categories = data.categories.filter((c: any) => c.id !== "signature");
-      this.checkinPlaces = data.places.filter((p) => p.category === "checkin");
-      this.naturePlaces = data.places.filter((p) => p.category === "nature");
-      this.homestayPlaces = data.places.filter((p) => p.category === "homestay");
-      this.rentalPlaces = data.places.filter((p) => p.category === "rental");
-      this.cafePlaces = data.places.filter((p) => p.category === "cafe");
 
-      // Signature: ưu tiên personalized, fallback lấy từ DB
+      // Signature trước — dùng làm chuẩn dedup
       const rawSignature = data.places.filter((p) => p.category === "signature");
       if (rawSignature.length > 0) {
         this.signaturePlaces = rawSignature;
@@ -725,6 +720,15 @@ export class HomePage implements OnInit {
           this.signaturePlaces = places.slice(0, 10);
         });
       }
+
+      // Set tên địa điểm đã có trong signature → loại khỏi các section khác
+      const signatureNames = new Set(this.signaturePlaces.map((p) => p.name));
+
+      this.checkinPlaces = data.places.filter((p) => p.category === "checkin" && !signatureNames.has(p.name));
+      this.naturePlaces = data.places.filter((p) => p.category === "nature" && !signatureNames.has(p.name));
+      this.homestayPlaces = data.places.filter((p) => p.category === "homestay");
+      this.rentalPlaces = data.places.filter((p) => p.category === "rental");
+      this.cafePlaces = data.places.filter((p) => p.category === "cafe");
 
       this.dalatFoods = data.places
         .filter((p) => p.category === "food")
