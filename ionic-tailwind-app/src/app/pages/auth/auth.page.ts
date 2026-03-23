@@ -488,6 +488,7 @@ export class AuthPage {
     } catch (error: any) {
       this.isSubmitting = false;
       console.error('[Google Login Error]', error?.code, error?.message);
+      const msg: string = error?.message || '';
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
         this.globalError = 'Cửa sổ đăng nhập đã bị đóng';
       } else if (error.code === 'auth/unauthorized-domain') {
@@ -496,8 +497,10 @@ export class AuthPage {
         this.globalError = 'Popup bị trình duyệt chặn. Vui lòng cho phép popup và thử lại.';
       } else if (error.code === 'auth/operation-not-allowed') {
         this.globalError = 'Đăng nhập Google chưa được kích hoạt. Vui lòng bật trong Firebase Console.';
+      } else if (msg.includes('null object reference') || msg.includes('google-services') || msg.includes('FirebaseApp')) {
+        this.globalError = 'Đăng nhập Google chưa sẵn sàng trên thiết bị này. Vui lòng dùng Email/Mật khẩu.';
       } else {
-        this.globalError = `Đã xảy ra lỗi: ${error?.code || error?.message || 'Vui lòng thử lại.'}`;
+        this.globalError = `Đã xảy ra lỗi: ${error?.code || msg || 'Vui lòng thử lại.'}`;
       }
     }
   }

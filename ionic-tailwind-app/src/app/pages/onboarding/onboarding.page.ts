@@ -13,12 +13,12 @@ interface Slide {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="min-h-screen bg-white flex flex-col">
-      <div class="flex justify-end p-4">
+    <div class="h-screen bg-white flex flex-col overflow-hidden">
+      <div class="flex justify-end p-4" style="padding-top: max(1rem, env(safe-area-inset-top))">
         <button (click)="skip()" class="text-sm text-gray-500">Bỏ qua</button>
       </div>
 
-      <div class="flex-1 flex flex-col items-center justify-center px-6">
+      <div class="flex-1 flex flex-col items-center justify-center px-6 overflow-hidden">
         <div class="text-center w-full max-w-sm">
           <div class="text-8xl mb-6">{{ slides[currentSlide].emoji }}</div>
           <h1 class="text-2xl font-semibold text-gray-900 mb-3">{{ slides[currentSlide].title }}</h1>
@@ -33,7 +33,7 @@ interface Slide {
         ></div>
       </div>
 
-      <div class="p-4 pb-8">
+      <div class="p-4" style="padding-bottom: max(2rem, env(safe-area-inset-bottom))">
         <button
           (click)="next()"
           class="w-full py-3 bg-black text-white rounded-full font-medium transition-all duration-300 hover:bg-gray-800"
