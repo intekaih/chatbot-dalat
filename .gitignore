@@ -32,3 +32,6 @@ server/generated-images/
 # Firebase Admin SDK service account key — KHÔNG BAO GIỜ COMMIT
 **/serviceAccountKey.json
 **/dalat-chatbot-firebase-adminsdk-*.json
+
+# Ignore assignment repo
+assignment-repo/
