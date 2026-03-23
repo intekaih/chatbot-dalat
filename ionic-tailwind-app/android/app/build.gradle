@@ -16,8 +16,29 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            // AppFlow injected properties (standard Gradle signing injection)
+            def keystorePath = System.getProperty("android.injected.signing.store.file")
+                    ?: System.getenv("KEYSTORE_PATH")
+                    ?: System.getenv("KEYSTORE_FILE")
+            def keystorePassword = System.getProperty("android.injected.signing.store.password")
+                    ?: System.getenv("KEYSTORE_PASSWORD")
+            def keyAlias = System.getProperty("android.injected.signing.key.alias")
+                    ?: System.getenv("KEY_ALIAS")
+            def keyPassword = System.getProperty("android.injected.signing.key.password")
+                    ?: System.getenv("KEY_PASSWORD")
+            if (keystorePath) {
+                storeFile file(keystorePath)
+                storePassword keystorePassword ?: ""
+                keyAlias keyAlias ?: ""
+                keyPassword keyPassword ?: ""
+            }
+        }
+    }
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
