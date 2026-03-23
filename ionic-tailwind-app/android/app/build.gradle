@@ -19,23 +19,16 @@ android {
     signingConfigs {
         release {
             // AppFlow injects signing via Gradle project properties (-P flags)
-            def keystorePathVal = project.findProperty("android.injected.signing.store.file")
-                    ?: System.getProperty("android.injected.signing.store.file")
-                    ?: System.getenv("KEYSTORE_PATH")
-            def keystorePasswordVal = project.findProperty("android.injected.signing.store.password")
-                    ?: System.getProperty("android.injected.signing.store.password")
-                    ?: System.getenv("KEYSTORE_PASSWORD")
-            def keyAliasVal = project.findProperty("android.injected.signing.key.alias")
-                    ?: System.getProperty("android.injected.signing.key.alias")
-                    ?: System.getenv("KEY_ALIAS")
-            def keyPasswordVal = project.findProperty("android.injected.signing.key.password")
-                    ?: System.getProperty("android.injected.signing.key.password")
-                    ?: System.getenv("KEY_PASSWORD")
+            def keystorePathVal = project.findProperty("android.injected.signing.store.file") ?: System.getenv("KEYSTORE_PATH")
+            def keystorePasswordVal = project.findProperty("android.injected.signing.store.password") ?: System.getenv("KEYSTORE_PASSWORD")
+            def keyAliasVal = project.findProperty("android.injected.signing.key.alias") ?: System.getenv("KEY_ALIAS")
+            def keyPasswordVal = project.findProperty("android.injected.signing.key.password") ?: System.getenv("KEY_PASSWORD")
+            
             if (keystorePathVal) {
                 storeFile file(keystorePathVal)
-                storePassword keystorePasswordVal ?: ""
-                keyAlias keyAliasVal ?: ""
-                keyPassword keyPasswordVal ?: ""
+                if (keystorePasswordVal) storePassword keystorePasswordVal
+                if (keyAliasVal) keyAlias keyAliasVal
+                if (keyPasswordVal) keyPassword keyPasswordVal
             }
         }
     }
