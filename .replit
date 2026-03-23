@@ -62,3 +62,6 @@ build = ["bash", "-c", "cd server && npm install"]
 
 [userenv.shared]
 PORT = "3001"
+API_PROXY_BASE_URL = "https://api.intekaih.id.vn/v1"
+API_PROXY_MODEL = "gemini-3-flash"
+API_IMAGE_MODEL = "gemini-3.1-flash-image"
