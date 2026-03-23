@@ -55,8 +55,12 @@ All images are AI-generated and stored in `ionic-tailwind-app/src/assets/places/
 ## Running the App (Development)
 
 Two workflows are configured:
-1. **Backend Server**: `cd server && npm run dev` (port 3001)
-2. **Start application**: `cd ionic-tailwind-app && npx ng serve --configuration development` (port 5000)
+1. **Backend Server**: `cd /home/runner/workspace/server && npm run dev` (port 3001)
+2. **Start application**: `cd /home/runner/workspace/ionic-tailwind-app && npx ng serve --configuration development --host 0.0.0.0 --port 5000 --disable-host-check` (port 5000)
+
+Environment variables:
+- `PORT=3001` (set via Replit secrets/env vars)
+- AI keys: set `API_PROXY_KEY` and `API_PROXY_BASE_URL` (or `OPENAI_API_KEY`) in Replit secrets
 
 ## Deployment (Production — Replit)
 

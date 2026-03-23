@@ -52,7 +52,7 @@ const app = express();
 // --- CORS: chỉ cho phép các origin được liệt kê ---
 const ALLOWED_ORIGINS = (
   process.env.CORS_ORIGIN ||
-  "http://localhost:8100,http://127.0.0.1:8100,http://localhost:4200,http://127.0.0.1:4200,http://localhost:5000,http://0.0.0.0:5000"
+  "http://localhost:8100,http://127.0.0.1:8100,http://localhost:4200,http://127.0.0.1:4200,http://localhost:5000,http://0.0.0.0:5000,http://localhost:3001,http://127.0.0.1:3001"
 )
   .split(",")
   .map((o) => o.trim());
