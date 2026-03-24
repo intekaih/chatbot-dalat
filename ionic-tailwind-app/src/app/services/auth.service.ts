@@ -132,7 +132,9 @@ export class AuthService {
 
     if (Capacitor.isNativePlatform()) {
       // Dùng native Google Sign-In (không qua browser redirect)
-      const result = await FirebaseAuthentication.signInWithGoogle();
+      const result = await FirebaseAuthentication.signInWithGoogle({
+        useCredentialManager: false
+      });
       if (!result.credential?.idToken) throw new Error('Không lấy được Google ID token');
 
       const credential = GoogleAuthProvider.credential(result.credential.idToken);

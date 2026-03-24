@@ -13,4 +13,12 @@ ext {
     androidxJunitVersion = '1.2.1'
     androidxEspressoCoreVersion = '3.6.1'
     cordovaAndroidVersion = '14.0.1'
+
+    // @capacitor-firebase/authentication — Google Sign-In requires these to be true/included
+    rgcfaIncludeGoogle = true
+    firebaseAuthVersion = '24.0.1'
+    playServicesAuthVersion = '20.7.0'
+    androidxCredentialsVersion = '1.2.0-rc01'
+    androidxCredentialsPlayServicesAuthVersion = '1.2.0-rc01'
+    librariesIdentityGoogleidVersion = '1.1.0'
 }

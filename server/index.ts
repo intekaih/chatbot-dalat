@@ -59,8 +59,10 @@ const ALLOWED_ORIGINS = (
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Cho phép requests không có origin (curl, mobile app native, Capacitor)
+      // Cho phép requests không có origin (curl, Postman...)
       if (!origin) return callback(null, true);
+      // Cho phép Capacitor native WebView (Android: https://localhost, iOS: capacitor://localhost)
+      if (origin === "https://localhost" || origin === "capacitor://localhost" || origin === "http://localhost") return callback(null, true);
       // Cho phép wildcard (*) nếu có cấu hình
       if (ALLOWED_ORIGINS.includes("*")) return callback(null, true);
       if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
