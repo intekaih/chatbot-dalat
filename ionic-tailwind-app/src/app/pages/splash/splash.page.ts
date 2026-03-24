@@ -7,7 +7,7 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex flex-col items-center justify-center transition-opacity duration-300"
+    <div class="h-full bg-gradient-to-br from-gray-900 to-gray-800 flex flex-col items-center justify-center transition-opacity duration-300"
          [class.opacity-0]="isLeaving">
       <!-- Logo -->
       <div class="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mb-8">

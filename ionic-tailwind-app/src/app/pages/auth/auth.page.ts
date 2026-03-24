@@ -10,7 +10,7 @@ import { ApiService } from "../../services/api.service";
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="min-h-screen bg-white flex flex-col px-6 py-8">
+    <div class="min-h-full bg-white flex flex-col px-6" style="padding-top: max(2rem, env(safe-area-inset-top)); padding-bottom: max(2rem, env(safe-area-inset-bottom))">
       <!-- Logo -->
       <div class="flex flex-col items-center mb-8">
         <div

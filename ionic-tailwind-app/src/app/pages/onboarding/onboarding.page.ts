@@ -13,7 +13,7 @@ interface Slide {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="h-screen bg-white flex flex-col overflow-hidden">
+    <div class="h-full bg-white flex flex-col overflow-hidden">
       <div class="flex justify-end p-4" style="padding-top: max(1rem, env(safe-area-inset-top))">
         <button (click)="skip()" class="text-sm text-gray-500">Bỏ qua</button>
       </div>

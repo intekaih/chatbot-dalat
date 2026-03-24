@@ -19,7 +19,7 @@ interface ChoiceItem {
     style: 'display: flex; flex-direction: column; position: absolute; inset: 0; z-index: 101; background: white; contain: layout size style;'
   },
   template: `
-    <div class="min-h-screen bg-white flex flex-col">
+    <div class="h-full bg-white flex flex-col overflow-hidden">
       <div class="flex items-center justify-between px-4 pt-6 pb-3">
         <button
           *ngIf="step > 0"
@@ -183,7 +183,7 @@ interface ChoiceItem {
         ></div>
       </div>
 
-      <div class="p-4 pb-8 space-y-3">
+      <div class="p-4 space-y-3" style="padding-bottom: max(2rem, env(safe-area-inset-bottom))">
         <button
           (click)="next()"
           [disabled]="!canNext() || isSubmitting"
