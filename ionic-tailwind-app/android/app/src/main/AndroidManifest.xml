@@ -35,7 +35,30 @@
         </provider>
     </application>
 
-    <!-- Permissions -->
-
+    <!-- Mạng -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Camera -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Truy cập ảnh (Android 13+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
+    <!-- Truy cập bộ nhớ ngoài (Android 12 trở xuống) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+
+    <!-- Vị trí (GPS chính xác + mạng) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Rung (haptic feedback) -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Camera là tùy chọn (app vẫn chạy trên thiết bị không có camera) -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
 </manifest>
