@@ -498,9 +498,15 @@ export class AuthPage {
       } else if (error.code === 'auth/operation-not-allowed') {
         this.globalError = 'Đăng nhập Google chưa được kích hoạt. Vui lòng bật trong Firebase Console.';
       } else if (msg.includes('null object reference') || msg.includes('google-services') || msg.includes('FirebaseApp')) {
-        this.globalError = 'Đăng nhập Google chưa sẵn sàng trên thiết bị này. Vui lòng dùng Email/Mật khẩu.';
+        this.globalError = 'Cấu hình Firebase chưa đúng. Vui lòng dùng Email/Mật khẩu.';
+      } else if (msg.includes('sign_in_cancelled') || msg.includes('12501')) {
+        this.globalError = 'Đăng nhập Google đã bị hủy.';
+      } else if (msg.includes('DEVELOPER_ERROR') || msg.includes('10:') || msg.includes('SHA')) {
+        this.globalError = 'Lỗi cấu hình SHA-1. Vui lòng liên hệ hỗ trợ.';
+      } else if (msg.includes('network') || msg.includes('Network')) {
+        this.globalError = 'Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại.';
       } else {
-        this.globalError = `Đã xảy ra lỗi: ${error?.code || msg || 'Vui lòng thử lại.'}`;
+        this.globalError = `Lỗi đăng nhập Google: ${error?.code || error?.message || 'Vui lòng thử lại.'}`;
       }
     }
   }

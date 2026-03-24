@@ -13,9 +13,9 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-white flex flex-col overflow-hidden" style="height: calc(100vh - 4rem - env(safe-area-inset-bottom))">
+    <div class="bg-white flex flex-col" style="height: calc(100vh - 4rem - env(safe-area-inset-bottom))">
       <!-- Profile Card -->
-      <div class="bg-gradient-to-br from-gray-900 to-gray-800 px-4 pt-4 pb-6 relative">
+      <div class="bg-gradient-to-br from-gray-900 to-gray-800 px-4 pt-4 pb-6 relative flex-shrink-0">
         <button
           *ngIf="user?.hasPersonalized"
           (click)="goToWelcome()"
@@ -79,7 +79,7 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
       </div>
 
       <!-- Stats -->
-      <div class="grid grid-cols-3 gap-px bg-gray-100 border-b border-gray-100">
+      <div class="grid grid-cols-3 gap-px bg-gray-100 border-b border-gray-100 flex-shrink-0">
         <div class="bg-white py-4 text-center">
           <p class="text-xl font-semibold text-gray-900">{{ tripCount }}</p>
           <p class="text-xs text-gray-500">Lịch trình</p>
@@ -97,7 +97,7 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
       </div>
 
       <!-- Menu Items -->
-      <div class="p-4 space-y-2">
+      <div class="p-4 space-y-2 overflow-y-auto flex-1">
         <button
           (click)="goToTrips()"
           class="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl"
@@ -267,14 +267,11 @@ import { FirestoreFavoritesService } from "../../services/firestore-favorites.se
 
       </div>
 
-      <!-- Spacer: đẩy logout xuống cuối -->
-      <div class="flex-1"></div>
-
       <!-- Logout -->
-      <div class="px-4 pb-4">
+      <div class="px-4 py-3 border-t border-gray-100 flex-shrink-0">
         <button
           (click)="logout()"
-          class="w-full py-3 text-red-600 hover:bg-red-50 rounded-xl font-medium text-sm border border-red-100"
+          class="w-full flex items-center justify-center py-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl font-medium text-sm border border-red-100 transition-colors"
         >
           Đăng xuất
         </button>
