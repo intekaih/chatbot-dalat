@@ -1286,7 +1286,7 @@ app.post("/api/chat/stream", rateLimiter, async (req, res) => {
   }
 });
 
-const PORT = Number(process.env.PORT) || 3001;
+const PORT = Number(process.env.PORT) || 5000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 API Base: http://localhost:${PORT}/api`);

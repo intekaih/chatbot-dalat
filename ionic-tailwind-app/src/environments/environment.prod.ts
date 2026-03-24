@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiBaseUrl: '',
+  apiBaseUrl: 'https://chatbot-dalat.replit.app',
   firebase: {
     apiKey: 'AIzaSyDen9SILPp9WXux0ABu7NUyMcFgnpCOmyw',
     authDomain: 'dalat-chatbot.firebaseapp.com',
@@ -11,4 +11,3 @@ export const environment = {
     measurementId: 'G-X3JZGP9LHQ',
   },
 };
-
