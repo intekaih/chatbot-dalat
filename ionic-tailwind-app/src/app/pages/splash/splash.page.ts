@@ -6,6 +6,9 @@ import { Router } from '@angular/router';
   selector: 'app-splash',
   standalone: true,
   imports: [CommonModule],
+  host: {
+    style: 'display: flex; flex-direction: column; position: absolute; inset: 0; contain: layout size style;'
+  },
   template: `
     <div class="h-full bg-gradient-to-br from-gray-900 to-gray-800 flex flex-col items-center justify-center transition-opacity duration-300"
          [class.opacity-0]="isLeaving">

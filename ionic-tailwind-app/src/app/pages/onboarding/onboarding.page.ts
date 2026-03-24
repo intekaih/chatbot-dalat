@@ -12,8 +12,11 @@ interface Slide {
   selector: 'app-onboarding',
   standalone: true,
   imports: [CommonModule],
+  host: {
+    style: 'display: flex; flex-direction: column; position: absolute; inset: 0; background: white; contain: layout size style;'
+  },
   template: `
-    <div class="h-full bg-white flex flex-col overflow-hidden">
+    <div class="h-full flex flex-col">
       <div class="flex justify-end p-4" style="padding-top: max(1rem, env(safe-area-inset-top))">
         <button (click)="skip()" class="text-sm text-gray-500">Bỏ qua</button>
       </div>
