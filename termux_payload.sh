@@ -1,34 +1,41 @@
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 
-echo "========== BAT DAU CAP NHAT / CAI DAT API SERVER =========="
+echo "========== BAT DAU FIX VA CAI DAT SERVER TRÊN TERMUX =========="
 cd ~
 
-echo "1. Kiem tra thu vien he thong..."
-pkg install -y nodejs sqlite build-essential python wget curl jq cloudflared > /dev/null 2>&1
+echo "1. Cai dat trinh bien dich C++ va cac thu vien ho tro (Fix better-sqlite3)..."
+# Cai dat cac goi can thiet de compile native modules trên Android
+pkg install -y nodejs-lts python make clang binutils libsqlite wget curl jq cloudflared > /dev/null 2>&1
 
-echo "2. Cai dat PM2 (Neu chua co)..."
+echo "2. Cau hinh moi truong build..."
+# Lua node-gyp de khong doi hoi Android NDK
+export ANDROID_NDK_HOME=/dev/null
+export ANDROID_NDK_PATH=/dev/null
+
+echo "3. Cai dat PM2..."
 if ! command -v pm2 &> /dev/null; then
     npm install -g pm2
 fi
 
-# Tu khoa giu dien thoai luon thuc (termux)
+# Giu may luon thuc
 termux-wake-lock 2>/dev/null || true
 
-# Tao thu muc chay app
+# Thu muc app
 mkdir -p backend_chatbot
 cd backend_chatbot
 
-echo "3. Tai code moi nhat (chuyen qua USB - port 127.0.0.1:8080)..."
+echo "4. Tai ma nguon moi nhat tu may tinh..."
 wget -q http://127.0.0.1:8080/backend.tar.gz -O backend.tar.gz || curl -s http://127.0.0.1:8080/backend.tar.gz -o backend.tar.gz
 
-echo "4. Giai nen code..."
+echo "5. Giai nen..."
 tar -xzf backend.tar.gz
 
-echo "5. Cai dat thu vien Node (npm install)..."
-npm install
+echo "6. Cai dat thu vien Node (Dang bien dich better-sqlite3)..."
+# Force build tu source va ignore loi NDK qua bien moi truong da set o tren
+npm install --build-from-source
 
-echo "6. Tao file cau hinh PM2..."
+echo "7. Thiet lap PM2 ecosystem..."
 cat << 'EOF' > ecosystem.config.cjs
 module.exports = {
   apps : [
@@ -51,17 +58,14 @@ module.exports = {
 }
 EOF
 
-echo "7. Khoi dong Backend + Cloudflare Tunnel bang PM2..."
-pm2 restart ecosystem.config.cjs --update-env || pm2 start ecosystem.config.cjs
-
-echo "8. Luu trang thai PM2 (Khoi dong cung Termux)..."
+echo "8. Khoi dong lai toan bo..."
+pm2 delete all > /dev/null 2>&1
+pm2 start ecosystem.config.cjs
 pm2 save
 
 echo ""
 echo "========== HOAN THANH! =========="
 echo "[->] API Server local  : http://localhost:3000"
 echo "[->] API Server public : https://chatbot.kaih.co.uk"
-echo "[->] pm2 list          : Xem danh sach dich vu"
-echo "[->] pm2 logs          : Xem log tat ca"
-echo "[->] pm2 logs chatbot-backend   : Xem log API"
-echo "[->] pm2 logs cloudflare_tunnel : Xem log Tunnel"
+echo "[->] Dung 'pm2 list' de kiem tra trang thai"
+echo "[->] Neu 'chatbot-backend' bao online la OK!"

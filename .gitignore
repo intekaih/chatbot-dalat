@@ -11,6 +11,15 @@ build/
 /server/node_modules/
 /ionic-tailwind-app/node_modules/
 
+# Server build files
+server/public/
+server.tar.gz
+server_full.tar.gz
+ecosystem.config.cjs
+deploy_vps.sh
+deploy_vps.ps1
+vps_setup.sh
+
 # Build output (www/ được commit vào git để deployment không cần build Angular)
 # www/
 
@@ -37,3 +46,7 @@ server/generated-images/
 assignment-repo/
 
 backend.tar.gz
+termux_payload.sh
+backend.tar.gz.1
+backend.tar.gz.2
+bc.tar.gz
