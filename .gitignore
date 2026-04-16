@@ -20,8 +20,8 @@ deploy_vps.sh
 deploy_vps.ps1
 vps_setup.sh
 
-# Build output (www/ được commit vào git để deployment không cần build Angular)
-# www/
+# Build output
+ionic-tailwind-app/www/
 
 # Database files
 *.db

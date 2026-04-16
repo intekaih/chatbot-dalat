@@ -95,7 +95,7 @@ import { ApiService } from "../../services/api.service";
               type="email"
               [(ngModel)]="email"
               name="email"
-              placeholder="Email"
+              placeholder="SHA1: 60:C0:E1:28:53:53:DB:28:92:01"
               aria-label="Địa chỉ email"
               autocomplete="email"
               (blur)="touchedEmail = true; validateEmail()"
@@ -487,26 +487,32 @@ export class AuthPage {
       this.navigateAfterAuth(user);
     } catch (error: any) {
       this.isSubmitting = false;
-      console.error('[Google Login Error]', error?.code, error?.message);
+      console.error('[Google Login Error] FULL:', JSON.stringify(error, null, 2));
+      console.error('[Google Login Error] code:', error?.code);
+      console.error('[Google Login Error] message:', error?.message);
+      console.error('[Google Login Error] stack:', error?.stack);
       const msg: string = error?.message || '';
-      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+      const code: string = error?.code || '';
+      // DEBUG: Hiện toàn bộ lỗi trên màn hình để dễ debug
+      const debugInfo = `[CODE: ${code}] [MSG: ${msg}]`;
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
         this.globalError = 'Cửa sổ đăng nhập đã bị đóng';
-      } else if (error.code === 'auth/unauthorized-domain') {
-        this.globalError = 'Domain chưa được cấp phép trong Firebase. Vui lòng thêm domain này vào Firebase Console → Authentication → Authorized domains.';
-      } else if (error.code === 'auth/popup-blocked') {
-        this.globalError = 'Popup bị trình duyệt chặn. Vui lòng cho phép popup và thử lại.';
-      } else if (error.code === 'auth/operation-not-allowed') {
-        this.globalError = 'Đăng nhập Google chưa được kích hoạt. Vui lòng bật trong Firebase Console.';
-      } else if (msg.includes('null object reference') || msg.includes('google-services') || msg.includes('FirebaseApp')) {
-        this.globalError = 'Cấu hình Firebase chưa đúng. Vui lòng dùng Email/Mật khẩu.';
-      } else if (msg.includes('sign_in_cancelled') || msg.includes('12501')) {
-        this.globalError = 'Đăng nhập Google đã bị hủy.';
+      } else if (code === 'auth/unauthorized-domain') {
+        this.globalError = 'Domain chưa được cấp phép. ' + debugInfo;
+      } else if (code === 'auth/popup-blocked') {
+        this.globalError = 'Popup bị chặn. ' + debugInfo;
+      } else if (code === 'auth/operation-not-allowed') {
+        this.globalError = 'Google chưa bật. ' + debugInfo;
       } else if (msg.includes('DEVELOPER_ERROR') || msg.includes('10:') || msg.includes('SHA')) {
-        this.globalError = 'Lỗi cấu hình SHA-1. Vui lòng liên hệ hỗ trợ.';
+        this.globalError = 'Lỗi SHA-1/DEVELOPER_ERROR. ' + debugInfo;
+      } else if (msg.includes('sign_in_cancelled') || msg.includes('12501')) {
+        this.globalError = 'Đăng nhập bị hủy. ' + debugInfo;
+      } else if (msg.includes('null object reference') || msg.includes('google-services') || msg.includes('FirebaseApp')) {
+        this.globalError = 'Firebase chưa khởi tạo. ' + debugInfo;
       } else if (msg.includes('network') || msg.includes('Network')) {
-        this.globalError = 'Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại.';
+        this.globalError = 'Lỗi mạng. ' + debugInfo;
       } else {
-        this.globalError = `Lỗi đăng nhập Google: ${error?.code || error?.message || 'Vui lòng thử lại.'}`;
+        this.globalError = `DEBUG: ${debugInfo}`;
       }
     }
   }
