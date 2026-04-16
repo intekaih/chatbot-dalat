@@ -148,6 +148,7 @@ export class ApiService {
       imageUrl.includes('replit.dev') ||
       imageUrl.includes('replit.app') ||
       imageUrl.includes('dalat-chatbot.web.app') ||
+      imageUrl.includes('kaih.co.uk') ||
       imageUrl.startsWith('/')
     ) {
       return imageUrl;

@@ -68,6 +68,8 @@ app.use(
       if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
       // Cho phép Replit dev domain và production domain
       if (origin && (origin.includes(".replit.dev") || origin.includes(".replit.app"))) return callback(null, true);
+      // Cho phép domain Cloudflare Tunnel
+      if (origin && (origin.includes("kaih.co.uk") || origin.includes("dalat-chatbot.web.app"))) return callback(null, true);
       callback(new Error(`CORS blocked: ${origin}`));
     },
     methods: ["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"],

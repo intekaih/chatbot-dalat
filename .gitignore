@@ -35,3 +35,5 @@ server/generated-images/
 
 # Ignore assignment repo
 assignment-repo/
+
+backend.tar.gz

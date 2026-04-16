@@ -1,0 +1,88 @@
+========== HƯỚNG DẪN DEPLOY BACKEND LÊN TERMUX + CLOUDFLARE TUNNEL ==========
+
+Domain public: https://chatbot.kaih.co.uk
+Server local : http://localhost:3000 (trên điện thoại)
+
+Hệ thống gồm 2 file script:
+  - deploy_termux.ps1  → Chạy ở máy tính Windows (nén code, mở server USB)
+  - termux_payload.sh  → Tự chạy trên Termux (cài đặt, khởi động Backend + Tunnel)
+
+
+===========================================
+TÌNH HUỐNG 1: LẦN ĐẦU HOẶC CẬP NHẬT CODE MỚI
+===========================================
+
+[BƯỚC 1 - TRÊN MÁY TÍNH WINDOWS]
+  1. Cắm điện thoại qua USB, bật USB Debugging
+  2. Mở PowerShell / Terminal VSCode tại thư mục dự án (e:\chatbot ai)
+  3. Chạy lệnh:
+     .\deploy_termux.ps1
+  (Script sẽ nén thư mục server/, thông cổng ADB 8080, mở HTTP server phát file)
+
+[BƯỚC 2 - TRÊN TERMUX (ĐIỆN THOẠI)]
+  Mở Termux, dán lệnh:
+     curl -s http://127.0.0.1:8080/termux_payload.sh | bash
+
+  Nếu dùng Wi-Fi chung mạng (không cần cáp USB), thay 127.0.0.1 bằng IP máy tính:
+     curl -s http://192.168.x.x:8080/termux_payload.sh | bash
+
+  Script sẽ tự động:
+    ✅ Cài nodejs, sqlite, pm2, cloudflared
+    ✅ Tải và giải nén code server mới nhất
+    ✅ npm install
+    ✅ Khởi động Backend API (cổng 3000) bằng PM2
+    ✅ Khởi động Cloudflare Tunnel (public ra https://chatbot.kaih.co.uk) bằng PM2
+    ✅ Lưu trạng thái PM2 (tự phục hồi khi khởi động lại)
+
+
+===========================================
+TÌNH HUỐNG 2: MẤT ĐIỆN / KHỞI ĐỘNG LẠI ĐIỆN THOẠI
+===========================================
+  Mở Termux, gõ:
+     pm2 resurrect
+
+
+===========================================
+TÌNH HUỐNG 3: CHỈ CẬP NHẬT CODE (KHÔNG CÀI LẠI MÔI TRƯỜNG)
+===========================================
+  [Trên Windows] Chạy: .\deploy_termux.ps1
+  [Trên Termux] Dán lệnh:
+     cd ~/backend_chatbot
+     wget -q http://127.0.0.1:8080/backend.tar.gz -O backend.tar.gz || curl -s http://127.0.0.1:8080/backend.tar.gz -o backend.tar.gz
+     tar -xzf backend.tar.gz
+     npm install
+     pm2 restart ecosystem.config.cjs --update-env
+
+
+===========================================
+LỆNH QUẢN LÝ TRÊN TERMUX
+===========================================
+  pm2 list                        → Xem trạng thái các dịch vụ
+  pm2 logs                        → Xem tất cả log
+  pm2 logs chatbot-backend        → Xem log API server
+  pm2 logs cloudflare_tunnel      → Xem log Cloudflare Tunnel
+  pm2 restart chatbot-backend     → Khởi động lại API
+  pm2 restart cloudflare_tunnel   → Khởi động lại Tunnel
+  pm2 stop all                    → Dừng tất cả
+  pm2 save                        → Lưu trạng thái hiện tại
+
+
+===========================================
+CÁC FILE ĐÃ CẬP NHẬT ĐỂ TRỎ VỀ DOMAIN MỚI
+===========================================
+  1. ionic-tailwind-app/src/environments/environment.prod.ts
+     → apiBaseUrl: 'https://chatbot.kaih.co.uk'
+  2. server/index.ts
+     → CORS cho phép origin chứa "kaih.co.uk"
+  3. ionic-tailwind-app/src/app/services/api.service.ts
+     → Thêm "kaih.co.uk" vào trusted domain (không proxy ảnh)
+
+
+===========================================
+LƯU Ý VỀ CLOUDFLARE TUNNEL (DASHBOARD)
+===========================================
+  Trên trang https://dash.cloudflare.com → Zero Trust → Networks → Tunnels:
+  - Hostname: chatbot.kaih.co.uk
+  - Path: ĐỂ TRỐNG (không điền ^/blog hay bất kỳ gì)
+  - Service Type: HTTP
+  - Service URL: localhost:3000
