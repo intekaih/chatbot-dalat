@@ -95,7 +95,7 @@ import { ApiService } from "../../services/api.service";
               type="email"
               [(ngModel)]="email"
               name="email"
-              placeholder="SHA1: 60:C0:E1:28:53:53:DB:28:92:01"
+              placeholder="Email"
               aria-label="Địa chỉ email"
               autocomplete="email"
               (blur)="touchedEmail = true; validateEmail()"
