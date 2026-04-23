@@ -276,101 +276,94 @@ Qua khảo sát, nhóm nhận thấy nhu cầu thực tế của du khách bao g
 Hệ thống được thiết kế theo kiến trúc phân lớp gồm 3 tầng chính:
 
 ```mermaid
-flowchart TB
-    subgraph T1["TẦNG 1: CLIENT (MOBILE APP)"]
-        UI["Ionic UI
-(HTML/SCSS)"]
-        NG["Angular
-Services"]
+%%{init:{'theme':'base','themeVariables':{'fontSize':'11px'}}}%%
+flowchart LR
+    subgraph T1["TẦNG 1: CLIENT"]
+        UI["Ionic UI (HTML/SCSS)"]
+        NG["Angular Services"]
         CP["Capacitor Plugins
 (Camera, Geo, Network)"]
         FF["Firebase
-Firestore, Auth, Storage"]
+(Firestore, Auth, Storage)"]
         LS["Local Storage
 (Offline Cache)"]
-        SM["State Management
-(Angular Signals)"]
+        SM["Angular Signals"]
     end
 
-    T1 --> |HTTPS REST API| T2
+    T1 --> |HTTPS| T2
 
-    subgraph T2["TẦNG 2: BACKEND API SERVER"]
-        EX["Express.js
-Router"]
+    subgraph T2["TẦNG 2: BACKEND API"]
+        EX["Express.js Router"]
         RL["Rate Limiter"]
-        AI["OpenAI / Gemini Proxy
+        AI["OpenAI / Gemini
 AI Generation"]
-        SQ["SQLite
-Database"]
-        RE["Recommender
-Engine"]
-        IP["Image Pool
-(Static)"]
-        FB["Firebase Admin SDK
+        SQ["SQLite Database"]
+        RE["Recommender"]
+        IP["Image Pool"]
+        FB["Firebase Admin
 JWT Verification"]
     end
 
     T2 --> T3
 
-    subgraph T3["TẦNG 3: DATA LAYER"]
-        SQL["SQLite (Server-side)
-places, categories, reviews,
-users, chat_sessions, trips,
-favorites, notifications"]
+    subgraph T3["TẦNG 3: DATA"]
+        SQL["SQLite
+(places, users,
+chat_sessions)"]
         FBC["Firebase Cloud
-Firestore (sessions),
-Auth (users),
-Storage (images)"]
+(Firestore, Auth,
+Storage)"]
     end
 ```
 
 ## 4.2. Sơ đồ phân rã chức năng
 
 ```mermaid
+%%{init:{'theme':'base','themeVariables':{'fontSize':'10px'}}}%%
 flowchart TB
-    ROOT["ỨNG DỤNG CHATBOT TƯ VẤN DU LỊCH ĐÀ LẠT"]
+    ROOT["CHATBOT DU LỊCH ĐÀ LẠT"]
 
     ROOT --> F1["1. Quản lý người dùng"]
-    F1 --> F11["1.1 Đăng ký (Email/Password)"]
-    F1 --> F12["1.2 Đăng nhập (Email, Google)"]
-    F1 --> F13["1.3 Đăng nhập khách (Guest)"]
+    F1 --> F11["1.1 Đăng ký"]
+    F1 --> F12["1.2 Đăng nhập"]
+    F1 --> F13["1.3 Guest"]
     F1 --> F14["1.4 Đăng xuất"]
-    F1 --> F15["1.5 Cập nhật hồ sơ cá nhân"]
+    F1 --> F15["1.5 Cập nhật hồ sơ"]
 
     ROOT --> F2["2. Chatbot AI"]
-    F2 --> F21["2.1 Gửi/nhận tin nhắn văn bản"]
-    F2 --> F22["2.2 Gửi ảnh trong chat"]
-    F2 --> F23["2.3 Streaming response"]
-    F2 --> F24["2.4 Chọn model AI"]
-    F2 --> F25["2.5 Lưu lịch sử chat"]
-    F2 --> F26["2.6 Trích xuất địa điểm từ chat"]
+    F2 --> F21["2.1 Gửi/nhận tin nhắn"]
+    F2 --> F22["2.2 Gửi ảnh"]
+    F2 --> F23["2.3 Streaming"]
+    F2 --> F24["2.4 Chọn model"]
+    F2 --> F25["2.5 Lưu lịch sử"]
+    F2 --> F26["2.6 Trích xuất địa điểm"]
 
     ROOT --> F3["3. Khám phá địa điểm"]
-    F3 --> F31["3.1 Xem danh sách theo danh mục"]
-    F3 --> F32["3.2 Tìm kiếm địa điểm"]
-    F3 --> F33["3.3 Xem chi tiết địa điểm"]
-    F3 --> F34["3.4 Mở bản đồ chỉ đường"]
-    F3 --> F35["3.5 Xem thời tiết"]
+    F3 --> F31["3.1 Danh sách theo danh mục"]
+    F3 --> F32["3.2 Tìm kiếm"]
+    F3 --> F33["3.3 Chi tiết địa điểm"]
+    F3 --> F34["3.4 Bản đồ chỉ đường"]
+    F3 --> F35["3.5 Thời tiết"]
 
     ROOT --> F4["4. Yêu thích"]
-    F4 --> F41["4.1 Thêm/bỏ yêu thích"]
-    F4 --> F42["4.2 Xem danh sách yêu thích"]
+    F4 --> F41["4.1 Thêm/bỏ"]
+    F4 --> F42["4.2 Danh sách"]
 
     ROOT --> F5["5. Lịch trình (Trips)"]
-    F5 --> F51["5.1 Tạo trip mới"]
-    F5 --> F52["5.2 Xem danh sách trips"]
-    F5 --> F53["5.3 Xem chi tiết trip"]
-    F5 --> F54["5.4 Chỉnh sửa trip"]
-    F5 --> F55["5.5 Xóa trip"]
+    F5 --> F51["5.1 Tạo trip"]
+    F5 --> F52["5.2 Danh sách trips"]
+    F5 --> F53["5.3 Chi tiết"]
+    F5 --> F54["5.4 Chỉnh sửa"]
+    F5 --> F55["5.5 Xóa"]
 
     ROOT --> F6["6. Tính năng Native"]
-    F6 --> F61["6.1 Định vị GPS & gợi ý gần nhất"]
-    F6 --> F62["6.2 Kiểm tra mạng & cảnh báo offline"]
-    F6 --> F63["6.3 Camera (chụp ảnh)"]
+    F6 --> F61["6.1 Định vị GPS"]
+    F6 --> F62["6.2 Kiểm tra mạng"]
+    F6 --> F63["6.3 Camera"]
 
     ROOT --> F7["7. Cài đặt"]
     F7 --> F71["7.1 Dark/Light mode"]
-    F7 --> F72["7.2 Thông tin ứng dụng"]
+    F7 --> F72["7.2 Thông tin app"]
     F7 --> F73["7.3 Thông báo"]
 ```
 
@@ -379,18 +372,17 @@ flowchart TB
 ### 4.3.1. Mô hình ER (Entity-Relationship)
 
 ```mermaid
+%%{init:{'theme':'base','themeVariables':{'fontSize':'10px'}}}%%
 erDiagram
     USER {
         string id PK
         string device_id UK
         string name
-        string avatar
         string email
         json preferences
         json travel_styles
         string budget
-        int has_personalized
-        string created_at
+        int personalized
     }
 
     PLACE {
@@ -400,20 +392,17 @@ erDiagram
         string category
         string image_url
         json tags
-        json suitable_for
         int featured
         real rating
         string address
         real lat
         real lng
-        string price_range
     }
 
     CHAT_SESSION {
         string id PK
         string user_id FK
         string title
-        string created_at
         string updated_at
     }
 
@@ -422,7 +411,6 @@ erDiagram
         string session_id FK
         string role
         string content
-        string timestamp
         json place_ids
     }
 
@@ -430,20 +418,15 @@ erDiagram
         string id PK
         string user_id FK
         string title
-        string destination
-        string cover_image
         string start_date
-        string end_date
         string status
         real total_budget
-        real spent
     }
 
     TRIP_DAY {
         string id PK
         string trip_id FK
         int day_number
-        string date
         real total_cost
     }
 
@@ -451,11 +434,8 @@ erDiagram
         string id PK
         string day_id FK
         string time
-        string type
         string title
-        string description
         real cost
-        string place_id FK
     }
 
     FAVORITE {
@@ -468,29 +448,23 @@ erDiagram
     NOTIFICATION {
         string id PK
         string user_id FK
-        string type
         string title
         string content
-        string is_read
-        string timestamp
+        int is_read
     }
 
     REVIEW {
         string id PK
         string place_id FK
         string author
-        string avatar
-        string date
         real rating
         string content
-        int helpful_count
     }
 
     CATEGORY {
         string id PK
         string label
         string icon
-        string icon_name
     }
 
     USER ||--o{ CHAT_SESSION : has
@@ -499,10 +473,10 @@ erDiagram
     TRIP ||--o{ TRIP_DAY : has
     TRIP_DAY ||--o{ TRIP_ITEM : has
     USER ||--o{ FAVORITE : has
-    FAVORITE }o--|| PLACE : references
+    FAVORITE }o--|| PLACE : refs
     USER ||--o{ NOTIFICATION : has
     PLACE ||--o{ REVIEW : has
-    PLACE }o--|| CATEGORY : belongs_to
+    PLACE }o--|| CATEGORY : cat
 ```
 
 ### 4.3.2. Mô hình quan hệ (SQLite - Backend)
@@ -576,48 +550,44 @@ categories/{categoryId}
 ### 4.4.2. Sơ đồ màn hình và luồng điều hướng
 
 ```mermaid
+%%{init:{'theme':'base','themeVariables':{'fontSize':'10px'}}}%%
 flowchart TD
     SPLASH["Splash Screen"]
     SPLASH --> AUTH_CHECK{"Đã đăng nhập?"}
 
-    AUTH_CHECK -->|"Không| Chưa có tài khoản"| ONBOARD["Onboarding
-(3 slides giới thiệu)"]
+    AUTH_CHECK -->|"Không"| ONBOARD["Onboarding
+(3 slides)"]
     ONBOARD --> AUTH["Auth Page
-(Login / Register / Google)"]
+(Login / Register)"]
     AUTH --> WELCOME["Welcome
-(Thiết lập cá nhân hóa)"]
+(Thiết lập cá nhân)"]
     WELCOME --> HOME_TABS
 
-    AUTH_CHECK -->|"Có| Đã đăng nhập"| HOME_TABS["Home Tab Bar
-(4 tabs chính)"]
+    AUTH_CHECK -->|"Có"| HOME_TABS["Home Tab Bar
+(4 tabs)"]
 
     HOME_TABS --> HOME["Home
-Dashboard: thời tiết, trip gần nhất, gợi ý nhanh"]
+(Dashboard)"]
     HOME_TABS --> EXPLORE["Explore
-Danh sách địa điểm theo danh mục"]
+(Danh sách địa điểm)"]
     HOME_TABS --> CHAT["Chat
-Giao diện hội thoại AI"]
+(Hội thoại AI)"]
     HOME_TABS --> PROFILE["Profile
-Thông tin & thống kê"]
+(Thông tin)"]
 
-    HOME --> PLACE_DETAIL["Place Detail
-Chi tiết địa điểm"]
+    HOME --> PLACE_DETAIL["Place Detail"]
     EXPLORE --> PLACE_DETAIL
-    PLACE_DETAIL --> MAP["Bản đồ
-Chỉ đường"]
+    PLACE_DETAIL --> MAP["Bản đồ chỉ đường"]
 
-    HOME --> TRIP_DETAIL["Trip Detail
-Chi tiết lịch trình"]
+    HOME --> TRIP_DETAIL["Trip Detail"]
     CHAT --> TRIP_SAVE["Lưu Trip
-Từ gợi ý AI"]
+từ gợi ý AI"]
     TRIP_SAVE --> TRIP_DETAIL
 
     PROFILE --> SETTINGS["Settings
-Dark mode, thông tin app"]
-    SETTINGS --> DARK["Dark / Light Mode"]
-
+(Dark mode)"]
     HOME_TABS --> FAVORITES["Favorites
-Địa điểm yêu thích & Trips"]
+(Yêu thích & Trips)"]
     FAVORITES --> PLACE_DETAIL
     FAVORITES --> TRIP_DETAIL
 ```
